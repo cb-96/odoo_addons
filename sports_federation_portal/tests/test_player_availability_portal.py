@@ -51,7 +51,9 @@ class TestPlayerAvailabilityPortal(TransactionCase):
         Club._portal_set_player_availability(self.club.id, False, user=self.user)
         self.assertFalse(self.club.player_availability_enabled)
         with self.assertRaises(AccessError):
-            Club._portal_set_player_availability(self.other_club.id, False, user=self.user)
+            Club._portal_set_player_availability(
+                self.other_club.id, False, user=self.user
+            )
         self.assertTrue(self.other_club.player_availability_enabled)
 
     def test_disabled_club_has_no_teams_in_availability(self):
@@ -82,7 +84,9 @@ class TestPlayerAvailabilityPortal(TransactionCase):
                 "name": "Rival Day",
                 "edition_id": edition.id,
                 "date": "2099-01-01",
-                "venue_id": self.env["federation.venue"].create({"name": "Rival Venue"}).id,
+                "venue_id": self.env["federation.venue"]
+                .create({"name": "Rival Venue"})
+                .id,
             }
         )
         request = self.Request.create(

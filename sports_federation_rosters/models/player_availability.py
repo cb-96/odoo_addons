@@ -84,8 +84,7 @@ class FederationPlayerAvailabilityRequest(models.Model):
         """Answers can change until the game day has passed."""
         self.ensure_one()
         return bool(
-            self.matchday_date
-            and self.matchday_date >= fields.Date.context_today(self)
+            self.matchday_date and self.matchday_date >= fields.Date.context_today(self)
         )
 
     # ------------------------------------------------------------------
@@ -96,21 +95,29 @@ class FederationPlayerAvailabilityRequest(models.Model):
     def _team_players(self, team, matchday):
         """Active roster players of the team that the game day falls in."""
         day = matchday.date
-        lines = self.env["federation.team.roster.line"].sudo().search(
-            [
-                ("roster_id.team_id", "=", team.id),
-                ("roster_id.status", "!=", "closed"),
-                ("status", "=", "active"),
-            ]
+        lines = (
+            self.env["federation.team.roster.line"]
+            .sudo()
+            .search(
+                [
+                    ("roster_id.team_id", "=", team.id),
+                    ("roster_id.status", "!=", "closed"),
+                    ("status", "=", "active"),
+                ]
+            )
         )
         lines = lines.filtered(
             lambda line: (
                 not day
                 or (
-                    (not line.roster_id.season_id.date_start
-                     or line.roster_id.season_id.date_start <= day)
-                    and (not line.roster_id.season_id.date_end
-                         or line.roster_id.season_id.date_end >= day)
+                    (
+                        not line.roster_id.season_id.date_start
+                        or line.roster_id.season_id.date_start <= day
+                    )
+                    and (
+                        not line.roster_id.season_id.date_end
+                        or line.roster_id.season_id.date_end >= day
+                    )
                 )
             )
         )
@@ -169,9 +176,7 @@ class FederationPlayerAvailabilityRequest(models.Model):
         now = fields.Datetime.now()
         for line in lines:
             Mail.create(line._invitation_mail_values(reminder=reminder))
-            line.sudo().write(
-                {"reminded_on": now} if reminder else {"invited_on": now}
-            )
+            line.sudo().write({"reminded_on": now} if reminder else {"invited_on": now})
         return len(lines)
 
     def _availability_by_player(self):
@@ -285,7 +290,7 @@ class FederationPlayerAvailability(models.Model):
             venue=day.venue_id.display_name or "",
         )
         body = Markup(
-            "<p>%s</p><p>%s</p><p><a href=\"%s\">%s</a></p><p><small>%s</small></p>"
+            '<p>%s</p><p>%s</p><p><a href="%s">%s</a></p><p><small>%s</small></p>'
         ) % (
             escape(_("Hello %s,", self.player_id.first_name or self.player_id.name)),
             escape(intro),

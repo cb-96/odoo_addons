@@ -14,7 +14,8 @@ class FederationGamedayLineupWizardClubRank(models.TransientModel):
         service = self.env["federation.club.rank.service"]
         for wizard in self:
             matches = wizard.matchday_id.published_match_ids.filtered(
-                lambda match: wizard.team_id in (match.home_team_id | match.away_team_id)
+                lambda match: wizard.team_id
+                in (match.home_team_id | match.away_team_id)
                 and match.state not in ("done", "cancelled")
             )
             warnings = service.promotion_warnings(

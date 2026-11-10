@@ -21,8 +21,11 @@ class FederationCreateCompetitionWizard(models.TransientModel):
     )
     name = fields.Char(required=True)
     season_id = fields.Many2one(
-        "federation.season", required=True,
-        default=lambda self: self.env["federation.season"]._default_registration_season(),
+        "federation.season",
+        required=True,
+        default=lambda self: self.env[
+            "federation.season"
+        ]._default_registration_season(),
     )
     date_start = fields.Date(required=True)
     date_end = fields.Date()

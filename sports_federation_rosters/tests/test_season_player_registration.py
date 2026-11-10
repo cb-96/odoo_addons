@@ -8,24 +8,43 @@ class TestMandatorySeasonPlayers(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.club = cls.env["federation.club"].create({"name": "Roster Annual Club"})
-        cls.team = cls.env["federation.team"].create({"name": "Annual Team", "club_id": cls.club.id})
-        cls.season = cls.env["federation.season"].create({
-            "name": "Roster Annual Season", "date_start": "2098-01-01",
-            "date_end": "2098-12-31", "state": "open",
-        })
-        cls.player = cls.env["federation.player"].create({
-            "first_name": "Roster", "last_name": "Annual", "club_id": cls.club.id,
-            "gender": "male", "birth_date": "2000-01-01",
-        })
-        cls.roster = cls.env["federation.team.roster"].create({
-            "team_id": cls.team.id, "season_id": cls.season.id,
-        })
-        cls.registration = cls.env["federation.club.season.registration"]._get_or_create(cls.club, cls.season)
+        cls.team = cls.env["federation.team"].create(
+            {"name": "Annual Team", "club_id": cls.club.id}
+        )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Roster Annual Season",
+                "date_start": "2098-01-01",
+                "date_end": "2098-12-31",
+                "state": "open",
+            }
+        )
+        cls.player = cls.env["federation.player"].create(
+            {
+                "first_name": "Roster",
+                "last_name": "Annual",
+                "club_id": cls.club.id,
+                "gender": "male",
+                "birth_date": "2000-01-01",
+            }
+        )
+        cls.roster = cls.env["federation.team.roster"].create(
+            {
+                "team_id": cls.team.id,
+                "season_id": cls.season.id,
+            }
+        )
+        cls.registration = cls.env[
+            "federation.club.season.registration"
+        ]._get_or_create(cls.club, cls.season)
 
     def _line(self):
-        return self.env["federation.team.roster.line"].create({
-            "roster_id": self.roster.id, "player_id": self.player.id,
-        })
+        return self.env["federation.team.roster.line"].create(
+            {
+                "roster_id": self.roster.id,
+                "player_id": self.player.id,
+            }
+        )
 
     def test_missing_registration_blocked_without_rule_set(self):
         self.assertFalse(self.roster.rule_set_id)
@@ -47,11 +66,17 @@ class TestMandatorySeasonPlayers(TransactionCase):
         self.assertFalse(line.eligible)
 
     def test_wrong_season_blocked(self):
-        other = self.env["federation.season"].create({
-            "name": "Other Annual Season", "date_start": "2099-01-01",
-            "date_end": "2099-12-31", "state": "open",
-        })
-        registration = self.env["federation.club.season.registration"]._get_or_create(self.club, other)
+        other = self.env["federation.season"].create(
+            {
+                "name": "Other Annual Season",
+                "date_start": "2099-01-01",
+                "date_end": "2099-12-31",
+                "state": "open",
+            }
+        )
+        registration = self.env["federation.club.season.registration"]._get_or_create(
+            self.club, other
+        )
         registration._add_players(self.player)
         registration.action_confirm()
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
@@ -60,7 +85,9 @@ class TestMandatorySeasonPlayers(TransactionCase):
     def test_expired_registration_blocked(self):
         self.registration._add_players(self.player)
         self.registration.action_confirm()
-        self.registration.license_ids.write({"issue_date": "2097-01-01", "expiry_date": "2097-12-31"})
+        self.registration.license_ids.write(
+            {"issue_date": "2097-01-01", "expiry_date": "2097-12-31"}
+        )
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             self._line()
 
@@ -68,18 +95,27 @@ class TestMandatorySeasonPlayers(TransactionCase):
         self.registration._add_players(self.player)
         self.registration.action_confirm()
         self._line()
-        other = self.env["federation.season"].create({
-            "name": "Scope Change Season", "date_start": "2099-01-01",
-            "date_end": "2099-12-31", "state": "open",
-        })
+        other = self.env["federation.season"].create(
+            {
+                "name": "Scope Change Season",
+                "date_start": "2099-01-01",
+                "date_end": "2099-12-31",
+                "state": "open",
+            }
+        )
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             self.roster.write({"season_id": other.id})
 
     def test_wrong_club_registration_blocked(self):
         other_club = self.env["federation.club"].create({"name": "Wrong Licence Club"})
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
-            self.env["federation.player.license"].create({
-                "player_id": self.player.id, "club_id": other_club.id,
-                "season_id": self.season.id, "state": "active",
-                "issue_date": "2098-01-01", "expiry_date": "2098-12-31",
-            })
+            self.env["federation.player.license"].create(
+                {
+                    "player_id": self.player.id,
+                    "club_id": other_club.id,
+                    "season_id": self.season.id,
+                    "state": "active",
+                    "issue_date": "2098-01-01",
+                    "expiry_date": "2098-12-31",
+                }
+            )

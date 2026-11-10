@@ -61,10 +61,12 @@ class TestParticipantHandoff(TransactionCase):
 
     def _approved(self):
         teams = self._make_team("Handoff A") | self._make_team("Handoff B")
-        entries = self.env["federation.competition.entry"].create([
-            {"window_id": self.window.id, "team_id": team.id, "state": "approved"}
-            for team in teams
-        ])
+        entries = self.env["federation.competition.entry"].create(
+            [
+                {"window_id": self.window.id, "team_id": team.id, "state": "approved"}
+                for team in teams
+            ]
+        )
         self.window.action_open()
         self.window.action_close()
         return teams, entries
@@ -76,9 +78,12 @@ class TestParticipantHandoff(TransactionCase):
         snapshot = self.window.participant_set_id
         self.window.action_finalize(expected_digest=digest)
         self.assertEqual(self.window.participant_set_id, snapshot)
-        participants = self.env["federation.tournament.participant"].search([
-            ("tournament_id", "=", self.division.id), ("state", "=", "confirmed"),
-        ])
+        participants = self.env["federation.tournament.participant"].search(
+            [
+                ("tournament_id", "=", self.division.id),
+                ("state", "=", "confirmed"),
+            ]
+        )
         self.assertEqual(set(participants.team_id.ids), set(teams.ids))
         self.assertEqual(set(participants.source_entry_id.ids), set(entries.ids))
         self.assertEqual(participants.mapped("source_participant_set_id"), snapshot)
@@ -106,39 +111,54 @@ class TestParticipantHandoff(TransactionCase):
         self.window.action_finalize()
         old = self.window.participant_set_id
         replacement = self._make_team("Handoff Replacement")
-        new = self.window.amend_finalized_teams((teams[:1] | replacement).ids, "Team replacement approved", old.id)
+        new = self.window.amend_finalized_teams(
+            (teams[:1] | replacement).ids, "Team replacement approved", old.id
+        )
         self.assertNotEqual(new, old)
         self.assertEqual(old.state, "superseded")
         self.assertEqual(set(old.line_ids.team_id.ids), set(teams.ids))
-        self.assertEqual(set(new.line_ids.team_id.ids), set((teams[:1] | replacement).ids))
+        self.assertEqual(
+            set(new.line_ids.team_id.ids), set((teams[:1] | replacement).ids)
+        )
 
     def test_amendment_requires_reason_and_current_snapshot(self):
         teams, entries = self._approved()
         self.window.action_finalize()
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
-            self.window.amend_finalized_teams(teams.ids, "", self.window.participant_set_id.id)
+            self.window.amend_finalized_teams(
+                teams.ids, "", self.window.participant_set_id.id
+            )
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             self.window.amend_finalized_teams(teams.ids, "Reviewed", 0)
 
     def test_managed_participant_cannot_be_confirmed_independently(self):
         teams, entries = self._approved()
         self.window.action_finalize()
-        participant = self.env["federation.tournament.participant"].search([
-            ("source_entry_id", "=", entries[0].id),
-        ], limit=1)
+        participant = self.env["federation.tournament.participant"].search(
+            [
+                ("source_entry_id", "=", entries[0].id),
+            ],
+            limit=1,
+        )
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             participant.write({"state": "withdrawn"})
 
     def test_another_window_cannot_overwrite_finalized_division(self):
         teams, entries = self._approved()
         self.window.action_finalize()
-        other = self.env["federation.registration.window"].create({
-            "name": "Conflicting window", "edition_id": self.edition.id,
-            "division_id": self.division.id, "state": "closed",
-        })
-        self.env["federation.competition.entry"].create([
-            {"window_id": other.id, "team_id": team.id, "state": "approved"}
-            for team in teams
-        ])
+        other = self.env["federation.registration.window"].create(
+            {
+                "name": "Conflicting window",
+                "edition_id": self.edition.id,
+                "division_id": self.division.id,
+                "state": "closed",
+            }
+        )
+        self.env["federation.competition.entry"].create(
+            [
+                {"window_id": other.id, "team_id": team.id, "state": "approved"}
+                for team in teams
+            ]
+        )
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             other.action_finalize()

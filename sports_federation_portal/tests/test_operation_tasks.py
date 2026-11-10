@@ -386,9 +386,13 @@ class TestFederationOperationTasks(TransactionCase):
     def test_task_collection_does_not_mutate_tasks_or_shared_methods(self):
         Task = self.env["federation.operation.task"]
         collector = type(Task)._project_task_specs
-        with patch.object(type(Task), "create", side_effect=AssertionError("collector created task")), \
-                patch.object(type(Task), "write", side_effect=AssertionError("collector wrote task")), \
-                patch.object(type(Task), "unlink", side_effect=AssertionError("collector deleted task")):
+        with patch.object(
+            type(Task), "create", side_effect=AssertionError("collector created task")
+        ), patch.object(
+            type(Task), "write", side_effect=AssertionError("collector wrote task")
+        ), patch.object(
+            type(Task), "unlink", side_effect=AssertionError("collector deleted task")
+        ):
             first, first_scope = Task._project_task_specs(user=self.manager)
             second, second_scope = Task._project_task_specs(user=self.manager)
         self.assertIs(type(Task)._project_task_specs, collector)
@@ -398,25 +402,39 @@ class TestFederationOperationTasks(TransactionCase):
         self.assertFalse(hasattr(Task, "_sync_specs"))
 
     def test_lineup_handoff_uses_one_writer_and_preserves_task_identity(self):
-        away = self.env["federation.team"].create({
-            "name": "Projection opponent", "club_id": self.club.id,
-        })
-        match = self.env["federation.match"].create({
-            "tournament_id": self.tournament.id,
-            "home_team_id": self.team.id, "away_team_id": away.id,
-            "date_scheduled": "2026-06-01 10:00:00", "state": "scheduled",
-        })
+        away = self.env["federation.team"].create(
+            {
+                "name": "Projection opponent",
+                "club_id": self.club.id,
+            }
+        )
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team.id,
+                "away_team_id": away.id,
+                "date_scheduled": "2026-06-01 10:00:00",
+                "state": "scheduled",
+            }
+        )
         Task = self.env["federation.operation.task"]
         Service = self.env["federation.task.projection"]
-        sheets = self.env["federation.match.sheet"].search([
-            ("match_id", "=", match.id), ("team_id", "=", self.team.id),
-        ])
+        sheets = self.env["federation.match.sheet"].search(
+            [
+                ("match_id", "=", match.id),
+                ("team_id", "=", self.team.id),
+            ]
+        )
         self.assertTrue(sheets)
         Task.sync_for_user(user=self.manager)
-        task = Task.search([
-            ("match_id", "=", match.id), ("journey_team_id", "=", self.team.id),
-            ("task_type", "=", "gameday_lineup"), ("state", "!=", "done"),
-        ])
+        task = Task.search(
+            [
+                ("match_id", "=", match.id),
+                ("journey_team_id", "=", self.team.id),
+                ("task_type", "=", "gameday_lineup"),
+                ("state", "!=", "done"),
+            ]
+        )
         self.assertEqual(len(task), 1)
         identity, key = task.id, task.source_key
         # Seed lifecycle states to isolate projection from eligibility commands.
@@ -444,7 +462,9 @@ class TestFederationOperationTasks(TransactionCase):
     def test_unchanged_projection_does_not_write_task(self):
         Task = self.env["federation.operation.task"]
         Task.sync_for_user(user=self.manager)
-        with patch.object(type(Task), "write", side_effect=AssertionError("unchanged task written")):
+        with patch.object(
+            type(Task), "write", side_effect=AssertionError("unchanged task written")
+        ):
             Task.sync_for_user(user=self.manager)
 
     def test_projection_batches_task_creation(self):
@@ -452,13 +472,18 @@ class TestFederationOperationTasks(TransactionCase):
         Service = self.env["federation.task.projection"]
         specs = []
         for index in range(3):
-            specs.append({
-                "name": "Batch projection %s" % index,
-                "task_type": "registration", "audience": "manager",
-                "blocking_reason": "Review required", "next_step": "Review",
-                "source_model": self.window._name, "source_record_id": self.window.id,
-                "source_key": "batch-projection:%s" % index,
-            })
+            specs.append(
+                {
+                    "name": "Batch projection %s" % index,
+                    "task_type": "registration",
+                    "audience": "manager",
+                    "blocking_reason": "Review required",
+                    "next_step": "Review",
+                    "source_model": self.window._name,
+                    "source_record_id": self.window.id,
+                    "source_key": "batch-projection:%s" % index,
+                }
+            )
         original = type(Task).create
         calls = []
 
@@ -467,6 +492,8 @@ class TestFederationOperationTasks(TransactionCase):
             return original(recordset, values)
 
         with patch.object(type(Task), "create", create_batch):
-            Service._apply(specs, [("source_key", "in", [item["source_key"] for item in specs])])
+            Service._apply(
+                specs, [("source_key", "in", [item["source_key"] for item in specs])]
+            )
         self.assertEqual(len(calls), 1)
         self.assertEqual(len(calls[0]), 3)

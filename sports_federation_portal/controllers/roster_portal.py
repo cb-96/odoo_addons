@@ -133,7 +133,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_with_query(
                 "/my/rosters",
                 error=str(exc),
-                error_hint=request.env._("Ensure the registration is confirmed and a roster has not already been created for this team."),
+                error_hint=request.env._(
+                    "Ensure the registration is confirmed and a roster has not already been created for this team."
+                ),
             )
 
         return self._redirect_roster(
@@ -220,7 +222,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("You may not have the required access to edit this roster."),
+                error_hint=request.env._(
+                    "You may not have the required access to edit this roster."
+                ),
             )
 
         values = {
@@ -285,7 +289,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("Ensure all required fields are complete before activating the roster."),
+                error_hint=request.env._(
+                    "Ensure all required fields are complete before activating the roster."
+                ),
             )
 
         return self._redirect_roster(roster, success=request.env._("Roster activated."))
@@ -309,10 +315,14 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("The roster cannot be moved to draft at its current stage."),
+                error_hint=request.env._(
+                    "The roster cannot be moved to draft at its current stage."
+                ),
             )
 
-        return self._redirect_roster(roster, success=request.env._("Roster set back to draft."))
+        return self._redirect_roster(
+            roster, success=request.env._("Roster set back to draft.")
+        )
 
     @http.route(
         ["/my/rosters/<int:roster_id>/close"],
@@ -333,7 +343,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("The roster could not be closed. Contact the federation if the issue persists."),
+                error_hint=request.env._(
+                    "The roster could not be closed. Contact the federation if the issue persists."
+                ),
             )
 
         return self._redirect_roster(roster, success=request.env._("Roster closed."))
@@ -357,7 +369,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("Resolve readiness blockers before reopening this roster."),
+                error_hint=request.env._(
+                    "Resolve readiness blockers before reopening this roster."
+                ),
             )
 
         return self._redirect_roster(roster, success=request.env._("Roster reopened."))
@@ -389,7 +403,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("You may not have the required access to manage this roster."),
+                error_hint=request.env._(
+                    "You may not have the required access to manage this roster."
+                ),
             )
 
         return self._render_roster_line_form(
@@ -425,10 +441,14 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_with_query(
                 f"/my/rosters/{roster_id}/lines/new",
                 error=str(exc),
-                error_hint=request.env._("Verify the player is eligible and not already listed on this roster."),
+                error_hint=request.env._(
+                    "Verify the player is eligible and not already listed on this roster."
+                ),
             )
 
-        return self._redirect_roster(roster, success=request.env._("Player added to roster."))
+        return self._redirect_roster(
+            roster, success=request.env._("Player added to roster.")
+        )
 
     @http.route(
         ["/my/rosters/<int:roster_id>/lines/<int:line_id>/edit"],
@@ -446,7 +466,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             if line.status != "active":
                 return self._redirect_roster(
                     roster,
-                    error=request.env._("Only active roster lines can be edited in the portal."),
+                    error=request.env._(
+                        "Only active roster lines can be edited in the portal."
+                    ),
                 )
             available_licenses = request.env[
                 "federation.team.roster.line"
@@ -461,7 +483,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("You may not have the required access to edit this roster line."),
+                error_hint=request.env._(
+                    "You may not have the required access to edit this roster line."
+                ),
             )
 
         return self._render_roster_line_form(
@@ -497,7 +521,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
                 error_hint=request.env._("Review the player details and try again."),
             )
 
-        return self._redirect_roster(roster, success=request.env._("Roster line updated."))
+        return self._redirect_roster(
+            roster, success=request.env._("Roster line updated.")
+        )
 
     @http.route(
         ["/my/rosters/<int:roster_id>/lines/<int:line_id>/delete"],
@@ -519,7 +545,11 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint=request.env._("The player could not be removed. Contact the federation if the issue persists."),
+                error_hint=request.env._(
+                    "The player could not be removed. Contact the federation if the issue persists."
+                ),
             )
 
-        return self._redirect_roster(roster, success=request.env._("Roster line removed."))
+        return self._redirect_roster(
+            roster, success=request.env._("Roster line removed.")
+        )

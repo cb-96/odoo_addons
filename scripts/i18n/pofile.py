@@ -97,7 +97,9 @@ def read(path: Path | str) -> Catalog:
             elif line.startswith("#,"):
                 current.flags.extend(f.strip() for f in line[2:].split(","))
             continue
-        match = re.match(r'^(msgctxt|msgid|msgid_plural|msgstr(?:\[\d+\])?)\s+"(.*)"$', line)
+        match = re.match(
+            r'^(msgctxt|msgid|msgid_plural|msgstr(?:\[\d+\])?)\s+"(.*)"$', line
+        )
         if match:
             name, value = match.groups()
             if name == "msgid" and key == "msgstr":
@@ -185,7 +187,9 @@ def header_text(language: str, module: str) -> str:
 # Consistency between a source text and its translation
 # --------------------------------------------------------------------------
 
-_PLACEHOLDER = re.compile(r"%\([A-Za-z_][A-Za-z0-9_]*\)[sdrf]|%[sdrf]|\{[A-Za-z_][A-Za-z0-9_]*\}")
+_PLACEHOLDER = re.compile(
+    r"%\([A-Za-z_][A-Za-z0-9_]*\)[sdrf]|%[sdrf]|\{[A-Za-z_][A-Za-z0-9_]*\}"
+)
 _TAG = re.compile(r"</?([A-Za-z][A-Za-z0-9_.-]*)\b[^>]*?/?>")
 
 
@@ -219,5 +223,7 @@ def problems(entry: Entry) -> list[str]:
             % (placeholders(entry.msgid), placeholders(entry.msgstr))
         )
     if sorted(tags(entry.msgid)) != sorted(tags(entry.msgstr)):
-        found.append("markup differs: %s vs %s" % (tags(entry.msgid), tags(entry.msgstr)))
+        found.append(
+            "markup differs: %s vs %s" % (tags(entry.msgid), tags(entry.msgstr))
+        )
     return found

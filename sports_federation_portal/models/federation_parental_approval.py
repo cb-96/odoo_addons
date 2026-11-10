@@ -173,7 +173,9 @@ class FederationPlayerParentalApprovalPortal(models.Model):
             if info["key"] == "pending":
                 counts["pending"] += 1
             if info["needs_action"]:
-                counts["needed_now" if info["level"] == "danger" else "needed_later"] += 1
+                counts[
+                    "needed_now" if info["level"] == "danger" else "needed_later"
+                ] += 1
         counts["needs_action"] = counts["needed_now"] + counts["needed_later"]
         return {
             "by_player": by_player,

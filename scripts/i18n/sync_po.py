@@ -68,15 +68,19 @@ def merge(template: pofile.Catalog, existing, language: str, component: str):
                 flags=[flag for flag in source.flags if flag != "fuzzy"],
             )
         )
-    header = existing.header if existing else pofile.Entry(
-        msgid="",
-        msgstr=pofile.header_text(language, component),
-        comments=[
-            "Translation of Odoo Server.",
-            "This file contains the translation of the following modules:",
-            "\t* %s" % component,
-            "",
-        ],
+    header = (
+        existing.header
+        if existing
+        else pofile.Entry(
+            msgid="",
+            msgstr=pofile.header_text(language, component),
+            comments=[
+                "Translation of Odoo Server.",
+                "This file contains the translation of the following modules:",
+                "\t* %s" % component,
+                "",
+            ],
+        )
     )
     return pofile.Catalog(header=header, entries=entries)
 
@@ -110,7 +114,13 @@ def main() -> int:
             pofile.write(merged, path)
             if before != path.read_text(encoding="utf-8"):
                 changed += 1
-                print("%s %s" % ("created" if before is None else "updated", path.relative_to(ROOT)))
+                print(
+                    "%s %s"
+                    % (
+                        "created" if before is None else "updated",
+                        path.relative_to(ROOT),
+                    )
+                )
     if args.check:
         print("%s language file(s) out of date." % changed)
         return 1 if changed else 0

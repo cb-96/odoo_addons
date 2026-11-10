@@ -1,4 +1,5 @@
 """Game-day declaration sharing; lifecycle and eligibility remain on match sheets."""
+
 from datetime import datetime, time, timedelta
 
 from odoo import _, fields, models
@@ -145,9 +146,7 @@ class FederationMatchSheetGameday(models.Model):
             self.write({"state": "approved"})
             self._log_audit_event(
                 "match_sheet_approved",
-                _(
-                    "Match sheet '%(sheet)s' inherited the approved game-day lineup."
-                )
+                _("Match sheet '%(sheet)s' inherited the approved game-day lineup.")
                 % {"sheet": self.display_name},
             )
         elif inherit_approval and source.state == "submitted":

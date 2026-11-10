@@ -1,4 +1,5 @@
 from .notification_boundary import notification_effect
+
 """
 Notification Dispatcher — event-driven notification routing.
 
@@ -86,7 +87,11 @@ class FederationNotificationDispatcher(models.AbstractModel):
             )
 
         return self.queue_direct_email(
-            record, subject, body_html, ",".join(unique_emails), log_name=log_name,
+            record,
+            subject,
+            body_html,
+            ",".join(unique_emails),
+            log_name=log_name,
         )
 
     def _create_group_activities(self, record, group_xmlid, summary, note=None):

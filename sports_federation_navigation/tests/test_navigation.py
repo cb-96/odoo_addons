@@ -42,8 +42,10 @@ RETIRED_MENU_XMLIDS = (
 class TestFederationNavigation(TransactionCase):
     def _federation_menus(self):
         root = self.env.ref("sports_federation_base.menu_federation_root")
-        return self.env["ir.ui.menu"].with_context(active_test=False).search(
-            [("id", "child_of", root.id), ("id", "!=", root.id)]
+        return (
+            self.env["ir.ui.menu"]
+            .with_context(active_test=False)
+            .search([("id", "child_of", root.id), ("id", "!=", root.id)])
         )
 
     def test_advanced_menus_are_limited_to_advanced_operators(self):
@@ -108,5 +110,6 @@ class TestFederationNavigation(TransactionCase):
         self.assertIn("('audience', '=', 'manager')", str(action["domain"]))
         menu = self.env.ref("sports_federation_navigation.menu_review_queue")
         self.assertEqual(
-            menu.group_ids, self.env.ref("sports_federation_base.group_federation_manager")
+            menu.group_ids,
+            self.env.ref("sports_federation_base.group_federation_manager"),
         )

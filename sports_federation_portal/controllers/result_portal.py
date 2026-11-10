@@ -168,7 +168,9 @@ class FederationResultPortal(FederationPortalBase):
         if match.result_state not in ("submitted", "verified", "approved"):
             return self._redirect_with_query(
                 f"/my/results/{match_id}",
-                error=request.env._("Only submitted, verified, or approved results can be contested."),
+                error=request.env._(
+                    "Only submitted, verified, or approved results can be contested."
+                ),
                 error_hint=(
                     "This result has already been contested."
                     if match.result_state == "contested"
@@ -195,5 +197,7 @@ class FederationResultPortal(FederationPortalBase):
 
         return self._redirect_with_query(
             f"/my/results/{match_id}",
-            success=request.env._("Result contested. The federation has been notified."),
+            success=request.env._(
+                "Result contested. The federation has been notified."
+            ),
         )

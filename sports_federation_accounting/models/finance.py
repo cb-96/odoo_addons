@@ -214,9 +214,9 @@ class FinanceClubPortal(models.Model):
         """Display values; the link opens Odoo's invoice page with online payment."""
         events = self._portal_club_invoices(user=user)
         labels = dict(
-            self.env["account.move"]._fields["payment_state"]._description_selection(
-                self.env
-            )
+            self.env["account.move"]
+            ._fields["payment_state"]
+            ._description_selection(self.env)
         )
         rows = []
         for event in events:

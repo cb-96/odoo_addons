@@ -133,14 +133,22 @@ class TestMatchJourney(TransactionCase):
                 "season_id": self.edition.season_id.id,
             }
         )
-        registration = self.env["federation.club.season.registration"]._get_or_create(team.club_id, self.edition.season_id)
-        registration.billing_partner_id = self.env["res.partner"].create({"name": "Journey Billing Contact"})
-        self.env["federation.player.license"].create({
-            "player_id": player.id, "club_id": team.club_id.id,
-            "season_id": self.edition.season_id.id, "state": "active",
-            "issue_date": self.edition.season_id.date_start,
-            "expiry_date": self.edition.season_id.date_end,
-        })
+        registration = self.env["federation.club.season.registration"]._get_or_create(
+            team.club_id, self.edition.season_id
+        )
+        registration.billing_partner_id = self.env["res.partner"].create(
+            {"name": "Journey Billing Contact"}
+        )
+        self.env["federation.player.license"].create(
+            {
+                "player_id": player.id,
+                "club_id": team.club_id.id,
+                "season_id": self.edition.season_id.id,
+                "state": "active",
+                "issue_date": self.edition.season_id.date_start,
+                "expiry_date": self.edition.season_id.date_end,
+            }
+        )
         self.env["federation.team.roster.line"].create(
             {"roster_id": roster.id, "player_id": player.id}
         )
@@ -266,24 +274,31 @@ class TestMatchJourney(TransactionCase):
     def test_noop_reschedule_does_not_create_revision(self):
         schedule, review = self._valid_schedule_review(self.days[0], "Noop")
         self.env["federation.schedule.approval.commands"].publish(schedule.id)
-        action = schedule.assignment_ids[0].fixture_id.action_reschedule_from_workspace()
+        action = schedule.assignment_ids[
+            0
+        ].fixture_id.action_reschedule_from_workspace()
         wizard = self.env["federation.match.reschedule.wizard"].browse(action["res_id"])
         wizard.reason = "No move"
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             wizard.action_prepare_amendment()
         self.assertFalse(schedule.superseded_by_id)
 
-
     def test_valid_move_prepares_revision_without_changing_live_match(self):
         schedule, review = self._valid_schedule_review(self.days[0], "Move")
-        publication = self.env["federation.schedule.approval.commands"].publish(schedule.id)
+        publication = self.env["federation.schedule.approval.commands"].publish(
+            schedule.id
+        )
         assignment = schedule.assignment_ids[0]
         match = assignment.fixture_id.operational_match_id
         original_date = match.date_scheduled
-        target = self.env["federation.schedule.slot"].create({
-            "matchday_id": schedule.matchday_id.id, "court_id": assignment.slot_id.court_id.id,
-            "start_datetime": "2026-10-03 11:00:00", "end_datetime": "2026-10-03 11:40:00",
-        })
+        target = self.env["federation.schedule.slot"].create(
+            {
+                "matchday_id": schedule.matchday_id.id,
+                "court_id": assignment.slot_id.court_id.id,
+                "start_datetime": "2026-10-03 11:00:00",
+                "end_datetime": "2026-10-03 11:40:00",
+            }
+        )
         action = assignment.fixture_id.action_reschedule_from_workspace()
         wizard = self.env["federation.match.reschedule.wizard"].browse(action["res_id"])
         wizard.write({"slot_id": target.id, "reason": "Reviewed venue timing change"})

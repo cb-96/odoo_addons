@@ -229,4 +229,3 @@ class TestPortalTemplateAccessibility(TransactionCase):
         self.assertIn(":focus-visible", stylesheet)
         self.assertIn("outline:", stylesheet)
         self.assertIn('[role="alert"]:focus', stylesheet)
-

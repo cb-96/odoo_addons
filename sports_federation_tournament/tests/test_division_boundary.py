@@ -6,15 +6,23 @@ from odoo.tests.common import TransactionCase, tagged
 class TestDivisionBoundary(TransactionCase):
     def setUp(self):
         super().setUp()
-        self.season = self.env["federation.season"].create({
-            "name": "Division Boundary Season", "date_start": "2098-01-01",
-            "date_end": "2098-12-31",
-        })
-        self.competition = self.env["federation.competition"].create({"name": "Division Boundary Competition"})
-        self.edition = self.env["federation.competition.edition"].create({
-            "name": "Division Boundary Edition", "competition_id": self.competition.id,
-            "season_id": self.season.id,
-        })
+        self.season = self.env["federation.season"].create(
+            {
+                "name": "Division Boundary Season",
+                "date_start": "2098-01-01",
+                "date_end": "2098-12-31",
+            }
+        )
+        self.competition = self.env["federation.competition"].create(
+            {"name": "Division Boundary Competition"}
+        )
+        self.edition = self.env["federation.competition.edition"].create(
+            {
+                "name": "Division Boundary Edition",
+                "competition_id": self.competition.id,
+                "season_id": self.season.id,
+            }
+        )
 
     def division(self, **values):
         vals = {"name": "Boundary Division", "edition_id": self.edition.id}
@@ -28,7 +36,11 @@ class TestDivisionBoundary(TransactionCase):
         self.assertEqual(division.date_start, self.season.date_start)
 
     def test_context_default_edition_is_normalized(self):
-        division = self.env["federation.tournament"].with_context(default_edition_id=self.edition.id).create({"name": "Context Division"})
+        division = (
+            self.env["federation.tournament"]
+            .with_context(default_edition_id=self.edition.id)
+            .create({"name": "Context Division"})
+        )
         self.assertEqual(division.competition_id, self.competition)
 
     def test_conflicting_scope_is_rejected(self):
@@ -52,10 +64,14 @@ class TestDivisionBoundary(TransactionCase):
             division.write({"edition_id": False})
 
     def test_legacy_standalone_history_remains(self):
-        legacy = self.env["federation.tournament"].create({
-            "name": "Legacy Standalone", "date_start": "2098-04-01",
-            "location": "Historical venue", "tournament_type": "single_day",
-        })
+        legacy = self.env["federation.tournament"].create(
+            {
+                "name": "Legacy Standalone",
+                "date_start": "2098-04-01",
+                "location": "Historical venue",
+                "tournament_type": "single_day",
+            }
+        )
         self.assertFalse(legacy.edition_id)
         self.assertEqual(legacy.location, "Historical venue")
 
@@ -72,10 +88,15 @@ class TestDivisionBoundary(TransactionCase):
 
     def test_division_cannot_move_to_another_edition(self):
         division = self.division()
-        competition = self.env["federation.competition"].create({"name": "Another Division Competition"})
-        edition = self.env["federation.competition.edition"].create({
-            "name": "Another Edition", "competition_id": competition.id,
-            "season_id": self.season.id,
-        })
+        competition = self.env["federation.competition"].create(
+            {"name": "Another Division Competition"}
+        )
+        edition = self.env["federation.competition.edition"].create(
+            {
+                "name": "Another Edition",
+                "competition_id": competition.id,
+                "season_id": self.season.id,
+            }
+        )
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             division.write({"edition_id": edition.id})

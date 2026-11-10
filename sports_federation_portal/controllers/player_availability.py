@@ -144,9 +144,7 @@ class FederationPlayerAvailabilityPortal(FederationPortalBase):
             if club.player_availability_enabled
             else _("Player availability is off.")
         )
-        return self._redirect_with_query(
-            "/my/club", club=club.id, success=message
-        )
+        return self._redirect_with_query("/my/club", club=club.id, success=message)
 
 
 class FederationPlayerAvailabilityLink(http.Controller):

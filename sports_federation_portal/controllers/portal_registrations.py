@@ -128,7 +128,9 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/season-registration/new",
                 error=str(error),
-                error_hint=request.env._("Check all required fields are completed and the season is still open for registration."),
+                error_hint=request.env._(
+                    "Check all required fields are completed and the season is still open for registration."
+                ),
             )
 
         return self._redirect_with_query(
@@ -167,7 +169,9 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/season-registrations",
                 error=str(error),
-                error_hint=request.env._("This registration may not be cancellable at its current stage. Contact the federation if needed."),
+                error_hint=request.env._(
+                    "This registration may not be cancellable at its current stage. Contact the federation if needed."
+                ),
             )
 
         return self._redirect_with_query(

@@ -25,7 +25,9 @@ class FederationCompetitionEdition(models.Model):
     season_id = fields.Many2one(
         "federation.season",
         string="Season",
-        default=lambda self: self.env["federation.season"]._default_registration_season(),
+        default=lambda self: self.env[
+            "federation.season"
+        ]._default_registration_season(),
         required=True,
         tracking=True,
         ondelete="restrict",

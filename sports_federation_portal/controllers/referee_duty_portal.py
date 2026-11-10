@@ -131,7 +131,9 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
         if duty.state not in _NOMINATABLE_STATES:
             return self._redirect_with_query(
                 f"/my/referee-duties/{duty_id}",
-                error=request.env._("This duty cannot be nominated in its current state."),
+                error=request.env._(
+                    "This duty cannot be nominated in its current state."
+                ),
             )
 
         if not player_id:

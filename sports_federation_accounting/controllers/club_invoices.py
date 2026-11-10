@@ -25,4 +25,6 @@ class FederationClubInvoices(FederationPortalBase):
                 "page_name": "club_invoices",
             }
         )
-        return request.render("sports_federation_accounting.portal_club_invoices", values)
+        return request.render(
+            "sports_federation_accounting.portal_club_invoices", values
+        )

@@ -185,9 +185,9 @@ class FederationClubRankService(models.AbstractModel):
                 team=promotion.to_team_id.display_name,
                 date=promotion.date,
             )
-        lines = self._scope_lines(roster, player) - (exclude_lines or self.env[
-            "federation.team.roster.line"
-        ])
+        lines = self._scope_lines(roster, player) - (
+            exclude_lines or self.env["federation.team.roster.line"]
+        )
         lines = lines.filtered(lambda line: line.roster_id.team_id != team)
         higher = lines.filtered(lambda line: line.roster_id.team_id.club_rank < rank)
         lower = lines.filtered(lambda line: line.roster_id.team_id.club_rank > rank)
@@ -254,7 +254,11 @@ class FederationClubRankService(models.AbstractModel):
             ("match_sheet_id.team_id", "=", roster.team_id.id),
             ("match_sheet_id.state", "in", APPEARANCE_SHEET_STATES),
             ("match_sheet_id.match_id.state", "=", "done"),
-            ("match_sheet_id.match_id.tournament_id.season_id", "=", roster.season_id.id),
+            (
+                "match_sheet_id.match_id.tournament_id.season_id",
+                "=",
+                roster.season_id.id,
+            ),
         ]
         if roster.competition_id:
             domain.append(
@@ -371,7 +375,10 @@ class FederationClubRankService(models.AbstractModel):
             try:
                 with self.env.cr.savepoint():
                     line.write(
-                        {"status": "removed", "date_to": fields.Date.context_today(self)}
+                        {
+                            "status": "removed",
+                            "date_to": fields.Date.context_today(self),
+                        }
                     )
                 line.roster_id.message_post(
                     body=message + " " + _("The player was removed from this roster.")
@@ -461,7 +468,9 @@ class FederationMatchSheetClubRank(models.Model):
         service = self.env["federation.club.rank.service"]
         for sheet in self:
             planned = 0 if sheet.match_id.state in ("done", "cancelled") else 1
-            players = sheet.line_ids.filtered(lambda line: not line.crossed_out).player_id
+            players = sheet.line_ids.filtered(
+                lambda line: not line.crossed_out
+            ).player_id
             warnings = service.promotion_warnings(sheet.roster_id, players, planned)
             sheet.club_rank_warning = "\n".join(warnings) or False
 
@@ -507,8 +516,10 @@ class FederationMatchClubRank(models.Model):
     def write(self, vals):
         result = super().write(vals)
         if vals.get("state") == "done":
-            sheets = self.env["federation.match.sheet"].sudo().search(
-                [("match_id", "in", self.ids)]
+            sheets = (
+                self.env["federation.match.sheet"]
+                .sudo()
+                .search([("match_id", "in", self.ids)])
             )
             self.env["federation.club.rank.service"].apply_promotions(sheets)
         return result

@@ -89,7 +89,10 @@ class FederationMatchdayPrint(models.Model):
             courts.setdefault(slot.court_id.id, slot.court_id.name)
             officials = [
                 "%s: %s"
-                % (referee_roles.get(line.role, line.role), line.referee_id.display_name)
+                % (
+                    referee_roles.get(line.role, line.role),
+                    line.referee_id.display_name,
+                )
                 for line in referees.filtered(lambda line: line.match_id == match)
             ]
             match_duties = duties.filtered(lambda duty: duty.match_id == match)
@@ -98,9 +101,11 @@ class FederationMatchdayPrint(models.Model):
                 % (
                     duty_roles.get(duty.role, duty.role),
                     duty.club_id.display_name,
-                    " (%s)" % duty.nominated_player_id.display_name
-                    if duty.nominated_player_id
-                    else "",
+                    (
+                        " (%s)" % duty.nominated_player_id.display_name
+                        if duty.nominated_player_id
+                        else ""
+                    ),
                 )
                 for duty in match_duties
             ]

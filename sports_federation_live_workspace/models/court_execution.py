@@ -65,7 +65,10 @@ class CourtCommandsExtension(models.AbstractModel):
                 # which is just as strict.
                 stale = command["revision"] != capture.revision or command[
                     "signature"
-                ] not in (self._device_signature(match), self._signature(match, session))
+                ] not in (
+                    self._device_signature(match),
+                    self._signature(match, session),
+                )
             else:
                 stale = (
                     command["revision"] != capture.revision

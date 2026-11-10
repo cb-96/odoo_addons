@@ -19,9 +19,7 @@ spec = importlib.util.spec_from_file_location(
 p = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(p)
 
-CASES = json.loads((ROOT / "ci/fixtures/court_scoring_cases.json").read_text())[
-    "cases"
-]
+CASES = json.loads((ROOT / "ci/fixtures/court_scoring_cases.json").read_text())["cases"]
 
 
 class TestScoringParity(unittest.TestCase):

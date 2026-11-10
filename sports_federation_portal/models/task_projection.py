@@ -6,7 +6,6 @@ from odoo.osv import expression
 from .. import task_policy
 
 
-
 class FederationOperationTaskExtension(models.Model):
     _inherit = "federation.operation.task"
 
@@ -239,7 +238,8 @@ class FederationOperationTaskExtension(models.Model):
             return []
         clubs = set(self._portal_club_ids(user)) & set(user.portal_club_scope_ids.ids)
         return [
-            "|", (team_field + ".club_id", "in", sorted(clubs)),
+            "|",
+            (team_field + ".club_id", "in", sorted(clubs)),
             (team_field, "in", user.portal_team_scope_ids.ids),
         ]
 
@@ -320,10 +320,7 @@ class FederationOperationTaskExtension(models.Model):
         parental_rosters = (
             self.env["federation.team.roster"]
             .sudo()
-            .search(
-                self._task_team_scope(user)
-                + [("status", "!=", "closed")]
-            )
+            .search(self._task_team_scope(user) + [("status", "!=", "closed")])
         )
         roster_lines = parental_rosters.mapped("line_ids").filtered(
             lambda line: line.status == "active"
@@ -414,13 +411,22 @@ class FederationOperationTaskExtension(models.Model):
                 sheet,
                 task_type,
                 audience,
-                (_("Review game-day line-up: %(team)s") if reviewing
-                 else _("Game-day lineup: %(team)s"))
+                (
+                    _("Review game-day line-up: %(team)s")
+                    if reviewing
+                    else _("Game-day lineup: %(team)s")
+                )
                 % {"team": sheet.team_id.display_name},
-                (_("The game-day line-up was submitted and needs approval.")
-                 if reviewing else _("Submit the shared lineup for this game day.")),
-                (_("Approve or return the line-up") if reviewing
-                 else _("Prepare game-day lineup")),
+                (
+                    _("The game-day line-up was submitted and needs approval.")
+                    if reviewing
+                    else _("Submit the shared lineup for this game day.")
+                ),
+                (
+                    _("Approve or return the line-up")
+                    if reviewing
+                    else _("Prepare game-day lineup")
+                ),
                 priority="1",
                 deadline=sheet.match_kickoff or False,
             )
@@ -431,11 +437,17 @@ class FederationOperationTaskExtension(models.Model):
             self.env["federation.match.club.referee.duty"]
             .sudo()
             .search(
-                ([] if is_manager else [("club_id", "in", club_ids)]
-                 + expression.OR([
-                     self._task_team_scope(user, "match_id.home_team_id"),
-                     self._task_team_scope(user, "match_id.away_team_id"),
-                 ]))
+                (
+                    []
+                    if is_manager
+                    else [("club_id", "in", club_ids)]
+                    + expression.OR(
+                        [
+                            self._task_team_scope(user, "match_id.home_team_id"),
+                            self._task_team_scope(user, "match_id.away_team_id"),
+                        ]
+                    )
+                )
                 + hidden("federation.match.club.referee.duty")
                 + [("state", "in", ("open", "rejected"))]
             )
@@ -530,8 +542,11 @@ class FederationOperationTaskExtension(models.Model):
                 )
             )
 
-        scope_domain = ([("audience", "=", "manager")] if is_manager
-                        else self._portal_get_domain(user))
+        scope_domain = (
+            [("audience", "=", "manager")]
+            if is_manager
+            else self._portal_get_domain(user)
+        )
         # A handoff changes audience on the same key. Include both audiences
         # for line-ups so approval/locking also closes existing reviewer work.
         lineup_scope = [("task_type", "in", ("gameday_lineup", "lineup_review"))]

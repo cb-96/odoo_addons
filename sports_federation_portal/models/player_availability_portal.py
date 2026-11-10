@@ -20,7 +20,9 @@ class FederationClubAvailabilityPortal(models.Model):
         user = user or self.env.user
         club = user.portal_club_scope_ids.filtered(lambda item: item.id == club_id)
         if not club:
-            raise AccessError(_("Only representatives of the whole club can change this."))
+            raise AccessError(
+                _("Only representatives of the whole club can change this.")
+            )
         club.sudo().write({"player_availability_enabled": bool(enabled)})
         return club
 
@@ -36,14 +38,18 @@ class FederationPlayerAvailabilityPortal(models.Model):
         teams = user.portal_team_scope_ids
         if not clubs and not teams:
             return self.env["federation.team"]
-        return self.env["federation.team"].sudo().search(
-            [
-                "|",
-                ("club_id", "in", clubs.ids),
-                ("id", "in", teams.ids),
-                ("club_id.player_availability_enabled", "=", True),
-            ],
-            order="name",
+        return (
+            self.env["federation.team"]
+            .sudo()
+            .search(
+                [
+                    "|",
+                    ("club_id", "in", clubs.ids),
+                    ("id", "in", teams.ids),
+                    ("club_id.player_availability_enabled", "=", True),
+                ],
+                order="name",
+            )
         )
 
     @api.model
@@ -57,15 +63,19 @@ class FederationPlayerAvailabilityPortal(models.Model):
         if not teams:
             return []
         today = fields.Date.context_today(self)
-        matches = self.env["federation.match"].sudo().search(
-            [
-                ("schedule_publication_id.state", "=", "live"),
-                ("schedule_publication_id.matchday_id.date", ">=", today),
-                ("state", "!=", "cancelled"),
-                "|",
-                ("home_team_id", "in", teams.ids),
-                ("away_team_id", "in", teams.ids),
-            ]
+        matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search(
+                [
+                    ("schedule_publication_id.state", "=", "live"),
+                    ("schedule_publication_id.matchday_id.date", ">=", today),
+                    ("state", "!=", "cancelled"),
+                    "|",
+                    ("home_team_id", "in", teams.ids),
+                    ("away_team_id", "in", teams.ids),
+                ]
+            )
         )
         pairs = OrderedDict()
         for match in matches:

@@ -80,7 +80,9 @@ class TestPlayerAvailability(TransactionCase):
     def test_request_lists_roster_players_and_emails_those_with_an_address(self):
         self.club.player_availability_enabled = True
         request = self.Request._open_request(self.team, self.day)
-        self.assertEqual(request.line_ids.player_id, self.with_email | self.without_email)
+        self.assertEqual(
+            request.line_ids.player_id, self.with_email | self.without_email
+        )
         self.assertEqual(request.pending_count, 2)
         self.assertEqual(request._send_invitations(), 1)
         self.assertEqual(request._send_invitations(), 0, "Players are invited once.")
@@ -94,9 +96,13 @@ class TestPlayerAvailability(TransactionCase):
         self.club.player_availability_enabled = True
         request = self.Request._open_request(self.team, self.day)
         line = request.line_ids.filtered(lambda item: item.player_id == self.with_email)
-        found = self.env["federation.player.availability"]._from_token(line.access_token)
+        found = self.env["federation.player.availability"]._from_token(
+            line.access_token
+        )
         self.assertEqual(found, line)
-        self.assertFalse(self.env["federation.player.availability"]._from_token("x" * 30))
+        self.assertFalse(
+            self.env["federation.player.availability"]._from_token("x" * 30)
+        )
         found._record_response("maybe", "only the morning")
         self.assertEqual(line.response, "maybe")
         self.assertEqual(line.answered_by, "player")
@@ -110,11 +116,15 @@ class TestPlayerAvailability(TransactionCase):
         self.club.player_availability_enabled = True
         request = self.Request._open_request(self.team, self.day)
         request._send_invitations()
-        self.assertEqual(request._send_invitations(only_unanswered=True, reminder=True), 1)
+        self.assertEqual(
+            request._send_invitations(only_unanswered=True, reminder=True), 1
+        )
         request.line_ids.filtered(
             lambda item: item.player_id == self.with_email
         )._record_response("yes")
-        self.assertEqual(request._send_invitations(only_unanswered=True, reminder=True), 0)
+        self.assertEqual(
+            request._send_invitations(only_unanswered=True, reminder=True), 0
+        )
 
     def test_answers_close_after_the_game_day(self):
         self.club.player_availability_enabled = True

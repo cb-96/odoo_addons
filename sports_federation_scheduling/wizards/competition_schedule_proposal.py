@@ -1,4 +1,5 @@
 """Read-only proposal calculation and validation for the competition scheduler."""
+
 import hashlib
 import json
 
@@ -15,10 +16,21 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
         errors, warnings = self._validate_scope(require_generated)
         fixtures, deferred, excluded = self._fixtures()
         capacities = self._capacities(errors)
-        distribution = self.env["federation.competition.schedule.distributor"].propose(
-            fixtures, capacities, pinned=self._pinned_fixture_days(),
-            known_days=self._known_fixture_dates(),
-        ) if capacities else {"assignments": {}, "remaining_capacity": {}, "errors": [], "valid": False}
+        distribution = (
+            self.env["federation.competition.schedule.distributor"].propose(
+                fixtures,
+                capacities,
+                pinned=self._pinned_fixture_days(),
+                known_days=self._known_fixture_dates(),
+            )
+            if capacities
+            else {
+                "assignments": {},
+                "remaining_capacity": {},
+                "errors": [],
+                "valid": False,
+            }
+        )
         errors.extend(distribution["errors"])
         duplicate_team_days = self._duplicate_team_days(fixtures, distribution)
         rest_shortfalls = self._rest_shortfalls(fixtures, distribution)
@@ -26,7 +38,9 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
         total_capacity = sum(day["capacity"] for day in capacities)
         if len(fixtures) > total_capacity:
             errors.append(
-                _("Selected stages contain %(fixtures)s playable fixtures but the selected game days provide only %(slots)s slots.")
+                _(
+                    "Selected stages contain %(fixtures)s playable fixtures but the selected game days provide only %(slots)s slots."
+                )
                 % {"fixtures": len(fixtures), "slots": total_capacity}
             )
         allocation_report = [
@@ -64,7 +78,8 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
                 "teams_with_multiple_same_day_matches": duplicate_team_days,
                 "rest_shortfalls": rest_shortfalls,
                 "planned_fixture_counts": {
-                    str(day_id): len(ids) for day_id, ids in distribution["assignments"].items()
+                    str(day_id): len(ids)
+                    for day_id, ids in distribution["assignments"].items()
                 },
                 "remaining_capacity": distribution["remaining_capacity"],
             },
@@ -77,10 +92,14 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
         if self.stage_ids and self.stage_ids.filtered(
             lambda stage: stage.structure_id not in self.structure_ids
         ):
-            errors.append(_("Every selected stage must belong to a selected competition format."))
+            errors.append(
+                _("Every selected stage must belong to a selected competition format.")
+            )
         if len(self.stage_ids) > 1:
             warnings.append(
-                _("This preview mixes %(count)s competition stages. Review the per-day allocation before applying it.")
+                _(
+                    "This preview mixes %(count)s competition stages. Review the per-day allocation before applying it."
+                )
                 % {"count": len(self.stage_ids)}
             )
         selected_fixtures = self.structure_ids.mapped("fixture_ids")
@@ -110,20 +129,35 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
                     }
                 )
         for structure in self.structure_ids:
-            if structure.state == "draft" and (require_generated or not self.generate_missing_fixtures):
+            if structure.state == "draft" and (
+                require_generated or not self.generate_missing_fixtures
+            ):
                 errors.append(_("Generate fixtures for %s.") % structure.display_name)
             elif structure.state == "draft":
-                warnings.append(_("Fixtures for %s will be generated on apply.") % structure.display_name)
+                warnings.append(
+                    _("Fixtures for %s will be generated on apply.")
+                    % structure.display_name
+                )
         for day in self.matchday_ids:
             if day.state not in ("draft", "capacity_ready"):
                 errors.append(_("%s is no longer mutable.") % day.display_name)
             if not day.planning_court_ids:
                 errors.append(_("Select planning courts for %s.") % day.display_name)
-            schedules = self.env["federation.schedule"].search([("matchday_id", "=", day.id)])
-            if schedules.filtered(lambda schedule: schedule.state not in ("draft", "changes_requested")):
-                errors.append(_("%s has reviewed or published planning.") % day.display_name)
-            if self.mode == "fill" and (day.slot_ids or day.allocation_ids or schedules):
-                warnings.append(_("Existing planning on %s will be retained.") % day.display_name)
+            schedules = self.env["federation.schedule"].search(
+                [("matchday_id", "=", day.id)]
+            )
+            if schedules.filtered(
+                lambda schedule: schedule.state not in ("draft", "changes_requested")
+            ):
+                errors.append(
+                    _("%s has reviewed or published planning.") % day.display_name
+                )
+            if self.mode == "fill" and (
+                day.slot_ids or day.allocation_ids or schedules
+            ):
+                warnings.append(
+                    _("Existing planning on %s will be retained.") % day.display_name
+                )
         return errors, warnings
 
     def _fixtures(self):
@@ -169,22 +203,37 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
                 continue
             try:
                 plan = generator.plan(
-                    day, day.planning_court_ids, day.default_day_start_hour,
-                    day.default_day_end_hour, day.default_slot_duration_minutes,
+                    day,
+                    day.planning_court_ids,
+                    day.default_day_start_hour,
+                    day.default_day_end_hour,
+                    day.default_slot_duration_minutes,
                     noon_pause=day.default_noon_pause,
                     noon_pause_minutes=day.default_noon_pause_minutes,
                 )
             except ValidationError as exc:
                 errors.append("%s: %s" % (day.display_name, exc))
                 continue
-            retained = len(day.slot_ids.filtered(lambda slot: slot.state == "available")) if self.mode == "fill" else 0
+            retained = (
+                len(day.slot_ids.filtered(lambda slot: slot.state == "available"))
+                if self.mode == "fill"
+                else 0
+            )
             rows = self._day_time_rows(day)
             capacities.append(
-                {"matchday_id": day.id, "date": day.date,
-                 "capacity": retained or len(plan["available"]), "blocked": plan["blocked_count"],
-                 "division_ids": day.division_ids.ids,
-                 # Most matches one team can play on this day with the rest.
-                 "team_limit": max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0}
+                {
+                    "matchday_id": day.id,
+                    "date": day.date,
+                    "capacity": retained or len(plan["available"]),
+                    "blocked": plan["blocked_count"],
+                    "division_ids": day.division_ids.ids,
+                    # Most matches one team can play on this day with the rest.
+                    "team_limit": (
+                        max_matches_with_rest(rows, self.preferred_rest_minutes)
+                        if rows
+                        else 0
+                    ),
+                }
             )
         return capacities
 
@@ -200,14 +249,22 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
         """Time rows of the slots this game day will offer."""
         if self.mode == "fill" and day.slot_ids:
             slots = [
-                {"start_datetime": slot.start_datetime, "end_datetime": slot.end_datetime}
-                for slot in day.slot_ids.filtered(lambda item: item.state == "available")
+                {
+                    "start_datetime": slot.start_datetime,
+                    "end_datetime": slot.end_datetime,
+                }
+                for slot in day.slot_ids.filtered(
+                    lambda item: item.state == "available"
+                )
             ]
         else:
             try:
                 slots = self.env["federation.slot.generator"].plan(
-                    day, day.planning_court_ids, day.default_day_start_hour,
-                    day.default_day_end_hour, day.default_slot_duration_minutes,
+                    day,
+                    day.planning_court_ids,
+                    day.default_day_start_hour,
+                    day.default_day_end_hour,
+                    day.default_slot_duration_minutes,
                     noon_pause=day.default_noon_pause,
                     noon_pause_minutes=day.default_noon_pause_minutes,
                 )["available"]
@@ -228,7 +285,9 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
         limits = {}
         for day in days:
             rows = self._day_time_rows(day)
-            limits[day.id] = max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0
+            limits[day.id] = (
+                max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0
+            )
         team_total, team_division = {}, {}
         for fixture in fixtures:
             for team in (fixture.home_team_id, fixture.away_team_id):
@@ -239,8 +298,11 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
         def season_room(team):
             division = team_division.get(team)
             playing = [
-                day for day in days
-                if not division or not hasattr(day, "_allows_division") or day._allows_division(division)
+                day
+                for day in days
+                if not division
+                or not hasattr(day, "_allows_division")
+                or day._allows_division(division)
             ]
             return len(playing), sum(limits.get(day.id, 0) for day in playing)
 
@@ -324,15 +386,33 @@ class FederationCompetitionScheduleProposal(models.TransientModel):
     def _input_signature(self):
         payload = {
             "edition": self.edition_id.id,
-            "structures": [(item.id, item.state, item.version, item.write_date) for item in self.structure_ids],
-            "stages": [(stage.id, stage.graph_state, stage.write_date) for stage in self.stage_ids],
+            "structures": [
+                (item.id, item.state, item.version, item.write_date)
+                for item in self.structure_ids
+            ],
+            "stages": [
+                (stage.id, stage.graph_state, stage.write_date)
+                for stage in self.stage_ids
+            ],
             "stage_days": [
                 (stage.id, sorted(stage.matchday_ids.ids))
                 for stage in self.structure_ids.mapped("stage_ids")
             ],
-            "days": [(day.id, day.state, day.date, day.default_day_start_hour,
-                      day.default_day_end_hour, day.default_slot_duration_minutes,
-                      day.planning_court_ids.ids, day.write_date) for day in self.matchday_ids],
+            "days": [
+                (
+                    day.id,
+                    day.state,
+                    day.date,
+                    day.default_day_start_hour,
+                    day.default_day_end_hour,
+                    day.default_slot_duration_minutes,
+                    day.planning_court_ids.ids,
+                    day.write_date,
+                )
+                for day in self.matchday_ids
+            ],
             "mode": self.mode,
         }
-        return hashlib.sha256(json.dumps(payload, default=str, sort_keys=True).encode()).hexdigest()
+        return hashlib.sha256(
+            json.dumps(payload, default=str, sort_keys=True).encode()
+        ).hexdigest()

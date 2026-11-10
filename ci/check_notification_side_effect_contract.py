@@ -19,12 +19,16 @@ def violations(root=ROOT):
     for name, text in (("dispatcher", dispatcher), ("service", service)):
         tree = ast.parse(text)
         for node in ast.walk(tree):
-            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            if not isinstance(node, ast.Call) or not isinstance(
+                node.func, ast.Attribute
+            ):
                 continue
             if node.func.attr == "send":
                 failures.append(f"{name} sends SMTP inside a business action")
             if node.func.attr == "send_mail":
-                flag = next((kw.value for kw in node.keywords if kw.arg == "force_send"), None)
+                flag = next(
+                    (kw.value for kw in node.keywords if kw.arg == "force_send"), None
+                )
                 if not isinstance(flag, ast.Constant) or flag.value is not False:
                     failures.append(f"{name} must explicitly queue template mail")
     return failures

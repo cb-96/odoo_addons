@@ -131,11 +131,22 @@ class FederationNotificationLog(models.Model):
         now = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
         deleted = 0
         for state, days in self.RETENTION_DAYS_BY_STATE.items():
-            logs = self.sudo().search([
-                ("state", "=", state), ("create_date", "!=", False),
-                ("create_date", "<", fields.Datetime.to_string(now - timedelta(days=days))),
-                *([("mail_id", "=", False)] if state == "pending" else []),
-            ])._retention_deletable()
+            logs = (
+                self.sudo()
+                .search(
+                    [
+                        ("state", "=", state),
+                        ("create_date", "!=", False),
+                        (
+                            "create_date",
+                            "<",
+                            fields.Datetime.to_string(now - timedelta(days=days)),
+                        ),
+                        *([("mail_id", "=", False)] if state == "pending" else []),
+                    ]
+                )
+                ._retention_deletable()
+            )
             mails = logs.mapped("mail_id")
             deleted += len(logs)
             logs.unlink()

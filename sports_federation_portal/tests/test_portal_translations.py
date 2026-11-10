@@ -20,7 +20,9 @@ class TestPortalTranslations(TransactionCase):
     def test_template_terms_are_translated(self):
         view = self.env.ref("sports_federation_portal.player_availability_link_invalid")
         self.assertIn("Deze link werkt niet", view.with_context(lang="nl_BE").arch_db)
-        self.assertIn("Ce lien ne fonctionne pas", view.with_context(lang="fr_BE").arch_db)
+        self.assertIn(
+            "Ce lien ne fonctionne pas", view.with_context(lang="fr_BE").arch_db
+        )
 
     def test_code_terms_are_translated(self):
         other = self.env["federation.club"].create(

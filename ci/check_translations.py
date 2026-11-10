@@ -39,10 +39,15 @@ def load_registry(errors):
             errors.append("languages.json: missing or duplicate code %r" % code)
         codes.add(code)
         if language.get("status") not in STATUSES:
-            errors.append("languages.json: %s has unknown status %r" % (code, language.get("status")))
+            errors.append(
+                "languages.json: %s has unknown status %r"
+                % (code, language.get("status"))
+            )
         for odoo_code in language.get("odoo_codes") or []:
             if odoo_code.split("_")[0] != code:
-                errors.append("languages.json: %s lists foreign Odoo code %s" % (code, odoo_code))
+                errors.append(
+                    "languages.json: %s lists foreign Odoo code %s" % (code, odoo_code)
+                )
     return data, languages
 
 
@@ -77,7 +82,9 @@ def check_po_files(languages, errors, warnings):
     for path in paths:
         rel = path.relative_to(ROOT)
         if path.stem not in allowed:
-            errors.append("%s: language %r is not in i18n/languages.json" % (rel, path.stem))
+            errors.append(
+                "%s: language %r is not in i18n/languages.json" % (rel, path.stem)
+            )
             continue
         try:
             catalog = pofile.read(path)
@@ -113,13 +120,22 @@ def check_completeness(data, languages, catalogs, errors, warnings):
                 translated = 0
             else:
                 if [entry.msgid for entry in catalog.entries] != expected:
-                    warnings.append("%s: out of step with its template; run scripts/i18n/sync_po.py" % rel)
+                    warnings.append(
+                        "%s: out of step with its template; run scripts/i18n/sync_po.py"
+                        % rel
+                    )
                 by_id = catalog.by_msgid()
-                translated = sum(1 for msgid in expected if by_id.get(msgid) and by_id[msgid].msgstr)
+                translated = sum(
+                    1 for msgid in expected if by_id.get(msgid) and by_id[msgid].msgstr
+                )
             missing = len(expected) - translated
             if missing and language["status"] == "required":
-                errors.append("%s: %s untranslated text(s); %s is required" % (rel, missing, code))
-            group = "Glossary" if component == "glossary" else group_of(component, groups)
+                errors.append(
+                    "%s: %s untranslated text(s); %s is required" % (rel, missing, code)
+                )
+            group = (
+                "Glossary" if component == "glossary" else group_of(component, groups)
+            )
             total = summary.setdefault((code, group), [0, 0])
             total[0] += translated
             total[1] += len(expected)
@@ -142,7 +158,12 @@ def check_messages(errors):
                 ):
                     errors.append(
                         "%s:%s: %s=%r is shown to users untranslated; use request.env._(...)"
-                        % (path.relative_to(ROOT), value.lineno, keyword.arg, value.value[:50])
+                        % (
+                            path.relative_to(ROOT),
+                            value.lineno,
+                            keyword.arg,
+                            value.value[:50],
+                        )
                     )
 
 
@@ -159,7 +180,10 @@ def main() -> int:
         status = {language["code"]: language["status"] for language in languages}
         for (code, group), (done, total) in sorted(summary.items()):
             percent = 100.0 * done / total if total else 100.0
-            print("  %-3s %-9s %-18s %5d/%-5d %5.1f%%" % (code, status[code], group, done, total, percent))
+            print(
+                "  %-3s %-9s %-18s %5d/%-5d %5.1f%%"
+                % (code, status[code], group, done, total, percent)
+            )
     else:
         print("No translation templates yet; run scripts/i18n/export_pot.sh.")
     for warning in warnings:

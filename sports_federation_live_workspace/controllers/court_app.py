@@ -264,9 +264,7 @@ class CourtApp(http.Controller):
     def court_claim(self, **kw):
         return self._device_call(
             "court_sync",
-            lambda service, device, body: service._claim(
-                device, int(body["match_id"])
-            ),
+            lambda service, device, body: service._claim(device, int(body["match_id"])),
         )
 
     @http.route(
@@ -343,9 +341,7 @@ class CourtApp(http.Controller):
             request.env["federation.court.device.service"]._revoke_own(device_id)
         except AccessError as error:
             return self._redirect(error=error)
-        return self._redirect(
-            success=_("Phone removed. It can no longer send scores.")
-        )
+        return self._redirect(success=_("Phone removed. It can no longer send scores."))
 
     @http.route(
         "/my/court-duties/pin",
@@ -388,9 +384,7 @@ class CourtApp(http.Controller):
     )
     def court_withdraw(self, scorer_id, **kw):
         try:
-            request.env["federation.court.device.service"]._withdraw_scorer(
-                scorer_id
-            )
+            request.env["federation.court.device.service"]._withdraw_scorer(scorer_id)
         except AccessError as error:
             return self._redirect(error=error)
         return self._redirect(success=_("Club scorer withdrawn."))

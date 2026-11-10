@@ -8,16 +8,29 @@ class TestClubSeasonRegistration(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.club = cls.env["federation.club"].create({"name": "Annual Player Club"})
-        cls.other_club = cls.env["federation.club"].create({"name": "Other Annual Club"})
-        cls.season = cls.env["federation.season"].create({
-            "name": "Annual Player Season", "date_start": "2098-01-01",
-            "date_end": "2098-12-31", "state": "open",
-        })
-        cls.player = cls.env["federation.player"].create({
-            "first_name": "Annual", "last_name": "Player", "gender": "male",
-            "birth_date": "2000-01-01", "club_id": cls.club.id,
-        })
-        cls.registration = cls.env["federation.club.season.registration"]._get_or_create(cls.club, cls.season)
+        cls.other_club = cls.env["federation.club"].create(
+            {"name": "Other Annual Club"}
+        )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Annual Player Season",
+                "date_start": "2098-01-01",
+                "date_end": "2098-12-31",
+                "state": "open",
+            }
+        )
+        cls.player = cls.env["federation.player"].create(
+            {
+                "first_name": "Annual",
+                "last_name": "Player",
+                "gender": "male",
+                "birth_date": "2000-01-01",
+                "club_id": cls.club.id,
+            }
+        )
+        cls.registration = cls.env[
+            "federation.club.season.registration"
+        ]._get_or_create(cls.club, cls.season)
 
     def test_collect_is_draft_and_idempotent(self):
         self.registration.action_collect_club_players()
@@ -66,20 +79,32 @@ class TestClubSeasonRegistration(TransactionCase):
             self.registration.license_ids.write({"club_id": self.other_club.id})
 
     def test_portal_cannot_approve_directly(self):
-        user = self.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Annual Portal", "login": "annual.portal.test",
-            "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
-        })
+        user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Annual Portal",
+                    "login": "annual.portal.test",
+                    "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
+                }
+            )
+        )
         with self.assertRaises(AccessError):
             self.registration.with_user(user).action_confirm()
 
     def test_active_create_cannot_bypass_current_club(self):
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
-            self.env["federation.player.license"].create({
-                "player_id": self.player.id, "club_id": self.other_club.id,
-                "season_id": self.season.id, "state": "active",
-                "issue_date": "2098-01-01", "expiry_date": "2098-12-31",
-            })
+            self.env["federation.player.license"].create(
+                {
+                    "player_id": self.player.id,
+                    "club_id": self.other_club.id,
+                    "season_id": self.season.id,
+                    "state": "active",
+                    "issue_date": "2098-01-01",
+                    "expiry_date": "2098-12-31",
+                }
+            )
 
     def test_transfer_before_approval_blocks_activation(self):
         self.registration._add_players(self.player)
@@ -123,11 +148,22 @@ class TestClubSeasonRegistration(TransactionCase):
         self.registration.action_confirm()
         License = self.env["federation.player.license"]
         from odoo import fields
+
         for date in ("2098-01-01", "2098-12-31"):
-            self.assertIn(self.player, License._registered_players(
-                self.club, self.season, fields.Date.to_date(date),
-            ))
+            self.assertIn(
+                self.player,
+                License._registered_players(
+                    self.club,
+                    self.season,
+                    fields.Date.to_date(date),
+                ),
+            )
         for date in ("2097-12-31", "2099-01-01"):
-            self.assertNotIn(self.player, License._registered_players(
-                self.club, self.season, fields.Date.to_date(date),
-            ))
+            self.assertNotIn(
+                self.player,
+                License._registered_players(
+                    self.club,
+                    self.season,
+                    fields.Date.to_date(date),
+                ),
+            )

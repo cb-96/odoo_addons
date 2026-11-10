@@ -199,7 +199,9 @@ class TestCourtDevices(DeviceFixture, TransactionCase):
 
     @freeze_time(GAME_DAY)
     def test_club_scorer_nominated_by_club_representative(self):
-        role_type = self.env.ref("sports_federation_portal.role_type_competition_contact")
+        role_type = self.env.ref(
+            "sports_federation_portal.role_type_competition_contact"
+        )
         for user in (self.official_user, self.other_user):
             self.env["federation.club.representative"].create(
                 {

@@ -120,7 +120,9 @@ class TestPlayerParentalOverview(TransactionCase):
 
     def test_verified_approval_covering_today_is_not_flagged(self):
         player = self._player("Valid", 15, on_senior_roster=True)
-        self._approval(player, valid_until=self.today + relativedelta(years=1), verify=True)
+        self._approval(
+            player, valid_until=self.today + relativedelta(years=1), verify=True
+        )
         line = self._line(player)
         self.assertEqual(line["key"], "approved")
         self.assertFalse(line["needs_action"])
@@ -128,7 +130,9 @@ class TestPlayerParentalOverview(TransactionCase):
 
     def test_approval_that_expires_soon_is_called_out(self):
         player = self._player("Soon", 15)
-        self._approval(player, valid_until=self.today + relativedelta(days=10), verify=True)
+        self._approval(
+            player, valid_until=self.today + relativedelta(days=10), verify=True
+        )
         line = self._line(player)
         self.assertEqual(line["key"], "expiring")
         self.assertFalse(line["needs_action"])
@@ -175,7 +179,9 @@ class TestPlayerParentalOverview(TransactionCase):
         player = self._player("Grows", 15)
         self.assertEqual(self._line(player)["key"], "missing")
         later = self.today + relativedelta(years=2)
-        self.assertEqual(self._line(player, reference_date=later)["key"], "not_required")
+        self.assertEqual(
+            self._line(player, reference_date=later)["key"], "not_required"
+        )
 
     def test_counts_tiles_and_bar_add_up(self):
         now = self._player("A", 14, on_senior_roster=True)
@@ -195,7 +201,8 @@ class TestPlayerParentalOverview(TransactionCase):
         self.assertEqual(counts["approved"], 1)
         self.assertEqual(sum(segment["count"] for segment in overview["bar"]), 4)
         self.assertEqual(
-            {tile["label"]: tile["count"] for tile in overview["tiles"]}["Needed now"], 1
+            {tile["label"]: tile["count"] for tile in overview["tiles"]}["Needed now"],
+            1,
         )
 
     def test_players_of_other_clubs_are_not_described(self):

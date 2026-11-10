@@ -141,7 +141,9 @@ class FederationClubPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/teams/new",
                 error=str(error),
-                error_hint=request.env._("Verify all required fields are filled in and the team code is unique for your club."),
+                error_hint=request.env._(
+                    "Verify all required fields are filled in and the team code is unique for your club."
+                ),
             )
 
         return self._redirect_with_query(
@@ -239,7 +241,8 @@ class FederationClubPortal(FederationPortalBase):
         # A representative of several clubs must choose; one club is implicit.
         if len(clubs) > 1 and not kw.get("club_id"):
             return self._redirect_with_query(
-                "/my/players/new", error=request.env._("Choose the club of the new player.")
+                "/my/players/new",
+                error=request.env._("Choose the club of the new player."),
             )
         club = self._selected_club(clubs, kw.get("club_id"))
         if not club:
@@ -263,7 +266,9 @@ class FederationClubPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/players/new",
                 error=str(error),
-                error_hint=request.env._("Verify all required player fields are filled in correctly."),
+                error_hint=request.env._(
+                    "Verify all required player fields are filled in correctly."
+                ),
                 club_id=club.id if len(clubs) > 1 else None,
             )
 

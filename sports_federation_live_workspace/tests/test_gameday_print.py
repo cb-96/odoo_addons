@@ -42,7 +42,9 @@ class TestGamedayPrint(CoverageFixture, TransactionCase):
         self.assertEqual(row["time"], "18:00")
         self.assertEqual(row["court"], "Print Court 1")
         self.assertIn(row, values["grid"]["18:00"][row["court_id"]])
-        self.assertTrue(any(self.club.display_name in item for item in row["officials"]))
+        self.assertTrue(
+            any(self.club.display_name in item for item in row["officials"])
+        )
 
     def test_club_duties_are_grouped_by_club(self):
         duties = self.day._gameday_print_values()["club_duties"]

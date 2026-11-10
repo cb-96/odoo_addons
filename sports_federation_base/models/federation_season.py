@@ -168,12 +168,22 @@ class FederationSeason(models.Model):
     @api.model
     def _default_registration_season(self):
         today = fields.Date.context_today(self)
-        season = self.search([
-            ("state", "=", "open"), ("date_start", "<=", today),
-            ("date_end", ">=", today),
-        ], order="date_start desc, id desc", limit=1)
+        season = self.search(
+            [
+                ("state", "=", "open"),
+                ("date_start", "<=", today),
+                ("date_end", ">=", today),
+            ],
+            order="date_start desc, id desc",
+            limit=1,
+        )
         if not season:
-            season = self.search([
-                ("state", "=", "open"), ("date_start", ">", today),
-            ], order="date_start, id", limit=1)
+            season = self.search(
+                [
+                    ("state", "=", "open"),
+                    ("date_start", ">", today),
+                ],
+                order="date_start, id",
+                limit=1,
+            )
         return season.id or False

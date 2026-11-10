@@ -596,9 +596,7 @@ class FederationCompetitionScheduleWizardGuidance(models.TransientModel):
         for wizard in self:
             wizard.guidance_status_html = wizard._guidance_status_markup()
 
-    @api.depends(
-        "mode", "existing_slot_count", "existing_draft_schedule_count"
-    )
+    @api.depends("mode", "existing_slot_count", "existing_draft_schedule_count")
     def _compute_mode_impact_html(self):
         for wizard in self:
             wizard.mode_impact_html = wizard._mode_impact_markup()
@@ -675,7 +673,7 @@ class FederationCompetitionScheduleWizardGuidance(models.TransientModel):
         )
         return (
             '<div class="alert alert-%(tone)s mb-2" role="status">'
-            "<p class=\"mb-1\"><strong>%(title)s</strong></p>"
+            '<p class="mb-1"><strong>%(title)s</strong></p>'
             '<p class="mb-1">%(body)s</p>'
             '<p class="mb-0 small">%(facts)s</p>'
             "</div>"

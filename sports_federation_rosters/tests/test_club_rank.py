@@ -9,7 +9,9 @@ class TestClubRank(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.club = cls.env["federation.club"].create({"name": "Rank Club", "code": "RKC"})
+        cls.club = cls.env["federation.club"].create(
+            {"name": "Rank Club", "code": "RKC"}
+        )
         cls.other_club = cls.env["federation.club"].create(
             {"name": "Rank Rivals", "code": "RKR"}
         )
@@ -129,7 +131,9 @@ class TestClubRank(TransactionCase):
         self._played_match("2026-10-03 10:00:00", self.roster_a, up_line)
         self.assertFalse(self._promotions(self.b_player))
 
-        _match, sheet = self._played_match("2026-10-10 10:00:00", self.roster_a, up_line)
+        _match, sheet = self._played_match(
+            "2026-10-10 10:00:00", self.roster_a, up_line
+        )
         promotion = self._promotions(self.b_player)
         self.assertEqual(promotion.to_team_id, self.team_a)
         self.assertEqual(promotion.from_team_id, self.team_b)

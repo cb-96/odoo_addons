@@ -13,6 +13,7 @@ The check flattens nested SCSS, merges declarations per selector in source
 order (as the cascade does for equal specificity) and fails when the final
 rule pairs a light text colour with a light or themed surface.
 """
+
 from pathlib import Path
 import re
 import sys
@@ -21,7 +22,9 @@ ROOT = Path(__file__).resolve().parents[1]
 UNDEFINED_VARS = re.compile(
     r"var\(--(body-bg|border-color|text-muted|o-brand-primary|o-view-background-color)\b"
 )
-LIGHT_TEXT = re.compile(r"^(#fff(fff)?|white|var\(--bs-white\)|rgba?\(255,\s*255,\s*255)", re.I)
+LIGHT_TEXT = re.compile(
+    r"^(#fff(fff)?|white|var\(--bs-white\)|rgba?\(255,\s*255,\s*255)", re.I
+)
 LIGHT_SURFACE = re.compile(
     r"^(#fff(fff)?|white|#f[0-9a-f]{5}|var\(--bs-(body-bg|white|light|tertiary-bg|secondary-bg)\)"
     r"|var\(--[\w-]+,\s*(#fff(fff)?|white|#f[0-9a-f]{5})\))",
@@ -68,7 +71,9 @@ def check_file(path):
     text = path.read_text(encoding="utf-8")
     for match in UNDEFINED_VARS.finditer(text):
         line = text.count("\n", 0, match.start()) + 1
-        errors.append(f"{path.relative_to(ROOT)}:{line}: --{match.group(1)} is not an Odoo theme variable; use the --bs-* equivalent")
+        errors.append(
+            f"{path.relative_to(ROOT)}:{line}: --{match.group(1)} is not an Odoo theme variable; use the --bs-* equivalent"
+        )
     merged = {}
     for selector, props in rules(text):
         if any(part.startswith("@") for part in selector):
@@ -76,8 +81,17 @@ def check_file(path):
         merged.setdefault(selector, {}).update(props)
     for selector, props in merged.items():
         colour = props.get("color", "").replace("!important", "").strip()
-        surface = (props.get("background-color") or props.get("background") or "").replace("!important", "").strip()
-        if colour and surface and LIGHT_TEXT.match(colour) and LIGHT_SURFACE.match(surface):
+        surface = (
+            (props.get("background-color") or props.get("background") or "")
+            .replace("!important", "")
+            .strip()
+        )
+        if (
+            colour
+            and surface
+            and LIGHT_TEXT.match(colour)
+            and LIGHT_SURFACE.match(surface)
+        ):
             errors.append(
                 f"{path.relative_to(ROOT)}: '{' '.join(selector)}' ends with light text ({colour}) on a light surface ({surface})"
             )

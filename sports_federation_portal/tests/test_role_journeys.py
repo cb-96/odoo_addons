@@ -79,14 +79,18 @@ class TestJourneyTasks(TransactionCase):
 
     def test_missing_roster_collector_joins_single_write_pass(self):
         from unittest.mock import patch
+
         Task = self.env["federation.operation.task"]
         Service = self.env["federation.task.projection"]
         specs, scope = Task._project_task_specs(user=self.user)
         self.assertTrue(scope)
-        self.assertTrue(any(
-            item["source_model"] == self.registration._name
-            and item["source_record_id"] == self.registration.id for item in specs
-        ))
+        self.assertTrue(
+            any(
+                item["source_model"] == self.registration._name
+                and item["source_record_id"] == self.registration.id
+                for item in specs
+            )
+        )
         original = type(Service)._apply
         calls = []
 
@@ -97,26 +101,37 @@ class TestJourneyTasks(TransactionCase):
         with patch.object(type(Service), "_apply", apply_once):
             Task.sync_for_user(user=self.user)
         self.assertEqual(len(calls), 1)
-        self.assertTrue(any(
-            item["source_model"] == self.registration._name
-            and item["source_record_id"] == self.registration.id for item in calls[0]
-        ))
+        self.assertTrue(
+            any(
+                item["source_model"] == self.registration._name
+                and item["source_record_id"] == self.registration.id
+                for item in calls[0]
+            )
+        )
 
     def test_team_scoped_sync_does_not_touch_sibling_lineup(self):
         self._scope_rep_to_team()
         Task = self.env["federation.operation.task"]
-        sibling = Task.create({
-            "name": "Sibling review", "task_type": "lineup_review",
-            "audience": "manager", "responsible_club_id": self.club.id,
-            "journey_team_id": self.other_team.id,
-            "source_model": "federation.team", "source_record_id": self.other_team.id,
-            "source_key": "sibling-lineup-review",
-            "blocking_reason": "Review required", "next_step": "Review",
-        })
+        sibling = Task.create(
+            {
+                "name": "Sibling review",
+                "task_type": "lineup_review",
+                "audience": "manager",
+                "responsible_club_id": self.club.id,
+                "journey_team_id": self.other_team.id,
+                "source_model": "federation.team",
+                "source_record_id": self.other_team.id,
+                "source_key": "sibling-lineup-review",
+                "blocking_reason": "Review required",
+                "next_step": "Review",
+            }
+        )
         before = sibling.write_date
         specs, scope = Task._project_task_specs(user=self.user)
         self.assertNotIn(sibling, Task.search(scope))
-        self.assertFalse(any(item.get("journey_team_id") == self.other_team.id for item in specs))
+        self.assertFalse(
+            any(item.get("journey_team_id") == self.other_team.id for item in specs)
+        )
         Task.sync_for_user(user=self.user)
         self.assertEqual(sibling.state, "open")
         self.assertEqual(sibling.write_date, before)
@@ -780,7 +795,9 @@ class TestJourneyHttp(HttpCase):
             with self.subTest(path=old):
                 response = self.url_open(old, allow_redirects=False)
                 self.assertEqual(response.status_code, 301)
-                self.assertTrue(response.headers["Location"].split("?")[0].endswith(new))
+                self.assertTrue(
+                    response.headers["Location"].split("?")[0].endswith(new)
+                )
 
     def test_my_account_opens_club_overview_for_club_representative(self):
         self.authenticate("journey.club@example.test", "journey-test-password")

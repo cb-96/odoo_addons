@@ -236,9 +236,9 @@ class ConnectedRoleJourneys(RoleJourneys):
                 user=user,
             ),
             "competitions": len(
-                request.env[
-                    "federation.portal.competition.queries"
-                ].visible_editions(user=user)
+                request.env["federation.portal.competition.queries"].visible_editions(
+                    user=user
+                )
             ),
             "tasks": len(open_tasks),
             "badges": {
@@ -499,7 +499,8 @@ class ConnectedPreparation(ClubPreparationJourney):
                     url=(
                         "/my/rosters/%s" % roster.id
                         if roster
-                        else "/my/season-registrations/%s/roster" % row["registration"].id
+                        else "/my/season-registrations/%s/roster"
+                        % row["registration"].id
                     ),
                 )
             )

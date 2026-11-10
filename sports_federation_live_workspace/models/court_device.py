@@ -103,7 +103,9 @@ class MatchScorer(models.Model):
 
     @api.ondelete(at_uninstall=False)
     def _retain(self):
-        raise ValidationError(_("Withdraw club scorer nominations; keep their history."))
+        raise ValidationError(
+            _("Withdraw club scorer nominations; keep their history.")
+        )
 
     def action_withdraw(self):
         """Withdraw from the backend (match-day managers of the competition)."""
@@ -959,9 +961,7 @@ class CourtDeviceService(models.AbstractModel):
             "revision": capture.revision,
             "payload": capture.payload,
             "match_log": capture.match_log or [],
-            "signature": self.env["federation.court.commands"]._device_signature(
-                match
-            ),
+            "signature": self.env["federation.court.commands"]._device_signature(match),
             "submitted": capture.submitted,
             "closed": capture.closed,
             "review_required": capture.review_required,
@@ -977,9 +977,7 @@ class CourtDeviceService(models.AbstractModel):
         """Current matches of the user's clubs that can get a club scorer."""
         user = user or self.env.user
         clubs = (
-            self.env["federation.club.representative"]
-            .sudo()
-            ._get_clubs_for_user(user)
+            self.env["federation.club.representative"].sudo()._get_clubs_for_user(user)
         )
         if not clubs:
             return []
