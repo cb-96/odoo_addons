@@ -6,7 +6,6 @@ from copy import deepcopy
 from datetime import datetime
 from functools import wraps
 import logging
-from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from xml.etree import ElementTree

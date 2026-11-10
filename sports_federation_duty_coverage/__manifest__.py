@@ -8,6 +8,7 @@
     ),
     "license": "LGPL-3",
     "depends": [
+        "sports_federation_base",
         "sports_federation_portal",
         "sports_federation_reporting",
         "sports_federation_setup_flow",

@@ -3,6 +3,7 @@
     "version": "19.0.1.8.1",
     "license": "LGPL-3",
     "depends": [
+        "sports_federation_base",
         "web",
         "sports_federation_duty_coverage",
         "sports_federation_calendar",
