@@ -1,0 +1,24 @@
+<odoo>
+  <record id="season_membership_policy" model="ir.ui.view">
+    <field name="name">season.membership.policy</field><field name="model">federation.season</field>
+    <field name="inherit_id" ref="sports_federation_base.view_federation_season_form"/>
+    <field name="arch" type="xml"><xpath expr="//field[@name='date_end']" position="after"><field name="player_membership_required"/></xpath></field>
+  </record>
+  <record id="player_registration_membership" model="ir.ui.view">
+    <field name="name">player.registration.membership</field><field name="model">federation.player.license</field>
+    <field name="inherit_id" ref="sports_federation_people.view_federation_player_license_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='season_id']" position="after"><field name="membership_status" groups="sports_federation_base.group_federation_manager"/></xpath>
+      <xpath expr="//header" position="inside"><button name="action_review_membership" type="object" string="Review federation membership" groups="sports_federation_base.group_federation_manager"/></xpath>
+      <xpath expr="//sheet" position="inside"><div class="alert alert-info">Federation membership records a person's role. Annual player registration approves playing for a club in a season and owns the player fee. Membership is only an additional prerequisite when enabled on the season.</div></xpath>
+    </field>
+  </record>
+  <record id="club_registration_membership" model="ir.ui.view">
+    <field name="name">club.registration.membership</field><field name="model">federation.club.season.registration</field>
+    <field name="inherit_id" ref="sports_federation_people.club_season_registration_form"/>
+    <field name="arch" type="xml"><xpath expr="//field[@name='license_ids']//field[@name='state']" position="after">
+      <field name="membership_status" groups="sports_federation_base.group_federation_manager"/>
+      <button name="action_review_membership" type="object" string="Review membership" groups="sports_federation_base.group_federation_manager"/>
+    </xpath></field>
+  </record>
+</odoo>

@@ -1,6 +1,6 @@
 {
     "name": "Member and Family Services",
-    "version": "19.0.1.3.1",
+    "version": "19.0.1.4.0",
     "license": "LGPL-3",
     "depends": [
         "sports_federation_people",
@@ -17,6 +17,7 @@
         "views/identity_backfill_views.xml",
         "views/evidence_retention_views.xml",
         "data/evidence_retention_data.xml",
+        "views/player_registration_boundary.xml",
     ],
     "installable": True,
     "application": False,

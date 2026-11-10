@@ -8,3 +8,4 @@ from . import family_summary
 from . import identity_backfill
 from . import renewal_progress
 from . import evidence_retention
+from . import player_registration_boundary

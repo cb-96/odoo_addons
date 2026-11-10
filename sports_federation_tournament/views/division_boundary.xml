@@ -1,0 +1,23 @@
+<odoo>
+  <record id="division_boundary_form" model="ir.ui.view">
+    <field name="name">division.boundary.form</field><field name="model">federation.tournament</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_tournament_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form" position="attributes"><attribute name="string">Division / Legacy Tournament</attribute></xpath>
+      <xpath expr="//field[@name='season_id']" position="attributes"><attribute name="readonly">edition_id != False</attribute></xpath>
+      <xpath expr="//field[@name='competition_id']" position="attributes"><attribute name="readonly">edition_id != False</attribute></xpath>
+      <xpath expr="//field[@name='tournament_type']" position="attributes"><attribute name="invisible">edition_id != False</attribute></xpath>
+      <xpath expr="//field[@name='location']" position="attributes"><attribute name="invisible">edition_id != False</attribute></xpath>
+      <xpath expr="//field[@name='date_start']" position="attributes"><attribute name="string">Division Valid From</attribute></xpath>
+      <xpath expr="//field[@name='date_end']" position="attributes"><attribute name="string">Division Valid Until</attribute><attribute name="invisible">not edition_id and tournament_type == 'single_day'</attribute></xpath>
+      <xpath expr="//header" position="inside">
+        <button name="action_open_competition_edition" type="object" string="Competition" invisible="not edition_id"/>
+        <button name="action_open_division_game_days" type="object" string="Plan game days" invisible="not edition_id"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <div class="alert alert-info" invisible="not edition_id">This record is a playing division. Dates describe its validity, not a venue booking. Plan dates, venues, courts and capacity in the competition's game days.</div>
+        <div class="alert alert-warning" invisible="edition_id">Legacy standalone tournament: history is preserved. Create new standalone events through a competition edition and its divisions, then plan game days.</div>
+      </xpath>
+    </field>
+  </record>
+</odoo>
