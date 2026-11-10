@@ -48,3 +48,59 @@ class TestClubSeasonPlayerInvoice(TransactionCase):
         self.registration.action_confirm()
         with self.assertRaises(ValidationError):
             self.registration.action_create_player_invoice()
+
+    def test_top_up_invoice_only_contains_new_charge(self):
+        self.registration._add_players(self.players[:1])
+        self.registration.action_confirm()
+        self._events().action_confirm()
+        first = self.registration.action_create_player_invoice()["res_id"]
+        self.registration._add_players(self.players[1:])
+        self.registration.action_confirm()
+        self._events().filtered(lambda event: event.state == "draft").action_confirm()
+        second = self.registration.action_create_player_invoice()["res_id"]
+        self.assertNotEqual(first, second)
+        for invoice_id in (first, second):
+            invoice = self.env["account.move"].browse(invoice_id)
+            self.assertEqual(len(invoice.invoice_line_ids), 1)
+            self.assertEqual(invoice.invoice_line_ids.price_unit, 25)
+
+    def test_missing_product_does_not_link_any_invoice(self):
+        self.registration._add_players(self.players)
+        self.registration.action_confirm()
+        self._events().action_confirm()
+        self.registration.invoice_product_id = False
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.registration.action_create_player_invoice()
+        self.assertFalse(self._events().mapped("account_move_id"))
+
+    def test_player_registration_to_roster_and_club_invoice(self):
+        team = self.env["federation.team"].create({
+            "name": "Annual Flow Team", "club_id": self.club.id,
+        })
+        roster = self.env["federation.team.roster"].create({
+            "team_id": team.id, "season_id": self.season.id,
+        })
+        self.registration._add_players(self.players)
+        self.registration.action_submit()
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.env["federation.team.roster.line"].create({
+                "roster_id": roster.id, "player_id": self.players[0].id,
+            })
+        self.assertFalse(self._events())
+        self.registration.action_confirm()
+        lines = self.env["federation.team.roster.line"].create([
+            {"roster_id": roster.id, "player_id": player.id}
+            for player in self.players
+        ])
+        self.assertTrue(all(lines.mapped("eligible")))
+        self.assertEqual(len(self._events()), 2)
+        self._events().action_confirm()
+        action = self.registration.action_create_player_invoice()
+        invoice = self.env["account.move"].browse(action["res_id"])
+        self.assertEqual(invoice.partner_id, self.registration.billing_partner_id)
+        self.assertEqual(invoice.state, "draft")
+        self.assertEqual(len(invoice.invoice_line_ids), 2)
+        self.assertEqual(sum(invoice.invoice_line_ids.mapped("price_unit")), 50)
+        self.registration.action_confirm()
+        self.assertEqual(len(self._events()), 2)
+        self.assertEqual(self._events().mapped("account_move_id"), invoice)

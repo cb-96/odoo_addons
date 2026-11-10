@@ -95,9 +95,26 @@ class FederationPlayerLicense(models.Model):
                     self.env["federation.club"].browse(vals["club_id"]),
                     self.env["federation.season"].browse(vals["season_id"]),
                 ).id
+        Registration.browse(sorted({vals["club_registration_id"] for vals in vals_list}))._registration_lock()
+        for vals in vals_list:
+            if vals.get("state", "draft") in ("draft", "active"):
+                player = self.env["federation.player"].browse(vals.get("player_id"))
+                if not player.active or player.club_id.id != vals.get("club_id"):
+                    raise ValidationError(_("Register an active player with their current club."))
         return super().create(vals_list)
 
     def write(self, vals):
+        self.check_access("write")
+        self.mapped("club_registration_id")._registration_lock()
+        self.invalidate_recordset()
+        if vals.get("state") == "active":
+            for license in self:
+                if license.state == "cancelled":
+                    raise ValidationError(_("Cancelled player registrations cannot be reactivated implicitly."))
+                if license.state != "active" and (
+                    not license.player_id.active or license.player_id.club_id != license.club_id
+                ):
+                    raise ValidationError(_("Approve an active player with their current club."))
         if vals.get("state") == "draft" and any(license.state != "draft" for license in self):
             raise ValidationError(_("Approved registration history cannot be reset to draft."))
         scope = {"player_id", "club_id", "season_id", "club_registration_id"}

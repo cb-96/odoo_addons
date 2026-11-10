@@ -72,3 +72,62 @@ class TestClubSeasonRegistration(TransactionCase):
         })
         with self.assertRaises(AccessError):
             self.registration.with_user(user).action_confirm()
+
+    def test_active_create_cannot_bypass_current_club(self):
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.env["federation.player.license"].create({
+                "player_id": self.player.id, "club_id": self.other_club.id,
+                "season_id": self.season.id, "state": "active",
+                "issue_date": "2098-01-01", "expiry_date": "2098-12-31",
+            })
+
+    def test_transfer_before_approval_blocks_activation(self):
+        self.registration._add_players(self.player)
+        self.player.club_id = self.other_club
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.registration.action_confirm()
+        self.assertEqual(self.registration.license_ids.state, "draft")
+
+    def test_cancelled_player_cannot_reactivate(self):
+        self.registration._add_players(self.player)
+        self.registration.action_confirm()
+        license = self.registration.license_ids
+        license.action_cancel()
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            license.action_activate()
+        self.assertEqual(license.state, "cancelled")
+
+    def test_cancelled_header_cannot_reopen(self):
+        self.registration.action_cancel()
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.registration.write({"state": "draft"})
+
+    def test_noop_scope_write_preserves_registration(self):
+        self.registration._add_players(self.player)
+        self.registration.write({"club_id": self.club.id, "season_id": self.season.id})
+        self.assertEqual(self.registration.player_count, 1)
+
+    def test_mixed_club_batch_is_atomic(self):
+        other = self.player.copy({"first_name": "Other", "club_id": self.other_club.id})
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.registration._add_players(self.player | other)
+        self.assertFalse(self.registration.license_ids)
+
+    def test_archived_player_cannot_be_added(self):
+        self.player.active = False
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.registration._add_players(self.player)
+
+    def test_validity_boundaries_are_inclusive(self):
+        self.registration._add_players(self.player)
+        self.registration.action_confirm()
+        License = self.env["federation.player.license"]
+        from odoo import fields
+        for date in ("2098-01-01", "2098-12-31"):
+            self.assertIn(self.player, License._registered_players(
+                self.club, self.season, fields.Date.to_date(date),
+            ))
+        for date in ("2097-12-31", "2099-01-01"):
+            self.assertNotIn(self.player, License._registered_players(
+                self.club, self.season, fields.Date.to_date(date),
+            ))

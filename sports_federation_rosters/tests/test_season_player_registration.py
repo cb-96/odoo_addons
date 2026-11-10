@@ -77,10 +77,9 @@ class TestMandatorySeasonPlayers(TransactionCase):
 
     def test_wrong_club_registration_blocked(self):
         other_club = self.env["federation.club"].create({"name": "Wrong Licence Club"})
-        self.env["federation.player.license"].create({
-            "player_id": self.player.id, "club_id": other_club.id,
-            "season_id": self.season.id, "state": "active",
-            "issue_date": "2098-01-01", "expiry_date": "2098-12-31",
-        })
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
-            self._line()
+            self.env["federation.player.license"].create({
+                "player_id": self.player.id, "club_id": other_club.id,
+                "season_id": self.season.id, "state": "active",
+                "issue_date": "2098-01-01", "expiry_date": "2098-12-31",
+            })

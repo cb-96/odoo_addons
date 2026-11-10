@@ -60,3 +60,28 @@ class TestPlayerSeasonFees(TransactionCase):
 
     def test_new_season_team_fee_is_opt_in(self):
         self.assertFalse(self.season.team_registration_fee_enabled)
+
+    def test_missing_billing_contact_rolls_back_approval(self):
+        self.registration.billing_partner_id = False
+        self.registration._add_players(self.player)
+        from odoo.exceptions import ValidationError
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.registration.action_confirm()
+        self.assertEqual(self.registration.license_ids.state, "draft")
+        self.assertFalse(self._events())
+
+    def test_cancel_retains_original_charge(self):
+        self.registration._add_players(self.player)
+        self.registration.action_confirm()
+        event = self._events()
+        self.registration.action_cancel()
+        self.assertEqual(self._events(), event)
+        self.assertEqual(event.amount, 25)
+
+    def test_company_cannot_change_after_charge(self):
+        from odoo.exceptions import ValidationError
+        self.registration._add_players(self.player)
+        self.registration.action_confirm()
+        other = self.env["res.company"].create({"name": "Other Annual Billing Company"})
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.registration.write({"company_id": other.id})

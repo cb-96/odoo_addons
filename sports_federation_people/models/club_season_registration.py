@@ -74,8 +74,14 @@ class FederationClubSeasonRegistration(models.Model):
             return registration
 
     def write(self, vals):
-        self.check_access("write")
-        if {"club_id", "season_id"}.intersection(vals) and self.mapped("license_ids"):
+        self._registration_lock()
+        if any(item.state == "cancelled" for item in self) and vals.get("state", "cancelled") != "cancelled":
+            raise ValidationError(_("Cancelled club registrations cannot be reopened implicitly."))
+        changed_scope = any(
+            key in vals and vals[key] != item[key].id
+            for item in self for key in ("club_id", "season_id")
+        )
+        if changed_scope and self.mapped("license_ids"):
             raise ValidationError(_("A registration with players cannot change club or season."))
         if vals.get("state") == "cancelled" and self.mapped("license_ids").filtered(
             lambda item: item.state in ("draft", "active")
@@ -112,6 +118,7 @@ class FederationClubSeasonRegistration(models.Model):
 
     def _add_players(self, players):
         self.ensure_one()
+        self._registration_lock()
         self._assert_open()
         if any(player.club_id != self.club_id or not player.active for player in players):
             raise ValidationError(_("Select active players belonging to this club."))
@@ -139,7 +146,7 @@ class FederationClubSeasonRegistration(models.Model):
         ])
 
     def action_submit(self):
-        self.check_access("write")
+        self._registration_lock()
         self._assert_open()
         if any(not item.pending_player_count for item in self):
             raise ValidationError(_("Add pending players before submitting."))
@@ -147,7 +154,7 @@ class FederationClubSeasonRegistration(models.Model):
         return True
 
     def action_confirm(self):
-        self.check_access("write")
+        self._registration_lock()
         self._assert_open()
         if any(not item.license_ids for item in self):
             raise ValidationError(_("A club registration must contain players."))
@@ -157,9 +164,20 @@ class FederationClubSeasonRegistration(models.Model):
         return True
 
     def action_cancel(self):
-        self.check_access("write")
+        self._registration_lock()
         self.mapped("license_ids").filtered(
             lambda item: item.state in ("draft", "active")
         ).action_cancel()
         self.write({"state": "cancelled"})
         return True
+
+    def _registration_lock(self):
+        self.check_access("write")
+        if self:
+            self.flush_recordset()
+            self.env.cr.execute(
+                "SELECT id FROM federation_club_season_registration WHERE id IN %s ORDER BY id FOR UPDATE",
+                [tuple(self.ids)],
+            )
+            self.invalidate_recordset()
+            self.check_access("write")
