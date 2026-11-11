@@ -128,7 +128,15 @@ def main():
                 )
                 if not rs:
                     return "pending", runs
-                runs.append(max(rs, key=lambda x: (x["databaseId"], x.get("attempt", 1))))
+                runs.append(
+                max(
+                    rs,
+                    key=lambda x: (
+                        x["databaseId"],
+                        x.get("attempt", 1),
+                    ),
+                )
+            )
             if any(x["status"] != "completed" for x in runs):
                 return "pending", runs
             if all(x["conclusion"] == "success" for x in runs):
