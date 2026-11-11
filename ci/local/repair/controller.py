@@ -123,12 +123,12 @@ def main():
                         "--limit",
                         "30",
                         "--json",
-                        "databaseId,status,conclusion,attempt",
+                        "databaseId,status,conclusion",
                     )
                 )
                 if not rs:
                     return "pending", runs
-                runs.append(max(rs, key=lambda x: (x["databaseId"], x["attempt"])))
+                runs.append(max(rs, key=lambda x: (x["databaseId"], x.get("attempt", 1))))
             if any(x["status"] != "completed" for x in runs):
                 return "pending", runs
             if all(x["conclusion"] == "success" for x in runs):
