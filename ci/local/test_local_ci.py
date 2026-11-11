@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import re
+import tempfile
 from pathlib import Path
 import unittest
 import yaml
@@ -24,6 +25,15 @@ Loader.add_implicit_resolver(
     re.compile(r"^(?:true|false|True|False|TRUE|FALSE)$"),
     list("tTfF"),
 )
+
+
+def addon_directories(root):
+    """Ignore leftover directories that are not addon source trees."""
+    return {
+        manifest.parent.name
+        for manifest in root.glob("sports_federation_*/__manifest__.py")
+        if manifest.is_file()
+    }
 
 
 class LocalCIContracts(unittest.TestCase):
@@ -93,8 +103,19 @@ class LocalCIContracts(unittest.TestCase):
     def test_review_only_and_real_modules(self):
         self.assertFalse(self.config["publish_enabled"])
         self.assertEqual(self.config["required_workflows"], ["ci-local.yml"])
-        modules = {p.name for p in ROOT.glob("sports_federation_*") if p.is_dir()}
+        modules = addon_directories(ROOT)
         self.assertEqual(set(self.config["allow_prefixes"]), modules)
+
+    def test_addon_discovery_ignores_non_addon_directories(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            active = root / "sports_federation_example"
+            active.mkdir()
+            (active / "__manifest__.py").write_text("{}", encoding="utf-8")
+            leftover = root / "sports_federation_unused"
+            leftover.mkdir()
+            (leftover / "__pycache__").mkdir()
+            self.assertEqual(addon_directories(root), {active.name})
 
     def test_ci_wait_budget(self):
         self.assertGreaterEqual(self.config["ci_seconds"], 8 * 3600)
