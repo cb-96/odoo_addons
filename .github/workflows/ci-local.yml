@@ -1,0 +1,306 @@
+# Local execution only. Hosted public PR CI remains in ci.yml.
+name: Local full CI
+'on':
+  push:
+    branches:
+    - feat/offline-gameday
+    - autofix/**
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: local-full-ci-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  lint:
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - federation-ci
+    timeout-minutes: 20
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Show checked-out revision
+      run: 'echo "GITHUB_SHA=$GITHUB_SHA"
+
+        echo "GITHUB_REF=$GITHUB_REF"
+
+        echo "GITHUB_HEAD_REF=$GITHUB_HEAD_REF"
+
+        echo "GITHUB_BASE_REF=$GITHUB_BASE_REF"
+
+        git rev-parse HEAD
+
+        git log -1 --oneline --decorate
+
+        git status --short
+
+        '
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: pip
+        cache-dependency-path: requirements.txt
+    - name: Install lint dependencies
+      run: 'python -m pip install --upgrade pip
+
+        python -m pip install -r requirements.txt
+
+        '
+    - name: Test local CI and repair contracts
+      run: python -m unittest discover -s ci/local -p "test_*.py"
+    - name: Run repository-wide lint (strict)
+      run: bash ci/run_repo_lint.sh --strict
+    - name: Check Odoo test discovery
+      run: python ci/check_test_discovery.py
+    - name: Check documentation freshness metadata
+      run: python ci/check_doc_freshness.py
+    - name: Check markdown links
+      run: python ci/check_markdown_links.py
+    - name: Check module owner registry
+      run: python ci/check_module_owners.py
+    - name: Check release train metadata
+      run: python ci/check_release_train.py
+    - name: Check reporting EXPLAIN snapshots
+      run: python ci/check_explain_snapshots.py
+    - name: Check migration review coverage
+      run: python ci/check_migration_review.py --base-ref origin/${{ github.base_ref || 'main' }}
+    - name: Check constraint/index contracts
+      run: python ci/check_constraint_index_contracts.py
+    - name: Check OpenAPI contract docs
+      run: python ci/check_openapi_contracts.py
+    - name: Check CI hygiene
+      run: python ci/check_ci_hygiene.py
+    - name: Check RC test scope
+      run: python ci/check_rc_test_scope.py
+    - name: Verify legacy competition engine removal
+      run: python ci/check_legacy_engine_removed.py
+    - name: Verify portal privilege boundaries
+      run: python ci/check_portal_sudo_guard.py
+    - name: Verify portal competition ownership
+      run: python ci/check_portal_competition_ownership.py
+    - name: Verify officiating contract
+      run: python ci/check_officiating_contract.py
+    - name: Verify registration contract
+      run: python ci/check_registration_contract.py
+    - name: Verify access CSV integrity
+      run: python ci/check_access_csv_integrity.py
+    - name: Check translations
+      run: 'python -m unittest ci/test_check_translations.py
+
+        python ci/check_translations.py
+
+        '
+    - name: Verify source collector completeness
+      run: python ci/check_source_collector_contract.py
+    - name: Check release-focus qualification
+      run: python ci/check_release_focus_contract.py
+    - name: Verify addon manifests, dependencies, imports and ACLs
+      run: python ci/check_addon_integrity.py
+    - name: Verify single application entry point
+      run: python ci/check_application_entrypoint.py
+    - name: Validate known release failure registry
+      run: python ci/check_known_release_failures.py
+    - name: Verify workflow state contracts
+      run: python ci/check_workflow_state_contracts.py
+    - name: Verify Fixture ownership contract
+      run: python ci/check_fixture_ownership_contract.py
+    - name: Verify Rules contract
+      run: python ci/check_rules_contract.py
+    - name: Verify competition pipeline contract
+      run: python ci/check_competition_pipeline_contract.py
+    - name: Verify operator handoff
+      run: python ci/check_schedule_handoff_contract.py
+    - name: Verify publication integrity contract
+      run: python ci/check_publication_integrity_contract.py
+    - name: Report module dependency drift
+      run: python ci/check_module_dependency_drift.py
+    - name: Validate CI shell scripts
+      run: 'bash -n ci/run_tests.sh
+
+        bash -n ci/apply_env_to_ir_config.sh
+
+        bash -n ci/restore_backup_drill.sh
+
+        '
+    if: github.repository == 'cb-96/odoo_addons' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/feat/offline-gameday' || startsWith(github.ref, 'refs/heads/autofix/'))
+  lint-report:
+    name: Lint report (nightly)
+    if: github.repository == 'cb-96/odoo_addons' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/feat/offline-gameday' || startsWith(github.ref, 'refs/heads/autofix/'))
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - federation-ci
+    timeout-minutes: 20
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: pip
+        cache-dependency-path: requirements.txt
+    - name: Install lint dependencies
+      run: 'python -m pip install --upgrade pip
+
+        python -m pip install -r requirements.txt
+
+        '
+    - name: Run repository-wide lint report
+      run: bash ci/run_repo_lint.sh --report
+  odoo-tests:
+    name: Odoo tests (${{ matrix.suite }})
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - federation-ci
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+        - competition_core
+        - portal_public_ops
+        - finance_reporting
+      max-parallel: 1
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Verify Docker Compose availability
+      run: docker compose version
+    - name: Prepare CI environment file
+      run: bash ci/local/prepare-env.sh ${{ matrix.suite }}
+    - name: Run Odoo module tests
+      run: 'chmod +x ci/run_tests.sh
+
+        bash ./ci/run_tests.sh --suite ${{ matrix.suite }}
+
+        '
+    - name: Retain test failure evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: local-odoo-tests-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ci/logs/
+        if-no-files-found: warn
+        retention-days: 7
+    - name: Clean only this test project
+      if: always()
+      run: bash ci/local/cleanup.sh
+    if: github.repository == 'cb-96/odoo_addons' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/feat/offline-gameday' || startsWith(github.ref, 'refs/heads/autofix/'))
+  odoo-integration-matrix:
+    name: Odoo integration matrix (${{ matrix.suite }})
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - federation-ci
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+        - people_rosters_rules
+        - ops_and_notifications
+      max-parallel: 1
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Verify Docker Compose availability
+      run: docker compose version
+    - name: Prepare CI environment file
+      run: bash ci/local/prepare-env.sh ${{ matrix.suite }}
+    - name: Run integration matrix suite
+      run: 'chmod +x ci/run_tests.sh
+
+        bash ./ci/run_tests.sh --suite ${{ matrix.suite }}
+
+        '
+    - name: Retain test failure evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: local-odoo-integration-matrix-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ci/logs/
+        if-no-files-found: warn
+        retention-days: 7
+    - name: Clean only this test project
+      if: always()
+      run: bash ci/local/cleanup.sh
+    if: github.repository == 'cb-96/odoo_addons' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/feat/offline-gameday' || startsWith(github.ref, 'refs/heads/autofix/'))
+  odoo-release-surfaces:
+    name: Odoo tests (release_surfaces)
+    if: github.repository == 'cb-96/odoo_addons' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/feat/offline-gameday' || startsWith(github.ref, 'refs/heads/autofix/'))
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - federation-ci
+    timeout-minutes: 90
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Verify Docker Compose availability
+      run: docker compose version
+    - name: Prepare CI environment file
+      run: bash ci/local/prepare-env.sh release_surfaces
+    - name: Run broader release-surface suite
+      run: 'chmod +x ci/run_tests.sh
+
+        bash ./ci/run_tests.sh --suite release_surfaces'
+    - name: Retain test failure evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: local-odoo-release-surfaces-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ci/logs/
+        if-no-files-found: warn
+        retention-days: 7
+    - name: Clean only this test project
+      if: always()
+      run: bash ci/local/cleanup.sh
+  full-ci-gate:
+    name: Full CI gate
+    if: always() && (github.repository == 'cb-96/odoo_addons' && (github.event_name == 'push' || github.event_name
+      == 'workflow_dispatch') && (github.ref == 'refs/heads/feat/offline-gameday' || startsWith(github.ref, 'refs/heads/autofix/')))
+    needs:
+    - lint
+    - lint-report
+    - odoo-tests
+    - odoo-integration-matrix
+    - odoo-release-surfaces
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - federation-ci
+    timeout-minutes: 5
+    steps:
+    - name: Require every full CI job
+      env:
+        NEEDS_JSON: ${{ toJSON(needs) }}
+      run: "python3 - <<'PY'\nimport json, os\nresults = json.loads(os.environ['NEEDS_JSON'])\nfailed = {name: item.get('result')\
+        \ for name, item in results.items() if item.get('result') != 'success'}\nprint(json.dumps(results, indent=2))\n\
+        if failed:\n    raise SystemExit('Required jobs did not pass: ' + str(failed))\nPY"

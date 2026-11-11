@@ -148,3 +148,7 @@ python3 ci/check_release_train.py
 python3 ci/check_competition_ui_workflow.py
 python3 ci/check_workflow_state_contracts.py
 ```
+
+## Local CI automation
+
+- [Local full CI and bounded repair](operations/local-ci-repair.md)
