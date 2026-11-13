@@ -581,17 +581,21 @@ class FederationTeamRoster(models.Model):
                 )
 
     def _get_reference_date(self):
-        """Return reference date."""
+        """Date on which this roster's eligibility is judged.
+
+        Today, kept inside the roster's own validity window: a future roster is
+        judged on its first day and a past roster on its last day, so a roster
+        from an ended season is not reported as ineligible just because its
+        licences expired with that season.
+        """
         self.ensure_one()
         today = fields.Date.context_today(self)
-        if self.valid_from and self.valid_from > today:
-            return self.valid_from
-        if (
-            self.season_id
-            and self.season_id.date_start
-            and self.season_id.date_start > today
-        ):
-            return self.season_id.date_start
+        start = self.valid_from or self.season_id.date_start
+        end = self.valid_to or self.season_id.date_end
+        if start and start > today:
+            return start
+        if end and end < today:
+            return end
         return today
 
     @api.model

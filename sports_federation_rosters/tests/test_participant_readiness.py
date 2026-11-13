@@ -63,6 +63,7 @@ class TestParticipantReadiness(TransactionCase):
                 "first_name": "Eligible",
                 "last_name": "Player",
                 "gender": "male",
+                "club_id": cls.club.id,
             }
         )
         cls.opponent_team = cls.env["federation.team"].create(
@@ -77,6 +78,7 @@ class TestParticipantReadiness(TransactionCase):
                 "first_name": "Opponent",
                 "last_name": "Player",
                 "gender": "male",
+                "club_id": cls.club.id,
             }
         )
 

@@ -60,12 +60,14 @@ def merge(template: pofile.Catalog, existing, language: str, component: str):
     for source in template.entries:
         old = previous.get(source.msgid)
         entries.append(
-            pofile.Entry(
-                msgid=source.msgid,
-                msgstr=old.msgstr if old else "",
-                comments=list(source.comments),
-                references=list(source.references),
-                flags=[flag for flag in source.flags if flag != "fuzzy"],
+            pofile.add_code_markers(
+                pofile.Entry(
+                    msgid=source.msgid,
+                    msgstr=old.msgstr if old else "",
+                    comments=list(source.comments),
+                    references=list(source.references),
+                    flags=[flag for flag in source.flags if flag != "fuzzy"],
+                )
             )
         )
     header = (

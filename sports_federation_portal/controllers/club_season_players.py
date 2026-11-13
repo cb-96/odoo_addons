@@ -1,4 +1,4 @@
-from odoo import _, http
+from odoo import http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
@@ -21,7 +21,7 @@ class FederationClubSeasonPlayersPortal(FederationPortalBase):
             )
         )
         if not registration:
-            raise AccessError(_("This club registration is not available."))
+            raise AccessError(request.env._("This club registration is not available."))
         return registration
 
     @http.route(
@@ -76,7 +76,7 @@ class FederationClubSeasonPlayersPortal(FederationPortalBase):
                 )
             )
             if not club or not season:
-                raise AccessError(_("Select your club and an open season."))
+                raise AccessError(request.env._("Select your club and an open season."))
             with request.env.cr.savepoint():
                 registration = (
                     request.env["federation.club.season.registration"]
@@ -84,7 +84,9 @@ class FederationClubSeasonPlayersPortal(FederationPortalBase):
                     ._get_or_create(club, season)
                 )
             if registration.company_id not in request.env.companies:
-                raise AccessError(_("The registration company is not available."))
+                raise AccessError(
+                    request.env._("The registration company is not available.")
+                )
             return request.redirect("/my/season-players/%s" % registration.id)
         except (ValueError, AccessError, ValidationError):
             return self._render_access_denied()
@@ -156,7 +158,9 @@ class FederationClubSeasonPlayersPortal(FederationPortalBase):
                 )
             )
             if not ids or set(players.ids) != ids:
-                raise AccessError(_("Select players belonging to your club."))
+                raise AccessError(
+                    request.env._("Select players belonging to your club.")
+                )
             with request.env.cr.savepoint():
                 registration._add_players(players)
         except (AccessError, ValueError):

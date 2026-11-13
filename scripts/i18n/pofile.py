@@ -212,11 +212,42 @@ def tags(text: str) -> list[str]:
     return result
 
 
+# Odoo loads a code translation only when the entry carries the marker for
+# its runtime: "#. odoo-python" for Python, "#. odoo-javascript" for web
+# assets. Without it the msgstr is silently ignored and users see English.
+PYTHON_MARKER = "odoo-python"
+JAVASCRIPT_MARKER = "odoo-javascript"
+
+
+def code_markers(entry: Entry) -> list[str]:
+    """Markers Odoo needs for the code references of ``entry``."""
+    markers = set()
+    for reference in entry.references:
+        match = re.match(r"code:addons/\w+/(\S+?)(?::\d+)?$", reference)
+        if not match:
+            continue
+        if match.group(1).endswith(".py"):
+            markers.add(PYTHON_MARKER)
+        elif "/static/" in match.group(1):
+            markers.add(JAVASCRIPT_MARKER)
+    return sorted(markers)
+
+
+def add_code_markers(entry: Entry) -> Entry:
+    for marker in code_markers(entry):
+        if marker not in entry.comments:
+            entry.comments.append(marker)
+    return entry
+
+
 def problems(entry: Entry) -> list[str]:
     """Reasons why a translation would break the page or the message."""
+    missing = [m for m in code_markers(entry) if m not in entry.comments]
+    found = [
+        "code translation lacks '#. %s'; Odoo ignores it" % marker for marker in missing
+    ]
     if not entry.msgstr:
-        return []
-    found = []
+        return found
     if placeholders(entry.msgid) != placeholders(entry.msgstr):
         found.append(
             "placeholders differ: %s vs %s"

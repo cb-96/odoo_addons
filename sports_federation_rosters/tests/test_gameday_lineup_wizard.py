@@ -3,6 +3,10 @@ import json
 
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestGamedayLineupWizard(TransactionCase):
     @classmethod
@@ -141,8 +145,9 @@ class TestGamedayLineupWizard(TransactionCase):
                 "rule_set_id": rule_set.id,
             }
         )
-        cls.env["federation.team.roster.line"].create(
-            {"roster_id": cls.roster.id, "player_id": player.id, "jersey_number": "7"}
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
+            {"roster_id": cls.roster.id, "player_id": player.id, "jersey_number": "7"},
         )
         cls.roster.action_activate()
 

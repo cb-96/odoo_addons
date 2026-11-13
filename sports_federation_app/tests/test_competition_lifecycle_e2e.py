@@ -495,7 +495,13 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         outcome="normal",
         reason="",
         save=True,
+        approve=True,
     ):
+        """Score a match on court; the tournament manager then approves it.
+
+        Court results always wait for the tournament manager (one-step
+        approval), whatever the competition's review flags.
+        """
         command_service = self.env["federation.court.commands"].with_user(
             self.court_operator
         )
@@ -514,9 +520,13 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             base = self._court_command(
                 command_service, matchday, match, "save", payload, opened
             )["current"]
-        return self._court_command(
+        result = self._court_command(
             command_service, matchday, match, "submit", payload, base
         )
+        if approve:
+            self.assertEqual(match.result_state, "submitted")
+            match.with_user(self.organizer).action_approve_result_one_step()
+        return result
 
     def _finish_gameday(self, matchday):
         return (
@@ -1014,7 +1024,7 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self._open_gameday(matchday)
         for team in match.home_team_id | match.away_team_id:
             self._cross_out(match, team)
-        self._court_result(matchday, match, home=2, away=1)
+        self._court_result(matchday, match, home=2, away=1, approve=False)
         self.assertEqual(match.result_state, "submitted")
 
         blockers = edition.with_user(self.organizer)._get_close_blockers()

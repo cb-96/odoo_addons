@@ -92,6 +92,25 @@ class TranslationContractTests(unittest.TestCase):
         self.assertIn("placeholders differ", out)
         self.assertIn("markup differs", out)
 
+    def test_code_translation_needs_the_odoo_python_marker(self):
+        reference = "code:addons/m/models/x.py:0"
+        bare = pofile.Entry(msgid="Saved", msgstr="Opgeslagen", references=[reference])
+        pofile.write(
+            pofile.Catalog(
+                header=pofile.Entry(msgid="", msgstr=pofile.header_text("nl", "m")),
+                entries=[bare],
+            ),
+            self.module / "i18n" / "nl.po",
+        )
+        code, out = self.run_check()
+        self.assertEqual(code, 1)
+        self.assertIn("odoo-python", out)
+        marked = pofile.add_code_markers(
+            pofile.Entry(msgid="Saved", msgstr="Opgeslagen", references=[reference])
+        )
+        self.assertIn("odoo-python", marked.comments)
+        self.assertEqual(pofile.problems(marked), [])
+
     def test_unregistered_language_fails(self):
         pofile.write(catalog("es", []), self.module / "i18n" / "es.po")
         code, out = self.run_check()

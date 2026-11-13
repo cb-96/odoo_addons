@@ -30,7 +30,7 @@ class FederationOperationTaskPortalQoL(FederationOperationTaskPortal):
                 ("assigned_user_id", "=", request.env.user.id),
                 ("assigned_user_id", "=", False),
             ]
-        allowed_types = dict(Task._fields["task_type"].selection)
+        allowed_types = dict(Task._fields["task_type"]._description_selection(Task.env))
         if task_type in allowed_types:
             domain += [("task_type", "=", task_type)]
         tasks = Task.search(domain)

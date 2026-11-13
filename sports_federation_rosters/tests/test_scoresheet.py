@@ -19,8 +19,8 @@ class TestMatchScoresheet(TransactionCase):
             {
                 "name": "Sheet Season",
                 "code": "SHS",
-                "date_start": "2026-01-01",
-                "date_end": "2026-12-31",
+                "date_start": "2025-01-01",
+                "date_end": "2025-12-31",
             }
         )
         tournament = cls.env["federation.tournament"].create(
@@ -28,9 +28,11 @@ class TestMatchScoresheet(TransactionCase):
                 "name": "Sheet Division",
                 "code": "SHD",
                 "season_id": season.id,
-                "date_start": "2026-01-01",
+                "date_start": "2025-01-01",
             }
         )
+        # A played (past) match: the roster deadline only guards future
+        # matches, and a fixed future date would expire as time passes.
         cls.match = (
             cls.env["federation.match"]
             .with_context(skip_auto_match_sheets=True)
@@ -39,7 +41,7 @@ class TestMatchScoresheet(TransactionCase):
                     "tournament_id": tournament.id,
                     "home_team_id": cls.home.id,
                     "away_team_id": cls.away.id,
-                    "date_scheduled": "2026-11-15 13:30:00",
+                    "date_scheduled": "2025-11-15 13:30:00",
                 }
             )
         )

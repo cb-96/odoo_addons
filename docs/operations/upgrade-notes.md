@@ -36,6 +36,41 @@ passed unless they ran.
 
 ## Entries
 
+### Odoo test-suite repair after the registry load fix
+
+Affected modules: `sports_federation_member_services` 19.0.1.4.0 → 19.0.1.4.1,
+`sports_federation_rosters`, `sports_federation_matchday`,
+`sports_federation_schedule_approval`, `sports_federation_portal`,
+`sports_federation_live_workspace` (code, data and tests)
+
+**Data changes**: `sports_federation_member_services/security/res_groups.xml`
+makes Federation Manager imply Contact Creation (`base.group_partner_manager`),
+because the reviewed identity commands write `res.partner`. No migration
+script. Code translations in the portal, rosters and live workspace `.po`
+files gain the `#. odoo-python` marker that Odoo needs to apply them.
+
+**Behaviour to verify**:
+
+- Manager action items (`/federation/operations/action-items`) and the portal
+  action items render instead of returning HTTP 500.
+- Identity review, family references and duplicate resolution work for
+  federation managers who are not administrators.
+- Schedule planners publish (streamlined policy) and replay publication
+  without Calendar Planner rights.
+- Deleting a closed game day releases its published matches.
+- Dutch and French messages raised from Python code are translated.
+- A roster from an ended season is judged on its last day, not today, so its
+  players do not turn ineligible once their season licences expire.
+- Demo data installs again.
+
+**Dry-run evidence**: static checks (Black, Flake8 F-codes, test discovery,
+addon integrity, model load order, ACL, privileged mutation and handoff
+contracts). The Odoo suites were NOT re-run after these changes; the fixes
+target the 157 failures of run 20261113_200640.
+
+**Rollback**: code-only rollback; remove the implied Contact Creation group from
+Federation Manager by hand if it is no longer wanted.
+
 ### Registry load order and schedule-owned match planning
 
 Affected modules: `sports_federation_schedule_approval` 19.0.1.4.0,

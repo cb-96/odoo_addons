@@ -3,6 +3,10 @@ from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.sports_federation_duty_coverage.tests.common import CoverageFixture
 
+from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+    with_published_planning_token,
+)
+
 
 @tagged("post_install", "-at_install", "sf_gameday_print")
 class TestGamedayPrint(CoverageFixture, TransactionCase):
@@ -22,8 +26,10 @@ class TestGamedayPrint(CoverageFixture, TransactionCase):
                 "end_datetime": "2026-06-15 16:40:00",
             }
         )
-        cls.match.sudo().write({"published_slot_id": slot.id})
-        cls.other_match.sudo().write(
+        with_published_planning_token(cls.match.sudo()).write(
+            {"published_slot_id": slot.id}
+        )
+        with_published_planning_token(cls.other_match.sudo()).write(
             {"schedule_publication_id": False, "published_slot_id": False}
         )
         cls.duty = cls.env["federation.match.club.referee.duty"].create(

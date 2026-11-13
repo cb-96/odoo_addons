@@ -95,6 +95,7 @@ class TestRegistrationUsesSchedule(TransactionCase):
                 "code": "SRS2026",
                 "date_start": "2026-01-01",
                 "date_end": "2026-12-31",
+                "team_registration_fee_enabled": True,
             }
         )
         # Make sure the season_registration fee type exists
@@ -156,6 +157,7 @@ class TestRegistrationUsesSchedule(TransactionCase):
                 "code": "FS2026",
                 "date_start": "2026-01-01",
                 "date_end": "2026-12-31",
+                "team_registration_fee_enabled": True,
             }
         )
         registration = self.env["federation.season.registration"].create(

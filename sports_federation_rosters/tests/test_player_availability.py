@@ -4,6 +4,10 @@ from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 @tagged("post_install", "-at_install", "sf_player_availability")
 class TestPlayerAvailability(TransactionCase):
@@ -47,8 +51,9 @@ class TestPlayerAvailability(TransactionCase):
             }
         )
         for player in cls.with_email | cls.without_email:
-            cls.env["federation.team.roster.line"].create(
-                {"roster_id": roster.id, "player_id": player.id}
+            create_registered_roster_lines(
+                cls.env["federation.team.roster.line"],
+                {"roster_id": roster.id, "player_id": player.id},
             )
         competition = cls.env["federation.competition"].create(
             {"name": "Availability Competition", "competition_type": "league"}

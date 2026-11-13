@@ -1,6 +1,10 @@
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestRosters(TransactionCase):
 
@@ -95,14 +99,16 @@ class TestRosters(TransactionCase):
         with self.assertRaisesRegex(
             ValidationError, "verified parental approval"
         ), self.cr.savepoint():
-            self.env["federation.team.roster.line"].create(
-                {"roster_id": roster.id, "player_id": minor.id}
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
+                {"roster_id": roster.id, "player_id": minor.id},
             )
 
         approval.action_verify()
 
-        line = self.env["federation.team.roster.line"].create(
-            {"roster_id": roster.id, "player_id": minor.id}
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster.id, "player_id": minor.id},
         )
         self.assertTrue(line.eligible)
 
@@ -131,8 +137,9 @@ class TestRosters(TransactionCase):
             }
         )
 
-        line = self.env["federation.team.roster.line"].create(
-            {"roster_id": roster.id, "player_id": minor.id}
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster.id, "player_id": minor.id},
         )
 
         self.assertTrue(line.eligible)
@@ -237,22 +244,24 @@ class TestRosters(TransactionCase):
         )
 
         # Create first line
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
                 "date_from": "2024-01-01",
-            }
+            },
         )
 
         # Try to create duplicate - should fail
         with self.assertRaises(Exception):
-            self.env["federation.team.roster.line"].create(
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": self.player1.id,
                     "date_from": "2024-01-01",
-                }
+                },
             )
 
     def test_single_active_captain_constraint(self):
@@ -266,24 +275,26 @@ class TestRosters(TransactionCase):
         )
 
         # Create first captain
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
                 "is_captain": True,
                 "status": "active",
-            }
+            },
         )
 
         # Try to create second captain - should fail
         with self.assertRaises(ValidationError):
-            self.env["federation.team.roster.line"].create(
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": self.player2.id,
                     "is_captain": True,
                     "status": "active",
-                }
+                },
             )
 
     def test_roster_line_date_validation(self):
@@ -298,13 +309,14 @@ class TestRosters(TransactionCase):
 
         # Test invalid dates
         with self.assertRaises(ValidationError):
-            self.env["federation.team.roster.line"].create(
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": self.player1.id,
                     "date_from": "2024-12-31",
                     "date_to": "2024-01-01",
-                }
+                },
             )
 
     def test_roster_line_rejects_gender_mismatch(self):
@@ -333,11 +345,12 @@ class TestRosters(TransactionCase):
         )
 
         with self.assertRaises(ValidationError):
-            self.env["federation.team.roster.line"].create(
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": male_player.id,
-                }
+                },
             )
 
     def test_roster_activation_blocks_lines_with_invalid_season_license(self):
@@ -364,6 +377,8 @@ class TestRosters(TransactionCase):
                 "rule_set_id": rule_set.id,
             }
         )
+        # A licence is a club season registration: the player plays for the club.
+        self.player1.club_id = self.club
         license_record = self.env["federation.player.license"].create(
             {
                 "name": "LIC-ROSTER-1",
@@ -375,12 +390,13 @@ class TestRosters(TransactionCase):
                 "state": "active",
             }
         )
-        line = self.env["federation.team.roster.line"].create(
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
                 "license_id": license_record.id,
-            }
+            },
         )
 
         roster.action_activate()
@@ -403,11 +419,12 @@ class TestRosters(TransactionCase):
                 "season_id": self.season.id,
             }
         )
-        line = self.env["federation.team.roster.line"].create(
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
-            }
+            },
         )
         roster.action_activate()
         match = (
@@ -473,11 +490,12 @@ class TestRosters(TransactionCase):
                 "season_id": self.season.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
-            }
+            },
         )
         roster.action_activate()
         roster.action_close()
@@ -503,11 +521,12 @@ class TestRosters(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster_a.id,
                 "player_id": self.player1.id,
-            }
+            },
         )
         roster_a.action_activate()
         self.assertEqual(roster_a.status, "active")
@@ -519,11 +538,12 @@ class TestRosters(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster_b.id,
                 "player_id": self.player2.id,
-            }
+            },
         )
         with self.assertRaises(ValidationError):
             roster_b.action_activate()
@@ -536,11 +556,12 @@ class TestRosters(TransactionCase):
                 "season_id": self.season.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster_a.id,
                 "player_id": self.player1.id,
-            }
+            },
         )
         roster_a.action_activate()
 
@@ -550,11 +571,12 @@ class TestRosters(TransactionCase):
                 "season_id": self.season.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster_b.id,
                 "player_id": self.player2.id,
-            }
+            },
         )
         with self.assertRaises(ValidationError):
             roster_b.action_activate()
@@ -574,8 +596,9 @@ class TestRosters(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": roster_a.id, "player_id": self.player1.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster_a.id, "player_id": self.player1.id},
         )
         roster_a.action_activate()
 
@@ -586,8 +609,9 @@ class TestRosters(TransactionCase):
                 "competition_id": other_competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": roster_b.id, "player_id": self.player2.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster_b.id, "player_id": self.player2.id},
         )
         roster_b.action_activate()  # must NOT raise
         self.assertEqual(roster_b.status, "active")
@@ -601,8 +625,9 @@ class TestRosters(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": roster_a.id, "player_id": self.player1.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster_a.id, "player_id": self.player1.id},
         )
         roster_a.action_activate()
         roster_a.action_close()
@@ -614,8 +639,9 @@ class TestRosters(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": roster_b.id, "player_id": self.player2.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster_b.id, "player_id": self.player2.id},
         )
         roster_b.action_activate()  # must NOT raise
         self.assertEqual(roster_b.status, "active")
@@ -629,8 +655,9 @@ class TestRosters(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": roster_a.id, "player_id": self.player1.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster_a.id, "player_id": self.player1.id},
         )
         roster_a.action_activate()
         roster_a.action_close()
@@ -642,8 +669,9 @@ class TestRosters(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": roster_b.id, "player_id": self.player2.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster_b.id, "player_id": self.player2.id},
         )
         roster_b.action_activate()
 

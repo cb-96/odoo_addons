@@ -10,6 +10,10 @@ from odoo.addons.sports_federation_base.tests.route_inventory import (
 )
 from odoo.tests.common import HttpCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 def _extract_csrf_token(response_text):
     match = re.search(
@@ -437,11 +441,12 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "season_registration_id": workspace_registration.id,
                 }
             )
-            roster_line = env["federation.team.roster.line"].create(
+            roster_line = create_registered_roster_lines(
+                env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": player.id,
-                }
+                },
             )
             roster.action_activate()
 
@@ -516,11 +521,12 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "season_id": self.open_season.id,
                 }
             )
-            foreign_line = env["federation.team.roster.line"].create(
+            foreign_line = create_registered_roster_lines(
+                env["federation.team.roster.line"],
                 {
                     "roster_id": foreign_roster.id,
                     "player_id": foreign_player.id,
-                }
+                },
             )
             cr.commit()
 

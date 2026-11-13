@@ -51,6 +51,10 @@ class TestClubInvoicePortal(TransactionCase):
         )
 
     def _invoiced_charge(self, club, post=True):
+        # One charge per source record: a fee is charged once per source.
+        source = self.env["res.partner"].create(
+            {"name": "Invoice source %s" % club.code}
+        )
         event = self.env["federation.finance.event"].create(
             {
                 "name": "Season registration %s" % club.code,
@@ -59,7 +63,7 @@ class TestClubInvoicePortal(TransactionCase):
                 "amount": 50.0,
                 "currency_id": self.env.company.currency_id.id,
                 "source_model": "res.partner",
-                "source_res_id": self.payer.id,
+                "source_res_id": source.id,
                 "partner_id": self.payer.id,
                 "charge_owner": "club",
                 "club_id": club.id,

@@ -189,23 +189,17 @@ class TestReleaseConfidenceResultPolicy(TransactionCase):
         match_count = self.env["federation.match"].search_count(
             [("tournament_id", "=", self.tournament.id)]
         )
+        # Outbound email goes through the mail queue: a retry requeues the
+        # message (no operational job, no SMTP in the business action) and the
+        # log only becomes "sent" once the mail transport reports it.
         notification.action_queue_retry()
-        job = self.env["federation.operation.job"].search(
-            [
-                ("source_model", "=", notification._name),
-                ("source_res_id", "=", notification.id),
-            ],
-            limit=1,
-        )
-        self.assertEqual(job.state, "pending")
-
-        with patch.object(type(template), "send_mail", return_value=1):
-            self.assertTrue(job._execute())
-
         notification.invalidate_recordset()
-        job.invalidate_recordset()
+        self.assertEqual(notification.state, "pending")
+        self.assertTrue(notification.mail_id)
+        self.assertEqual(notification.mail_id.state, "outgoing")
+        notification.mail_id.write({"state": "sent"})
+        notification._reconcile_mail()
         self.assertEqual(notification.state, "sent")
-        self.assertEqual(job.state, "done")
         self.assertEqual(match.result_state, "approved")
         self.assertEqual(
             self.env["federation.match"].search_count(

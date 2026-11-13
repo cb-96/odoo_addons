@@ -114,7 +114,7 @@ class TestPersonalScope(TransactionCase):
                 "code": "PMS26",
                 "date_start": "2026-01-01",
                 "date_end": "2026-12-31",
-                "state": "closed",
+                "state": "open",
             }
         )
         next_season = self.env["federation.season"].create(
@@ -135,7 +135,10 @@ class TestPersonalScope(TransactionCase):
                 "review_note": "Reviewed fixture membership",
             }
         )
+        # Memberships are activated while their season is open; the season
+        # then closes before the member renews for the next one.
         membership.action_activate()
+        previous_season.action_close()
 
         service_membership = membership.with_user(self.portal)
         renewal_id = service_membership._renew(next_season.id)

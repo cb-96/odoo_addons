@@ -40,13 +40,17 @@ class PublicationReplay(models.AbstractModel):
             "schedule_approver",
             "competition_director",
         )
+        # The role check above authorizes the publication. Planners do not
+        # need Calendar Planner rights to see the game day being published, so
+        # read it elevated, like the base publish command does.
+        matchday = schedule.sudo().matchday_id
         self.env.cr.execute(
             "SELECT id FROM federation_matchday WHERE id = %s FOR UPDATE",
-            [schedule.matchday_id.id],
+            [matchday.id],
         )
         schedule.invalidate_recordset()
-        schedule.matchday_id.invalidate_recordset()
-        live = schedule.matchday_id.current_publication_id
+        matchday.invalidate_recordset()
+        live = matchday.current_publication_id
         if (
             live
             and live.state == "live"

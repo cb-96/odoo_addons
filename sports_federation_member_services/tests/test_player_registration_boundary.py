@@ -60,6 +60,10 @@ class TestPlayerMembershipBoundary(TransactionCase):
         self.assertEqual(self.license.membership_status, "not_required")
         self.assertFalse(self.player.person_id)
 
+    def _link_person(self):
+        """Fixture shortcut for the reviewed identity link (a lifecycle command)."""
+        command(self.player).write({"person_id": self.person.id})
+
     def test_required_identity_blocks_approval_atomically(self):
         self.season.player_membership_required = True
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
@@ -67,14 +71,14 @@ class TestPlayerMembershipBoundary(TransactionCase):
         self.assertEqual(self.license.state, "draft")
 
     def test_wrong_role_does_not_satisfy_player_membership(self):
-        self.player.person_id = self.person
+        self._link_person()
         self.season.player_membership_required = True
         self.membership(role="coach")
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             self.registration.action_confirm()
 
     def test_active_membership_allows_registration_and_revocation_blocks(self):
-        self.player.person_id = self.person
+        self._link_person()
         self.season.player_membership_required = True
         membership = self.membership()
         self.registration.action_confirm()
@@ -103,7 +107,7 @@ class TestPlayerMembershipBoundary(TransactionCase):
         )
 
     def test_wrong_club_membership_blocks(self):
-        self.player.person_id = self.person
+        self._link_person()
         self.season.player_membership_required = True
         other = self.env["federation.club"].create({"name": "Other Membership Club"})
         self.membership(club_id=other.id)
@@ -111,7 +115,7 @@ class TestPlayerMembershipBoundary(TransactionCase):
             self.registration.action_confirm()
 
     def test_membership_review_action_has_exact_scope(self):
-        self.player.person_id = self.person
+        self._link_person()
         action = self.license.action_review_membership()
         self.assertEqual(action["context"]["default_person_id"], self.person.id)
         self.assertEqual(action["context"]["default_role"], "player")
@@ -120,7 +124,7 @@ class TestPlayerMembershipBoundary(TransactionCase):
         )
 
     def test_wrong_season_membership_blocks(self):
-        self.player.person_id = self.person
+        self._link_person()
         self.season.player_membership_required = True
         other = self.env["federation.season"].create(
             {
@@ -135,7 +139,7 @@ class TestPlayerMembershipBoundary(TransactionCase):
             self.registration.action_confirm()
 
     def test_membership_alone_does_not_approve_player(self):
-        self.player.person_id = self.person
+        self._link_person()
         self.season.player_membership_required = True
         self.membership()
         self.assertEqual(self.license.state, "draft")

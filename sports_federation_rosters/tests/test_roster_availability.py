@@ -1,6 +1,10 @@
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 @tagged("post_install", "-at_install", "sf_roster_availability")
 class TestRosterAvailability(TransactionCase):
@@ -71,8 +75,9 @@ class TestRosterAvailability(TransactionCase):
                 "club_id": cls.club.id,
             }
         )
-        cls.env["federation.team.roster.line"].create(
-            {"roster_id": cls.second_roster.id, "player_id": cls.player.id}
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
+            {"roster_id": cls.second_roster.id, "player_id": cls.player.id},
         )
 
     def test_player_on_the_roster_is_unavailable_there(self):
@@ -82,14 +87,16 @@ class TestRosterAvailability(TransactionCase):
     def test_same_division_club_team_is_unavailable(self):
         self.assertIn(self.player, self.first_roster.unavailable_player_ids)
         with self.assertRaises(ValidationError):
-            self.env["federation.team.roster.line"].create(
-                {"roster_id": self.first_roster.id, "player_id": self.player.id}
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
+                {"roster_id": self.first_roster.id, "player_id": self.player.id},
             )
 
     def test_other_division_is_not_affected(self):
         self.assertNotIn(self.player, self.other_roster.unavailable_player_ids)
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": self.other_roster.id, "player_id": self.player.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": self.other_roster.id, "player_id": self.player.id},
         )
 
     def test_withdrawn_participation_does_not_count(self):

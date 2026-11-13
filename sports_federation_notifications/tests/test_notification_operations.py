@@ -105,12 +105,20 @@ class TestNotificationOperations(TransactionCase):
             target_model="res.users",
             target_res_id=self.other.id,
         )
-        target = self.env["res.users"]
-        with patch.object(
-            type(target), "check_access", side_effect=AccessError("denied")
-        ):
-            log.with_user(self.user)._compute_target_display_name()
-            self.assertFalse(log.with_user(self.user).target_display_name)
+        Users = type(self.env["res.users"])
+        original = Users.check_access
+        other_id = self.other.id
+
+        def deny_target(records, operation):
+            # Deny only the notification target, not the ORM's own user checks.
+            if other_id in records.ids:
+                raise AccessError("denied")
+            return original(records, operation)
+
+        as_user = log.with_user(self.user)
+        with patch.object(Users, "check_access", deny_target):
+            as_user.invalidate_recordset(["target_display_name"])
+            self.assertFalse(as_user.target_display_name)
 
     def test_log_create_failure_preserves_business_write(self):
         self.club.name = "Decision preserved"

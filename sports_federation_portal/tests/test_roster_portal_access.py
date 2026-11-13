@@ -1,6 +1,10 @@
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestRosterPortalAccess(TransactionCase):
     @classmethod
@@ -204,17 +208,19 @@ class TestRosterPortalAccess(TransactionCase):
                 "season_registration_id": cls.registration_b.id,
             }
         )
-        cls.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
             {
                 "roster_id": cls.roster_a.id,
                 "player_id": cls.player_a.id,
-            }
+            },
         )
-        cls.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
             {
                 "roster_id": cls.roster_b.id,
                 "player_id": cls.player_b.id,
-            }
+            },
         )
         cls.roster_a.action_activate()
         cls.roster_b.action_activate()

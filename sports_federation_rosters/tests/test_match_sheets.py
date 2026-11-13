@@ -1,6 +1,10 @@
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestMatchSheets(TransactionCase):
 
@@ -21,19 +25,21 @@ class TestMatchSheets(TransactionCase):
                 "rule_set_id": rule_set.id,
             }
         )
-        line1 = self.env["federation.team.roster.line"].create(
+        line1 = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
-            }
+            },
         )
         line2 = False
         if min_players > 1:
-            line2 = self.env["federation.team.roster.line"].create(
+            line2 = create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": self.player2.id,
-                }
+                },
             )
         roster.action_activate()
         return roster, line1, line2
@@ -266,11 +272,12 @@ class TestMatchSheets(TransactionCase):
                 "rule_set_id": rule_set.id,
             }
         )
-        roster_line = self.env["federation.team.roster.line"].create(
+        roster_line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
-            }
+            },
         )
         roster.action_activate()
         self.player1.write({"state": "suspended"})
@@ -481,11 +488,12 @@ class TestMatchSheets(TransactionCase):
                 "gender": "male",
             }
         )
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": player.id,
-            }
+            },
         )
         roster.action_activate()
 

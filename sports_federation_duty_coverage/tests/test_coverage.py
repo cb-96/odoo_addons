@@ -13,6 +13,10 @@ from odoo.tests.common import TransactionCase, tagged
 
 from .common import CoverageFixture
 
+from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+    with_published_planning_token,
+)
+
 
 @tagged("post_install", "-at_install", "sf_release_confidence", "sf_duty_coverage")
 class TestCoverage(CoverageFixture, TransactionCase):
@@ -220,7 +224,9 @@ class TestCoverage(CoverageFixture, TransactionCase):
 
     def test_officiating_overlap_visible(self):
         """A second overlapping duty invalidates current eligibility."""
-        self.other_match.date_scheduled = self.slot.start_datetime
+        with_published_planning_token(self.other_match).date_scheduled = (
+            self.slot.start_datetime
+        )
         overlapping = self.env["federation.match.referee"].create(
             {
                 "match_id": self.other_match.id,
@@ -238,7 +244,7 @@ class TestCoverage(CoverageFixture, TransactionCase):
         self._accept()
         original_signature = self.assignment.accepted_signature
         original_timestamp = self.assignment.accepted_on
-        self.match.date_scheduled = "2026-06-15 19:00:00"
+        with_published_planning_token(self.match).date_scheduled = "2026-06-15 19:00:00"
         snapshot = self._snapshot()
         self.assertNotEqual(original_signature, self.assignment._coverage_signature())
         self.assertFalse(self.assignment.coverage_accepted)
@@ -260,7 +266,7 @@ class TestCoverage(CoverageFixture, TransactionCase):
             reason="Unavailable",
         )
         before_ids = self._assignments().ids
-        self.match.date_scheduled = "2026-06-15 19:00:00"
+        with_published_planning_token(self.match).date_scheduled = "2026-06-15 19:00:00"
         self._assert_rejected(ValidationError, wizard.action_apply)
         self.assertEqual(self._assignments().ids, before_ids)
         self.assertEqual(self.assignment.state, "draft")
@@ -365,7 +371,9 @@ class TestCoverage(CoverageFixture, TransactionCase):
 
     def test_escalation_idempotent_and_cleanup(self):
         """One overdue activity is removed on readiness and presence recovery."""
-        self.match.write({"date_scheduled": "2026-06-17 18:00:00"})
+        with_published_planning_token(self.match).write(
+            {"date_scheduled": "2026-06-17 18:00:00"}
+        )
         self.slot.write(
             {
                 "start_datetime": "2026-06-17 18:00:00",

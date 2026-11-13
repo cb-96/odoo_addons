@@ -15,12 +15,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 #, python-format
 msgid "%(club)s does not use player availability."
 msgstr "%(club)s n'utilise pas la disponibilité des joueurs."
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 #, python-format
 msgid "%(team)s plays on %(date)s at %(venue)s. Let your team know whether you can play."
@@ -43,22 +45,26 @@ msgid "Available"
 msgstr "Disponible"
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 #, python-format
 msgid "Can you play on %(date)s?"
 msgstr "Pouvez-vous jouer le %(date)s ?"
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 msgid "Choose Available, Maybe or Not available."
 msgstr "Choisissez Disponible, Peut-être ou Indisponible."
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 msgid "Give your answer"
 msgstr "Donner votre réponse"
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 #, python-format
 msgid "Hello %s,"
@@ -83,17 +89,20 @@ msgid "Not available"
 msgstr "Indisponible"
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 #, python-format
 msgid "Reminder: can you play on %(date)s?"
 msgstr "Rappel : pouvez-vous jouer le %(date)s ?"
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 msgid "This game day has already been played."
 msgstr "Cette journée a déjà été jouée."
 
 #. module: sports_federation_rosters
+#. odoo-python
 #: code:addons/sports_federation_rosters/models/player_availability.py:0
 msgid "You can change your answer with the same link until the game day."
 msgstr "Vous pouvez modifier votre réponse avec le même lien jusqu'à la journée."

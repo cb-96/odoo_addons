@@ -15,6 +15,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: sports_federation_live_workspace
+#. odoo-python
 #: code:addons/sports_federation_live_workspace/models/gameday_print.py:0
 #, python-format
 msgid "%(day)s has no published matches yet. Publish its schedule before printing."
@@ -71,6 +72,7 @@ msgid "Time"
 msgstr "Tijd"
 
 #. module: sports_federation_live_workspace
+#. odoo-python
 #: code:addons/sports_federation_live_workspace/models/gameday_print.py:0
 msgid "To be decided"
 msgstr "Nog te bepalen"

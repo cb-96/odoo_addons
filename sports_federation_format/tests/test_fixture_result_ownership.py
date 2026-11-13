@@ -2,6 +2,10 @@ from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_registration.models.participant_handoff import (
+    governed,
+)
+
 
 @tagged("post_install", "-at_install", "sf_fixture_result_ownership")
 class TestFixtureResultOwnership(TransactionCase):
@@ -64,7 +68,7 @@ class TestFixtureResultOwnership(TransactionCase):
                 "state": "finalized",
             }
         )
-        cls.env["federation.participant.set.line"].create(
+        governed(cls.env["federation.participant.set.line"]).create(
             [
                 {
                     "participant_set_id": participant_set.id,

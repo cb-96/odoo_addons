@@ -1,6 +1,10 @@
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 @tagged("post_install", "-at_install", "sf_club_rank")
 class TestClubRank(TransactionCase):
@@ -56,11 +60,11 @@ class TestClubRank(TransactionCase):
             {"first_name": "Bart", "last_name": "Second", "gender": "male"}
         )
         Line = cls.env["federation.team.roster.line"]
-        cls.a_line = Line.create(
-            {"roster_id": cls.roster_a.id, "player_id": cls.a_player.id}
+        cls.a_line = create_registered_roster_lines(
+            Line, {"roster_id": cls.roster_a.id, "player_id": cls.a_player.id}
         )
-        cls.b_line = Line.create(
-            {"roster_id": cls.roster_b.id, "player_id": cls.b_player.id}
+        cls.b_line = create_registered_roster_lines(
+            Line, {"roster_id": cls.roster_b.id, "player_id": cls.b_player.id}
         )
 
     def _played_match(self, kickoff, roster, line, crossed_out=False):
@@ -111,8 +115,9 @@ class TestClubRank(TransactionCase):
         self.assertEqual(self.rival.club_rank, 0)
 
     def test_lower_team_player_can_play_up(self):
-        line = self.env["federation.team.roster.line"].create(
-            {"roster_id": self.roster_a.id, "player_id": self.b_player.id}
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": self.roster_a.id, "player_id": self.b_player.id},
         )
         self.assertIn("Rank Club B", line.club_rank_note)
         self.assertNotIn(self.b_player, self.roster_a.club_rank_blocked_player_ids)
@@ -120,13 +125,15 @@ class TestClubRank(TransactionCase):
     def test_higher_team_player_cannot_play_down(self):
         self.assertIn(self.a_player, self.roster_b.club_rank_blocked_player_ids)
         with self.assertRaises(ValidationError):
-            self.env["federation.team.roster.line"].create(
-                {"roster_id": self.roster_b.id, "player_id": self.a_player.id}
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
+                {"roster_id": self.roster_b.id, "player_id": self.a_player.id},
             )
 
     def test_two_matches_promote_the_player(self):
-        up_line = self.env["federation.team.roster.line"].create(
-            {"roster_id": self.roster_a.id, "player_id": self.b_player.id}
+        up_line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": self.roster_a.id, "player_id": self.b_player.id},
         )
         self._played_match("2026-10-03 10:00:00", self.roster_a, up_line)
         self.assertFalse(self._promotions(self.b_player))
@@ -142,8 +149,9 @@ class TestClubRank(TransactionCase):
         self.assertFalse(up_line.club_rank_note)
 
     def test_crossed_out_matches_do_not_count(self):
-        up_line = self.env["federation.team.roster.line"].create(
-            {"roster_id": self.roster_a.id, "player_id": self.b_player.id}
+        up_line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": self.roster_a.id, "player_id": self.b_player.id},
         )
         self._played_match("2026-10-03 10:00:00", self.roster_a, up_line)
         self._played_match(
@@ -152,8 +160,9 @@ class TestClubRank(TransactionCase):
         self.assertFalse(self._promotions(self.b_player))
 
     def test_warning_before_the_deciding_match(self):
-        up_line = self.env["federation.team.roster.line"].create(
-            {"roster_id": self.roster_a.id, "player_id": self.b_player.id}
+        up_line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": self.roster_a.id, "player_id": self.b_player.id},
         )
         service = self.env["federation.club.rank.service"]
         self.assertEqual(

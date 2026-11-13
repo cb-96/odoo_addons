@@ -4,6 +4,10 @@ from unittest.mock import patch
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 @tagged("sf_release_confidence")
 class TestFederationOperationTasks(TransactionCase):
@@ -240,8 +244,9 @@ class TestFederationOperationTasks(TransactionCase):
             }
         )
         approval.action_verify()
-        line = self.env["federation.team.roster.line"].create(
-            {"roster_id": roster.id, "player_id": player.id}
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster.id, "player_id": player.id},
         )
         approval.revocation_reason = "Consent withdrawn"
         approval.action_revoke()
@@ -306,8 +311,9 @@ class TestFederationOperationTasks(TransactionCase):
                     "competition_id": self.competition.id,
                 }
             )
-            self.env["federation.team.roster.line"].create(
-                {"roster_id": roster.id, "player_id": player.id}
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
+                {"roster_id": roster.id, "player_id": player.id},
             )
         approval.revocation_reason = "Consent withdrawn"
         approval.action_revoke()

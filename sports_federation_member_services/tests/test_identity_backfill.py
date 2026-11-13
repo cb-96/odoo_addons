@@ -60,12 +60,18 @@ class TestIdentityBackfill(TransactionCase):
         players.invalidate_recordset(["family_match_key"])
 
     def _lookalikes(self, tag):
+        """Two legacy players that are the same person written differently.
+
+        Exact name and birth date duplicates are refused by the database, so
+        legacy lookalikes differ in case or spacing, which the match key
+        normalizes.
+        """
         first = self._player("Legacy%s" % tag, "Original")
         second = self._player("Other%s" % tag, "Person")
         self.env.flush_all()
         self.env.cr.execute(
             "UPDATE federation_player SET first_name=%s, last_name=%s WHERE id=%s",
-            [first.first_name, first.last_name, second.id],
+            [first.first_name.upper(), first.last_name.upper(), second.id],
         )
         second.invalidate_recordset(["first_name", "last_name"])
         return first, second
@@ -194,7 +200,7 @@ class TestIdentityBackfill(TransactionCase):
         self.env.flush_all()
         self.env.cr.execute(
             "UPDATE federation_player SET first_name=%s, last_name=%s, family_match_key=NULL WHERE id=%s",
-            [first.first_name, first.last_name, third.id],
+            [" %s " % first.first_name.lower(), first.last_name, third.id],
         )
         third.invalidate_recordset()
         self.Candidate.run_backfill()

@@ -15,54 +15,63 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "%(approved)s of %(total)s players under %(age)s have a valid parental approval; %(action)s need action and %(pending)s await review."
 msgstr "%(approved)s van %(total)s spelers jonger dan %(age)s hebben een geldige ouderlijke toestemming; %(action)s vragen actie en %(pending)s wachten op nazicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 #, python-format
 msgid "%(copied)s player(s) copied; %(skipped)s skipped for review."
 msgstr "%(copied)s speler(s) gekopieerd; %(skipped)s overgeslagen voor nazicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/roster_bulk.py:0
 #, python-format
 msgid "%(count)s player(s) added."
 msgstr "%(count)s speler(s) toegevoegd."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 #, python-format
 msgid "%(count)s upcoming game day(s). Create the roster first, then choose the players for each game day."
 msgstr "%(count)s komende speeldag(en). Maak eerst de selectie aan en kies dan de spelers voor elke speeldag."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 #, python-format
 msgid "%(open)s of %(total)s upcoming game day(s) still need a line-up."
 msgstr "%(open)s van %(total)s komende speeldag(en) hebben nog een opstelling nodig."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 #, python-format
 msgid "%(record)s: %(error)s"
 msgstr "%(record)s: %(error)s"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 #, python-format
 msgid "%(team)s - %(season)s Roster"
 msgstr "%(team)s - selectie %(season)s"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "%s expire within 30 days."
 msgstr "%s verlopen binnen 30 dagen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/player_availability.py:0
 #, python-format
 msgid "%s player(s) received an email."
@@ -685,6 +694,7 @@ msgid "<strong>Your club does not ask players for their availability here.</stro
 msgstr "<strong>Je club vraagt hier niet naar de beschikbaarheid van spelers.</strong>"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_club_representative.py:0
 msgid "A club representative without a federation function must use portal access and cannot be an internal Odoo user."
 msgstr "Een clubvertegenwoordiger zonder functie bij de federatie gebruikt portaaltoegang en kan geen interne Odoo-gebruiker zijn."
@@ -695,21 +705,25 @@ msgid "A decline requires a short reason."
 msgstr "Een weigering vraagt een korte reden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "A parental approval for this player is already awaiting federation review."
 msgstr "Er wacht al een ouderlijke toestemming voor deze speler op nazicht door de federatie."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "A player under 16 in a senior team needs a verified approval covering participation."
 msgstr "Een speler jonger dan 16 in een seniorenploeg heeft een gecontroleerde toestemming nodig die de deelname dekt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 msgid "A reason is required."
 msgstr "Een reden is verplicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "A roster can only be created after the season registration has been confirmed."
 msgstr "Een selectie kan pas aangemaakt worden nadat de seizoensinschrijving bevestigd is."
@@ -720,16 +734,19 @@ msgid "A roster is your team's player pool for the season. Open a roster to see 
 msgstr "Een selectie is de spelerskern van je ploeg voor het seizoen. Open een selectie om de speeldagen te zien en voor elke speeldag de opstelling te kiezen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Accept or decline assignment"
 msgstr "Aanstelling aanvaarden of weigeren"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Accept or decline assignments before their confirmation deadline."
 msgstr "Aanvaard of weiger aanstellingen vóór hun bevestigingstermijn."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Acceptance is recorded separately from eligibility, attendance and completion."
 msgstr "Aanvaarding wordt apart bijgehouden van speelgerechtigdheid, aanwezigheid en afronding."
@@ -740,6 +757,7 @@ msgid "Access Denied"
 msgstr "Geen toegang"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/competition_portal.py:0
 msgid "Access denied."
 msgstr "Geen toegang."
@@ -756,11 +774,13 @@ msgid "Action"
 msgstr "Actie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/competition_portal.py:0
 msgid "Action failed."
 msgstr "Actie mislukt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 msgid "Action reassigned."
 msgstr "Actie opnieuw toegewezen."
@@ -799,11 +819,13 @@ msgid "Add players"
 msgstr "Spelers toevoegen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Add players before consent requirements can be checked."
 msgstr "Voeg spelers toe voor de toestemmingsvereisten gecontroleerd kunnen worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Add players before eligibility can be checked."
 msgstr "Voeg spelers toe voor de speelgerechtigdheid gecontroleerd kan worden."
@@ -819,6 +841,7 @@ msgid "Add selected players"
 msgstr "Gekozen spelers toevoegen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Add the birth date so the age rule can be checked."
 msgstr "Vul de geboortedatum in zodat de leeftijdsregel gecontroleerd kan worden."
@@ -870,16 +893,19 @@ msgid "All manager work:"
 msgstr "Al het beheerderswerk:"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "All my assignments"
 msgstr "Al mijn aanstellingen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "All results to review"
 msgstr "Alle uitslagen om na te kijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "All upcoming line-ups are submitted and approved."
 msgstr "Alle komende opstellingen zijn ingediend en goedgekeurd."
@@ -890,6 +916,7 @@ msgid "Answer"
 msgstr "Antwoord"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/player_availability.py:0
 msgid "Answer saved."
 msgstr "Antwoord opgeslagen."
@@ -920,47 +947,56 @@ msgid "Approval date"
 msgstr "Datum van toestemming"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Approval date is required."
 msgstr "De datum van toestemming is verplicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Approval expired"
 msgstr "Toestemming verlopen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Approval needed"
 msgstr "Toestemming nodig"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Approval revoked"
 msgstr "Toestemming ingetrokken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Approve or return the line-up"
 msgstr "De opstelling goedkeuren of terugsturen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Approve result"
 msgstr "Uitslag goedkeuren"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Approve verified result"
 msgstr "Gecontroleerde uitslag goedkeuren"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Approved"
 msgstr "Goedgekeurd"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Approved, expires soon"
 msgstr "Goedgekeurd, verloopt binnenkort"
@@ -1023,16 +1059,19 @@ msgid "Available"
 msgstr "Beschikbaar"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Awaiting an independent registration decision"
 msgstr "Wacht op een onafhankelijke beslissing over de inschrijving"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Awaiting federation review"
 msgstr "Wacht op nazicht door de federatie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Awaiting review"
 msgstr "Wacht op nazicht"
@@ -1099,6 +1138,7 @@ msgid "Birth Date"
 msgstr "Geboortedatum"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Birth date missing"
 msgstr "Geboortedatum ontbreekt"
@@ -1115,11 +1155,13 @@ msgid "blocking"
 msgstr "blokkerend"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/operation_task.py:0
 msgid "Blocking tasks must be resolved in the linked record."
 msgstr "Blokkerende taken moeten in het gekoppelde record opgelost worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/competition_portal.py:0
 msgid "Both scores are 0. Confirm the 0–0 result before saving."
 msgstr "Beide scores zijn 0. Bevestig de uitslag 0–0 voor je opslaat."
@@ -1194,31 +1236,37 @@ msgid "Checks apply to this roster and its upcoming line-ups. They do not replac
 msgstr "Controles gelden voor deze selectie en haar komende opstellingen. Ze vervangen de goedkeuring van de speeldag niet."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/player_availability_portal.py:0
 msgid "Choose a player of this request."
 msgstr "Kies een speler van deze vraag."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
 msgid "Choose a roster before selecting the game-day line-up."
 msgstr "Kies een selectie voor je de opstelling kiest."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 msgid "Choose a valid bulk decision."
 msgstr "Kies een geldige beslissing voor meerdere records."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team.py:0
 msgid "Choose a valid team category."
 msgstr "Kies een geldige categorie voor de ploeg."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team.py:0
 msgid "Choose a valid team gender."
 msgstr "Kies een geldig geslacht voor de ploeg."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/player_availability.py:0
 msgid "Choose Available, Maybe or Not available."
 msgstr "Kies Beschikbaar, Misschien of Niet beschikbaar."
@@ -1239,6 +1287,7 @@ msgid "Close Roster"
 msgstr "Selectie afsluiten"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Closed rosters cannot be edited in the portal."
 msgstr "Afgesloten selecties kunnen niet via het portaal aangepast worden."
@@ -1303,17 +1352,20 @@ msgid "Competition entries waiting for federation review"
 msgstr "Inschrijvingen voor competities die op nazicht door de federatie wachten"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Competition entry for %(team)s"
 msgstr "Inschrijving voor competitie van %(team)s"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Competition organiser"
 msgstr "Organisator van de competitie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Competition planning"
 msgstr "Competitieplanning"
@@ -1336,16 +1388,19 @@ msgid "Competitions"
 msgstr "Competities"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Competitions that still need a setup or scheduling step."
 msgstr "Competities die nog een stap in opzet of planning nodig hebben."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Complete roster readiness"
 msgstr "Selectie klaarmaken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Complete the linked action. Existing approval rules still apply."
 msgstr "Voer de gekoppelde actie uit. De bestaande goedkeuringsregels blijven gelden."
@@ -1376,6 +1431,7 @@ msgid "Confirmation Deadline"
 msgstr "Bevestigingstermijn"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Confirmed registration"
 msgstr "Bevestigde inschrijving"
@@ -1386,6 +1442,7 @@ msgid "Confirmed season registrations that still need a roster."
 msgstr "Bevestigde seizoensinschrijvingen die nog een selectie nodig hebben."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_club_representative.py:0
 msgid "Contact"
 msgstr "Contact"
@@ -1396,6 +1453,7 @@ msgid "Continue"
 msgstr "Verder"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 #, python-format
 msgid "Continue: %s"
@@ -1412,11 +1470,13 @@ msgid "Copy eligible players from"
 msgstr "Speelgerechtigde spelers kopiëren uit"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Correct and submit competition entry"
 msgstr "Inschrijving voor competitie verbeteren en indienen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Correct contested result"
 msgstr "Betwiste uitslag verbeteren"
@@ -1450,6 +1510,7 @@ msgid "Create roster"
 msgstr "Selectie aanmaken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 #, python-format
 msgid "Create roster: %(team)s"
@@ -1466,6 +1527,7 @@ msgid "Create the roster"
 msgstr "De selectie aanmaken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Create the roster from the existing registration."
 msgstr "Maak de selectie aan op basis van de bestaande inschrijving."
@@ -1476,6 +1538,7 @@ msgid "Create the roster, add eligible players and activate it before preparing 
 msgstr "Maak de selectie aan, voeg speelgerechtigde spelers toe en activeer ze voor je een opstelling voorbereidt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 msgid "Create the roster, add eligible players and activate it."
 msgstr "Maak de selectie aan, voeg speelgerechtigde spelers toe en activeer ze."
@@ -1506,6 +1569,7 @@ msgid "Cross out player for this match"
 msgstr "Speler schrappen voor deze wedstrijd"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/gameday_participation.py:0
 msgid "Cross out players until no more than the allowed number play."
 msgstr "Schrap spelers tot er niet meer dan het toegelaten aantal spelen."
@@ -1521,16 +1585,19 @@ msgid "Current official schedule revision"
 msgstr "Huidige officiële kalenderversie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Current roster checks passed; match-day approval remains separate."
 msgstr "De huidige controles van de selectie zijn in orde; de goedkeuring van de speeldag blijft apart."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Current roster-date checks passed."
 msgstr "De huidige controles op datum van de selectie zijn in orde."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Current roster-date parental-consent checks passed or are not required."
 msgstr "De controles op ouderlijke toestemming zijn in orde of niet nodig."
@@ -1602,6 +1669,7 @@ msgid "Decline Assignment"
 msgstr "Aanstelling weigeren"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_club_representative.py:0
 msgid "Delegation must stay within the same club."
 msgstr "Delegatie moet binnen dezelfde club blijven."
@@ -1653,6 +1721,7 @@ msgid "Download submitted document"
 msgstr "Ingediend document downloaden"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Draft"
 msgstr "Ontwerp"
@@ -1718,6 +1787,7 @@ msgid "Email"
 msgstr "E-mail"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/competition_portal.py:0
 msgid "Enter both scores before saving the result."
 msgstr "Vul beide scores in voor je de uitslag opslaat."
@@ -1733,6 +1803,7 @@ msgid "Entered by the club"
 msgstr "Ingevuld door de club"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Entry is %(state)s and needs follow-up."
@@ -1755,12 +1826,14 @@ msgid "Everything your teams need for registration, schedules, match days and re
 msgstr "Alles wat je ploegen nodig hebben voor inschrijving, kalenders, speeldagen en uitslagen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "Expired on %s."
 msgstr "Verlopen op %s."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 #: code:addons/sports_federation_portal/models/operation_task.py:0
 #, python-format
@@ -1768,11 +1841,13 @@ msgid "Federation action digest: %(count)s open item(s)"
 msgstr "Overzicht federatie-acties: %(count)s openstaande actie(s)"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/operation_task.py:0
 msgid "Federation manager access is required."
 msgstr "Toegang als federatiebeheerder is vereist."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Federation registration reviewer"
 msgstr "Controleur van inschrijvingen bij de federatie"
@@ -1783,6 +1858,7 @@ msgid "Federation search"
 msgstr "Zoeken in de federatie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Federation work queue"
 msgstr "Werkbak van de federatie"
@@ -1793,6 +1869,7 @@ msgid "Female"
 msgstr "Vrouw"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Filed with the competition entry."
 msgstr "Toegevoegd aan de inschrijving voor de competitie."
@@ -1804,6 +1881,7 @@ msgid "Filter"
 msgstr "Filteren"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "Finished"
 msgstr "Afgelopen"
@@ -1814,6 +1892,7 @@ msgid "First Name <span class=\"text-danger\">*</span>"
 msgstr "Voornaam <span class=\"text-danger\">*</span>"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_player.py:0
 msgid "First name is required."
 msgstr "Voornaam is verplicht."
@@ -1861,11 +1940,13 @@ msgid "Game-day line-up"
 msgstr "Opstelling van de speeldag"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Game-day line-ups"
 msgstr "Opstellingen per speeldag"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Game-day lineup: %(team)s"
@@ -1937,11 +2018,13 @@ msgid "Include player in the line-up"
 msgstr "Speler opnemen in de opstelling"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Independent review requires another authorised reviewer."
 msgstr "Onafhankelijk nazicht vraagt een andere bevoegde controleur."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Inspect current status"
 msgstr "Huidige status bekijken"
@@ -1973,6 +2056,7 @@ msgid "Last Name <span class=\"text-danger\">*</span>"
 msgstr "Achternaam <span class=\"text-danger\">*</span>"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_player.py:0
 msgid "Last name is required."
 msgstr "Achternaam is verplicht."
@@ -2016,6 +2100,7 @@ msgid "Line-up summary"
 msgstr "Samenvatting opstelling"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "Live"
 msgstr "Live"
@@ -2031,6 +2116,7 @@ msgid "Location"
 msgstr "Locatie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
 msgid "Locked line-ups cannot be updated from the portal."
 msgstr "Vergrendelde opstellingen kunnen niet via het portaal aangepast worden."
@@ -2041,6 +2127,7 @@ msgid "Male"
 msgstr "Man"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Manage document"
 msgstr "Document beheren"
@@ -2088,6 +2175,7 @@ msgid "match(es)"
 msgstr "wedstrijd(en)"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Match-day organiser"
 msgstr "Organisator van de speeldag"
@@ -2126,6 +2214,7 @@ msgid "Maybe"
 msgstr "Misschien"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_player.py:0
 #, python-format
 msgid "Member registration fee for %(player)s at %(club)s"
@@ -2163,6 +2252,7 @@ msgid "My actions"
 msgstr "Mijn acties"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "My official assignments"
 msgstr "Mijn aanstellingen als official"
@@ -2187,16 +2277,19 @@ msgid "Name"
 msgstr "Naam"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Needed before they play in a senior team."
 msgstr "Nodig voor ze in een seniorenploeg spelen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Needed for senior play"
 msgstr "Nodig om bij de senioren te spelen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Needed now"
 msgstr "Nu nodig"
@@ -2254,16 +2347,19 @@ msgid "No email"
 msgstr "Geen e-mail"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "No expiry date."
 msgstr "Geen vervaldatum."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "No federation responsibility assigned"
 msgstr "Geen verantwoordelijkheid bij de federatie toegewezen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "No further result decision"
 msgstr "Geen verdere beslissing over de uitslag"
@@ -2339,6 +2435,7 @@ msgid "No published match days are visible."
 msgstr "Er zijn geen gepubliceerde speeldagen zichtbaar."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "No recorded blocker"
 msgstr "Geen blokkering geregistreerd"
@@ -2404,6 +2501,7 @@ msgid "No upcoming game day"
 msgstr "Geen komende speeldag"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "No upcoming game days are scheduled yet. Line-ups open when a schedule is published."
 msgstr "Er zijn nog geen speeldagen gepland. Opstellingen openen zodra een kalender gepubliceerd is."
@@ -2429,11 +2527,13 @@ msgid "Nominate"
 msgstr "Aanduiden"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Nominate a club official"
 msgstr "Een club-official aanduiden"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Nominate a club official."
 msgstr "Duid een club-official aan."
@@ -2465,6 +2565,7 @@ msgid "Not chosen yet"
 msgstr "Nog niet gekozen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Not on a senior roster, but would need one to play there."
 msgstr "Niet in een seniorenselectie, maar nodig om daar te spelen."
@@ -2476,6 +2577,7 @@ msgid "Not playing"
 msgstr "Speelt niet"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
 msgid "Not required"
@@ -2487,11 +2589,13 @@ msgid "Not selected"
 msgstr "Niet gekozen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Not valid until the federation verifies it."
 msgstr "Pas geldig nadat de federatie het gecontroleerd heeft."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "Not valid until the federation verifies it. On %s."
@@ -2545,6 +2649,7 @@ msgid "of"
 msgstr "van"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Official needed for %(match)s"
@@ -2556,37 +2661,44 @@ msgid "official schedule revision"
 msgstr "officiële kalenderversie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "On %s."
 msgstr "In %s."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "On a senior roster without a valid approval."
 msgstr "In een seniorenselectie zonder geldige toestemming."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
 msgid "Only a draft line-up can be submitted from the portal."
 msgstr "Alleen een ontwerpopstelling kan via het portaal ingediend worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Only draft, returned, rejected, or withdrawn entries can be resubmitted."
 msgstr "Alleen ontwerp-, teruggestuurde, geweigerde of teruggetrokken inschrijvingen kunnen opnieuw ingediend worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_referee.py:0
 msgid "Only newly assigned officiating requests can be confirmed from the portal."
 msgstr "Alleen nieuw toegewezen aanstellingen kunnen via het portaal bevestigd worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_referee.py:0
 msgid "Only newly assigned officiating requests can be declined from the portal."
 msgstr "Alleen nieuw toegewezen aanstellingen kunnen via het portaal geweigerd worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/player_availability_portal.py:0
 msgid "Only representatives of the whole club can change this."
 msgstr "Alleen vertegenwoordigers van de hele club kunnen dit wijzigen."
@@ -2639,11 +2751,13 @@ msgid "Open roster"
 msgstr "Selectie openen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/operation_task.py:0
 msgid "Open the action inbox to review deadlines, blockers, and direct next steps."
 msgstr "Open de werkbak om termijnen, blokkeringen en volgende stappen te bekijken."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Open the competition planner"
 msgstr "De competitieplanner openen"
@@ -2654,11 +2768,13 @@ msgid "Open the linked task and its source through the backend. Current source p
 msgstr "Open de gekoppelde taak en haar bron in de backend. De huidige rechten en onafhankelijke controles blijven gelden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Open the task to continue"
 msgstr "Open de taak om verder te gaan"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Open the work queue"
 msgstr "De werkbak openen"
@@ -2674,6 +2790,7 @@ msgid "Open workspace"
 msgstr "Werkruimte openen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 msgid "Open your work inbox for current owners, deadlines and next steps."
 msgstr "Open je werkbak voor de huidige verantwoordelijken, termijnen en volgende stappen."
@@ -2722,6 +2839,7 @@ msgid "Overdue"
 msgstr "Te laat"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Owner not yet assigned"
 msgstr "Nog geen verantwoordelijke toegewezen"
@@ -2732,6 +2850,7 @@ msgid "Parent or guardian name"
 msgstr "Naam van ouder of voogd"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Parent or guardian name is required."
 msgstr "De naam van de ouder of voogd is verplicht."
@@ -2743,11 +2862,13 @@ msgid "Parental approval"
 msgstr "Ouderlijke toestemming"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Parental consent"
 msgstr "Ouderlijke toestemming"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Parental consent: %(player)s"
@@ -2809,16 +2930,19 @@ msgid "Player availability"
 msgstr "Beschikbaarheid spelers"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/player_availability.py:0
 msgid "Player availability is off."
 msgstr "Beschikbaarheid spelers staat uit."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/player_availability.py:0
 msgid "Player availability is on. Ask your players from Player availability."
 msgstr "Beschikbaarheid spelers staat aan. Vraag je spelers via Beschikbaarheid spelers."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Player eligibility and licences"
 msgstr "Speelgerechtigdheid en licenties van spelers"
@@ -2855,6 +2979,7 @@ msgid "Players can be crossed out after the line-up is submitted, until the matc
 msgstr "Spelers kunnen geschrapt worden nadat de opstelling ingediend is, tot de wedstrijd afgelopen is."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Players can only be copied into a draft roster."
 msgstr "Spelers kunnen alleen naar een ontwerpselectie gekopieerd worden."
@@ -2875,6 +3000,7 @@ msgid "Players for this match"
 msgstr "Spelers voor deze wedstrijd"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/gameday_participation.py:0
 msgid "Players for this match saved."
 msgstr "Spelers voor deze wedstrijd opgeslagen."
@@ -2912,6 +3038,7 @@ msgid "playing"
 msgstr "spelen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "Plays in %s. Upload a signed approval."
@@ -2923,16 +3050,19 @@ msgid "plays on"
 msgstr "speelt op"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_referee.py:0
 msgid "Please provide a short reason before declining the assignment."
 msgstr "Geef een korte reden voor je de aanstelling weigert."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Portal roster editing only supports active roster lines. Remove a player from the roster if they should no longer be available."
 msgstr "In het portaal kan je alleen actieve spelers in de selectie beheren. Verwijder een speler uit de selectie als die niet meer beschikbaar is."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Prepare game-day lineup"
 msgstr "Opstelling van de speeldag voorbereiden"
@@ -2962,6 +3092,7 @@ msgid "Prepare your team"
 msgstr "Je ploeg voorbereiden"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "Preparing"
 msgstr "In voorbereiding"
@@ -2982,6 +3113,7 @@ msgid "Readiness"
 msgstr "Klaar"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "Ready"
 msgstr "Klaar"
@@ -3023,6 +3155,7 @@ msgid "Register for Season"
 msgstr "Inschrijven voor het seizoen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 #: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
 #: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
@@ -3031,6 +3164,7 @@ msgid "Registration"
 msgstr "Inschrijving"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Registration is not open for this division."
 msgstr "De inschrijving is niet open voor deze reeks."
@@ -3046,17 +3180,20 @@ msgid "Registration windows and entries for your represented teams."
 msgstr "Inschrijvingsperiodes en inschrijvingen voor de ploegen die je vertegenwoordigt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Rejected"
 msgstr "Geweigerd"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/player_availability.py:0
 #, python-format
 msgid "Reminder sent to %s player(s)."
 msgstr "Herinnering verstuurd naar %s speler(s)."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 msgid "Reminders created."
 msgstr "Herinneringen aangemaakt."
@@ -3072,6 +3209,7 @@ msgid "Reopen Roster"
 msgstr "Selectie heropenen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Replacement needed"
 msgstr "Nieuw document nodig"
@@ -3119,6 +3257,7 @@ msgid "Result"
 msgstr "Uitslag"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Result approver"
 msgstr "Goedkeurder van uitslagen"
@@ -3134,6 +3273,7 @@ msgid "Result Follow-Up"
 msgstr "Opvolging uitslag"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Result follow-up: %(match)s"
@@ -3145,22 +3285,26 @@ msgid "Result history"
 msgstr "Geschiedenis van de uitslag"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 #: model_terms:ir.ui.view,arch_db:sports_federation_portal.review_work
 msgid "Result review"
 msgstr "Nazicht van uitslagen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Result validator"
 msgstr "Controleur van uitslagen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Results waiting for your verification or approval."
 msgstr "Uitslagen die op jouw controle of goedkeuring wachten."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Returned for updates"
 msgstr "Teruggestuurd voor aanpassing"
@@ -3181,11 +3325,13 @@ msgid "Review assignments"
 msgstr "Aanstellingen bekijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Review competition entry"
 msgstr "Inschrijving voor competitie nakijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Review game-day line-up: %(team)s"
@@ -3202,6 +3348,7 @@ msgid "Review the results assigned to your role. Independent approval checks sti
 msgstr "Kijk de uitslagen na die bij je rol horen. Onafhankelijke goedkeuringscontroles blijven gelden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Reviews and follow-up that wait for the federation."
 msgstr "Nazicht en opvolging die op de federatie wachten."
@@ -3213,6 +3360,7 @@ msgid "Role"
 msgstr "Rol"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 #: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
 #: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
@@ -3251,6 +3399,7 @@ msgid "Roster Name"
 msgstr "Naam van de selectie"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Roster name is required."
 msgstr "De naam van de selectie is verplicht."
@@ -3261,6 +3410,7 @@ msgid "Roster players available for this game-day line-up."
 msgstr "Spelers uit de selectie die beschikbaar zijn voor deze opstelling."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 #, python-format
 msgid "Roster readiness: %(team)s"
@@ -3347,6 +3497,7 @@ msgid "Score"
 msgstr "Score"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/competition_portal.py:0
 msgid "Scores cannot be negative."
 msgstr "Scores kunnen niet negatief zijn."
@@ -3386,46 +3537,55 @@ msgid "Season registrations submitted through the portal."
 msgstr "Seizoensinschrijvingen ingediend via het portaal."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Select a player."
 msgstr "Kies een speler."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Select a signed approval document to upload."
 msgstr "Kies een ondertekend document om op te laden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_player.py:0
 msgid "Select a valid club before adding a player."
 msgstr "Kies een geldige club voor je een speler toevoegt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team.py:0
 msgid "Select a valid club before creating a team."
 msgstr "Kies een geldige club voor je een ploeg aanmaakt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Select a valid competition division."
 msgstr "Kies een geldige reeks van de competitie."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Select a valid license."
 msgstr "Kies een geldige licentie."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Select a valid player."
 msgstr "Kies een geldige speler."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_season_registration.py:0
 msgid "Select a valid team before continuing."
 msgstr "Kies een geldige ploeg om verder te gaan."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Select at least one player."
 msgstr "Kies minstens één speler."
@@ -3436,16 +3596,19 @@ msgid "Select Player"
 msgstr "Speler kiezen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/gameday_participation.py:0
 msgid "Select players from this game-day line-up."
 msgstr "Kies spelers uit de opstelling van deze speeldag."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 msgid "Select submitted competition entries only."
 msgstr "Kies alleen ingediende inschrijvingen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Select valid players."
 msgstr "Kies geldige spelers."
@@ -3462,6 +3625,7 @@ msgid "Selected"
 msgstr "Gekozen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 msgid "Selected competition entries processed."
 msgstr "Gekozen inschrijvingen verwerkt."
@@ -3508,6 +3672,7 @@ msgid "Signed document"
 msgstr "Ondertekend document"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "Some selected players cannot be added to this roster."
 msgstr "Sommige gekozen spelers kunnen niet aan deze selectie toegevoegd worden."
@@ -3555,6 +3720,7 @@ msgid "Submission note"
 msgstr "Opmerking bij de inschrijving"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Submission, verification and approval are separate decisions."
 msgstr "Indienen, controleren en goedkeuren zijn aparte beslissingen."
@@ -3565,6 +3731,7 @@ msgid "Submit"
 msgstr "Indienen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Submit corrected result"
 msgstr "Verbeterde uitslag indienen"
@@ -3575,6 +3742,7 @@ msgid "Submit Nomination"
 msgstr "Aanduiding indienen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Submit the shared lineup for this game day."
 msgstr "Dien de gedeelde opstelling voor deze speeldag in."
@@ -3585,11 +3753,13 @@ msgid "Submitted"
 msgstr "Ingediend"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Submitted line-ups await review."
 msgstr "Ingediende opstellingen wachten op nazicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Submitted successfully. No resubmission is needed while review is pending."
 msgstr "Succesvol ingediend. Opnieuw indienen is niet nodig zolang het nazicht loopt."
@@ -3660,6 +3830,7 @@ msgid "Team Name"
 msgstr "Naam van de ploeg"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team.py:0
 msgid "Team name is required."
 msgstr "De naam van de ploeg is verplicht."
@@ -3685,41 +3856,49 @@ msgid "Thank you. Your team can see your answer. You can change it with the same
 msgstr "Bedankt. Je ploeg ziet je antwoord. Je kan het met dezelfde link aanpassen tot de speeldag."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "The age rule cannot be checked."
 msgstr "De leeftijdsregel kan niet gecontroleerd worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "The corrected result must be submitted again by a Result Submitter."
 msgstr "De verbeterde uitslag moet opnieuw ingediend worden door een indiener van uitslagen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "The existing planner resumes at the first incomplete step. Publication still requires independent review."
 msgstr "De planner gaat verder bij de eerste onvolledige stap. Publicatie vraagt nog altijd een onafhankelijk nazicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "The federation asked for a new document."
 msgstr "De federatie vroeg een nieuw document."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "The federation revoked the last approval."
 msgstr "De federatie heeft de laatste toestemming ingetrokken."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
 msgid "The game-day line-up can only be changed while it is a draft."
 msgstr "De opstelling kan alleen aangepast worden zolang ze een ontwerp is."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "The game-day line-up was submitted and needs approval."
 msgstr "De opstelling van de speeldag werd ingediend en moet goedgekeurd worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "The last approval does not cover today."
 msgstr "De laatste toestemming geldt niet voor vandaag."
@@ -3735,76 +3914,91 @@ msgid "The next step for each team before its game days: roster, eligibility, pa
 msgstr "De volgende stap voor elke ploeg vóór haar speeldagen: selectie, speelgerechtigdheid, ouderlijke toestemming en opstellingen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "The nomination deadline has passed."
 msgstr "De termijn voor de aanduiding is voorbij."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "The planner resumes at the first incomplete step. Publication still requires independent review."
 msgstr "De planner gaat verder bij de eerste onvolledige stap. Publicatie vraagt nog altijd een onafhankelijk nazicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/role_journeys.py:0
 msgid "The registration must be confirmed before roster creation."
 msgstr "De inschrijving moet bevestigd zijn voor de selectie aangemaakt wordt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/competition_portal.py:0
 msgid "The registration window was not found."
 msgstr "De inschrijvingsperiode werd niet gevonden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "The result is contested and must return to the submitter for correction."
 msgstr "De uitslag is betwist en gaat terug naar de indiener voor correctie."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "The result is waiting for approval by a Result Approver."
 msgstr "De uitslag wacht op goedkeuring door een goedkeurder van uitslagen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "The result is waiting for approval by the tournament manager."
 msgstr "De uitslag wacht op goedkeuring door de toernooiverantwoordelijke."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "The roster is not ready for activation."
 msgstr "De selectie is nog niet klaar om te activeren."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/operation_task.py:0
 msgid "The selected assignee is not authorized for this club task."
 msgstr "De gekozen persoon is niet bevoegd voor deze clubtaak."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "The selected license must belong to the chosen player, your club, and the roster season."
 msgstr "De gekozen licentie moet horen bij de gekozen speler, je club en het seizoen van de selectie."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "The selected registration window is not currently open for this division."
 msgstr "De gekozen inschrijvingsperiode is momenteel niet open voor deze reeks."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_season_registration.py:0
 msgid "The selected season is not open for registrations."
 msgstr "Het gekozen seizoen is niet open voor inschrijvingen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "The source cannot be checked with your current access. No readiness is implied."
 msgstr "De bron kan met je huidige toegang niet gecontroleerd worden. Dit betekent niet dat alles in orde is."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/operation_task.py:0
 msgid "The source record no longer exists."
 msgstr "Het bronrecord bestaat niet meer."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 msgid "The source was removed. Refresh your workspace."
 msgstr "De bron werd verwijderd. Vernieuw je werkruimte."
@@ -3830,21 +4024,25 @@ msgid "This assignment is ready for confirmation."
 msgstr "Deze aanstelling kan bevestigd worden."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/archive_scope.py:0
 msgid "This competition is no longer available."
 msgstr "Deze competitie is niet meer beschikbaar."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 msgid "This confirmed registration has no roster."
 msgstr "Deze bevestigde inschrijving heeft geen selectie."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "This division has reached its entry capacity."
 msgstr "Deze reeks heeft het maximale aantal inschrijvingen bereikt."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/player_availability_portal.py:0
 msgid "This game day has already been played."
 msgstr "Deze speeldag is al gespeeld."
@@ -3866,6 +4064,7 @@ msgid "This is the direct post-match queue. Start in the Club Operations Workspa
 msgstr "Dit is de lijst na de wedstrijd. Begin in de clubwerkruimte als je de context van een ploeg nodig hebt, en gebruik deze lijst om uitslagen goed te keuren, na te kijken of te betwisten."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/operation_task.py:0
 msgid "This item must be corrected in its owning workflow."
 msgstr "Dit moet in de bijhorende werkstroom verbeterd worden."
@@ -3886,6 +4085,7 @@ msgid "This match"
 msgstr "Deze wedstrijd"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "This match day has no visible live publication."
 msgstr "Deze speeldag heeft geen zichtbare live publicatie."
@@ -3908,6 +4108,7 @@ msgid "This roster belongs to a past season. It is kept for history and no longe
 msgstr "Deze selectie hoort bij een vorig seizoen. Ze wordt bewaard als geschiedenis en verschijnt niet meer bij je huidige selecties."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "This roster can only be managed in the portal after the team's season registration has been confirmed."
 msgstr "Deze selectie kan pas via het portaal beheerd worden nadat de seizoensinschrijving van de ploeg bevestigd is."
@@ -3923,16 +4124,19 @@ msgid "This roster is your season pool. For every game day you choose the player
 msgstr "Deze selectie is je spelerskern voor het seizoen. Voor elke speeldag kies je daaruit de spelers die die dag beschikbaar zijn. Die opstelling geldt voor al je wedstrijden van die dag; bij elke wedstrijd schrap je alleen de spelers die niet spelen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "This task is complete; source approval and eligibility remain separate checks."
 msgstr "Deze taak is afgerond; goedkeuring en speelgerechtigdheid blijven aparte controles."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "This team already has an active entry."
 msgstr "Deze ploeg heeft al een actieve inschrijving."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/player_availability_portal.py:0
 msgid "This team does not play on that game day."
 msgstr "Deze ploeg speelt niet op die speeldag."
@@ -3943,6 +4147,7 @@ msgid "This team has no roster for this season yet. Create the roster first, the
 msgstr "Deze ploeg heeft nog geen selectie voor dit seizoen. Maak eerst de selectie aan en kom dan terug om de spelers te kiezen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_season_registration.py:0
 msgid "This team is already registered for this season."
 msgstr "Deze ploeg is al ingeschreven voor dit seizoen."
@@ -3980,6 +4185,7 @@ msgid "Tournament"
 msgstr "Toernooi"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/qol.py:0
 msgid "Tournament manager access is required."
 msgstr "Toegang als toernooiverantwoordelijke is vereist."
@@ -3990,18 +4196,21 @@ msgid "Tournament registrations visible in the portal."
 msgstr "Toernooi-inschrijvingen zichtbaar in het portaal."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "Under %(age)s until %(date)s"
 msgstr "Jonger dan %(age)s tot %(date)s"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "Under %s"
 msgstr "Jonger dan %s"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/competition_portal.py:0
 msgid "Unsupported match-day action."
 msgstr "Niet-ondersteunde actie op de speeldag."
@@ -4032,11 +4241,13 @@ msgid "Upcoming game days with the state of each line-up."
 msgstr "Komende speeldagen met de stand van elke opstelling."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/task_projection.py:0
 msgid "Upload and verify parental approval"
 msgstr "Ouderlijke toestemming opladen en laten controleren"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Upload approval"
 msgstr "Toestemming opladen"
@@ -4047,6 +4258,7 @@ msgid "Upload for review"
 msgstr "Opladen ter controle"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Upload renewal"
 msgstr "Vernieuwing opladen"
@@ -4057,11 +4269,13 @@ msgid "Upload signed approval"
 msgstr "Ondertekende toestemming opladen"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Uploaded; the federation still has to verify it."
 msgstr "Opgeladen; de federatie moet het nog controleren."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_club_representative.py:0
 msgid "User"
 msgstr "Gebruiker"
@@ -4077,6 +4291,7 @@ msgid "Valid To"
 msgstr "Geldig tot"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "Valid today."
 msgstr "Vandaag geldig."
@@ -4087,18 +4302,21 @@ msgid "Valid until"
 msgstr "Geldig tot"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "Valid until %(date)s (%(days)s days left)."
 msgstr "Geldig tot %(date)s (nog %(days)s dagen)."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 #, python-format
 msgid "Valid until %s."
 msgstr "Geldig tot %s."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Verify submitted result"
 msgstr "Ingediende uitslag controleren"
@@ -4118,26 +4336,31 @@ msgid "View"
 msgstr "Bekijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "View approved result"
 msgstr "Goedgekeurde uitslag bekijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "View assignment status"
 msgstr "Status van de aanstelling bekijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "View completed work"
 msgstr "Afgerond werk bekijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "View status"
 msgstr "Status bekijken"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "View submission status"
 msgstr "Status van de inzending bekijken"
@@ -4169,6 +4392,7 @@ msgid "Withdraw this entry from the registration window."
 msgstr "Deze inschrijving terugtrekken uit de inschrijvingsperiode."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
 msgid "Withdrawn"
 msgstr "Teruggetrokken"
@@ -4179,106 +4403,127 @@ msgid "Work inbox"
 msgstr "Werkbak"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "You"
 msgstr "Jij"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "You can only access rosters for your assigned teams or clubs."
 msgstr "Je hebt alleen toegang tot selecties van je eigen ploegen of clubs."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "You can only access season registrations for your assigned teams or clubs."
 msgstr "Je hebt alleen toegang tot seizoensinschrijvingen van je eigen ploegen of clubs."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_referee.py:0
 msgid "You can only access your own referee profile."
 msgstr "Je hebt alleen toegang tot je eigen scheidsrechtersprofiel."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_player.py:0
 msgid "You can only add players to your own club."
 msgstr "Je kan alleen spelers aan je eigen club toevoegen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team.py:0
 msgid "You can only create teams for your own club."
 msgstr "Je kan alleen ploegen aanmaken voor je eigen club."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_season_registration.py:0
 msgid "You can only register your own teams."
 msgstr "Je kan alleen je eigen ploegen inschrijven."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
 msgid "You can only review line-ups for your assigned teams or club."
 msgstr "Je kan alleen opstellingen van je eigen ploegen of club bekijken."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_referee.py:0
 msgid "You can only review your own officiating assignments."
 msgstr "Je kan alleen je eigen aanstellingen als official bekijken."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
 msgid "You can only upload parental approval for players in your club."
 msgstr "Je kan alleen ouderlijke toestemming opladen voor spelers van je club."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/player_availability_portal.py:0
 msgid "You do not have access to this availability request."
 msgstr "Je hebt geen toegang tot deze beschikbaarheidsvraag."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 msgid "You do not have access to this club duty."
 msgstr "Je hebt geen toegang tot deze clubdienst."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "You do not have access to this competition."
 msgstr "Je hebt geen toegang tot deze competitie."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "You do not have access to this match day."
 msgstr "Je hebt geen toegang tot deze speeldag."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/journey_operation_task.py:0
 msgid "You do not have access to this match result."
 msgstr "Je hebt geen toegang tot deze wedstrijduitslag."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "You do not have access to this player."
 msgstr "Je hebt geen toegang tot deze speler."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/portal_privilege.py:0
 msgid "You do not have access to this record."
 msgstr "Je hebt geen toegang tot dit record."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/competition_queries.py:0
 msgid "You do not have access to this team."
 msgstr "Je hebt geen toegang tot deze ploeg."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
 msgid "You do not have portal access to game-day line-ups."
 msgstr "Je hebt geen portaaltoegang tot opstellingen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "You do not have portal access to season registrations."
 msgstr "Je hebt geen portaaltoegang tot seizoensinschrijvingen."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/models/federation_team_roster.py:0
 msgid "You do not have portal access to team rosters."
 msgstr "Je hebt geen portaaltoegang tot selecties."
@@ -4311,6 +4556,7 @@ msgid "Your Response"
 msgstr "Jouw antwoord"
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/web_auth.py:0
 msgid "Your session expired. Please sign in again and retry your last action."
 msgstr "Je sessie is verlopen. Meld je opnieuw aan en probeer je laatste actie opnieuw."
@@ -4331,6 +4577,7 @@ msgid "Your teams, people, competitions and match-day work in one overview."
 msgstr "Je ploegen, mensen, competities en speeldagwerk in één overzicht."
 
 #. module: sports_federation_portal
+#. odoo-python
 #: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
 msgid "Your work is handed over. The owner shown is responsible for the next decision."
 msgstr "Je werk is doorgegeven. De vermelde verantwoordelijke neemt de volgende beslissing."
