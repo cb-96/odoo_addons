@@ -37,6 +37,11 @@ class TestClubSeasonPlayersPortalScope(TransactionCase):
         ), patch.object(self.controller, "_get_portal_clubs", return_value=self.club):
             self.assertEqual(self.controller._registration(self.own.id), self.own)
 
+    def test_season_player_detail_template_compiles(self):
+        self.env["ir.qweb"]._compile(
+            "sports_federation_portal.portal_season_players_detail"
+        )
+
     def test_forged_other_club_registration_denied(self):
         with patch(
             "odoo.addons.sports_federation_portal.controllers.club_season_players.request",

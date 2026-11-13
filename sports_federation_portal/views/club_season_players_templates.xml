@@ -26,7 +26,7 @@
       <p>Pending players are not eligible for team rosters until the federation approves their registration. Adding more players does not revoke previous approvals.</p>
       <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
       <table class="table"><thead><tr><th>Player</th><th>Status</th><th>Valid until</th></tr></thead><tbody>
-        <tr t-foreach="registration.license_ids" t-as="license"><td t-esc="license.player_id.display_name"/><td t-field="license.state"/><td t-field="license.expiry_date"/></tr>
+        <tr t-foreach="registration.license_ids" t-as="license"><td t-esc="license.player_id.display_name"/><td><span t-field="license.state"/></td><td><span t-field="license.expiry_date"/></td></tr>
       </tbody></table>
       <t t-if="registration.state != 'cancelled' and registration.season_id.state == 'open'">
         <form t-attf-action="/my/season-players/#{registration.id}/add" method="post">

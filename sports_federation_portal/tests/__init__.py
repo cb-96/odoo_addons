@@ -3,6 +3,7 @@ from . import test_portal_translations
 from . import test_player_availability_portal
 from . import test_http_smoke
 from . import test_officiating_portal_access
+from . import test_task_projection_freshness
 from . import test_player_portal_access
 from . import test_portal_access_denied
 from . import test_portal_ownership_guard

@@ -1,4 +1,5 @@
 from datetime import datetime, time, timedelta
+from time import monotonic
 
 from odoo import _, api, fields, models
 from odoo.osv import expression
@@ -572,6 +573,147 @@ class FederationOperationTaskExtension(models.Model):
 
     @api.model
     def sync_for_user(self, user=None):
-        return self.env["federation.task.projection"].synchronize(
-            user=user or self.env.user
+        """Bring the user's tasks up to date before a page shows them.
+
+        Rebuilding the projection reads every domain in scope and writes the
+        task rows, so page views share it instead of each paying for it:
+
+        - once per HTTP request, however many page parts ask for it;
+        - for page views (HTTP GET), a projection younger than
+          ``task_projection_max_age`` seconds (system parameter
+          ``sports_federation_portal.task_projection_max_age``, default 30;
+          0 disables) is reused. Any portal change by the user discards it,
+          so their own actions always show at once;
+        - while another transaction is rebuilding the same clubs, this one
+          shows the current tasks instead of writing the same rows (which
+          would only end in a serialization retry).
+
+        Outside HTTP requests (tests, scheduled jobs, commands) it always
+        rebuilds.
+        """
+        user = user or self.env.user
+        freshness = _ProjectionFreshness(self.env, user)
+        if freshness.can_reuse():
+            return self._current_tasks_for(user)
+        if not freshness.try_lock():
+            return self._current_tasks_for(user)
+        result = self.env["federation.task.projection"].synchronize(user=user)
+        freshness.mark_synced()
+        return result
+
+    @api.model
+    def _current_tasks_for(self, user):
+        return self.sudo().search(
+            self._portal_get_domain(user) + [("state", "!=", "done")]
         )
+
+    @api.model
+    def _forget_projection_for(self, user):
+        """Make the next page view of ``user`` rebuild their tasks."""
+        _ProjectionFreshness.forget(self.env, user)
+
+
+# Process-local freshness of task projections: {(database, user id): monotonic
+# time of the last rebuild}. Each worker keeps its own; a stale entry only means
+# one extra rebuild.
+_LAST_SYNC = {}
+_LAST_SYNC_LIMIT = 10000
+# Namespace of the transaction-level advisory locks taken per club while a
+# projection is rebuilt (two-integer form: namespace, club id).
+_LOCK_NAMESPACE = 731_406
+_MANAGER_SCOPE = 0
+
+
+class _ProjectionFreshness:
+    """Decides whether a page view may reuse the user's last task projection."""
+
+    def __init__(self, env, user):
+        self.env = env
+        self.user = user
+        self.key = (env.cr.dbname, user.id)
+        self.http_request = _current_http_request(env)
+
+    @classmethod
+    def forget(cls, env, user):
+        for one in user:
+            _LAST_SYNC.pop((env.cr.dbname, one.id), None)
+        request = _current_http_request(env)
+        if request is not None:
+            getattr(request, "_sf_task_synced_users", set()).difference_update(user.ids)
+
+    def max_age(self):
+        default = "0" if self.env.registry.in_test_mode() else "30"
+        value = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("sports_federation_portal.task_projection_max_age", default)
+        )
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            return 30
+
+    def can_reuse(self):
+        if self.http_request is None:
+            return False
+        synced = getattr(self.http_request, "_sf_task_synced_users", set())
+        if self.user.id in synced:
+            return True
+        if self.http_request.httprequest.method != "GET":
+            return False
+        age = self.max_age()
+        last = _LAST_SYNC.get(self.key)
+        return bool(age and last is not None and monotonic() - last < age)
+
+    def try_lock(self):
+        """Lock the clubs of this projection; False when another rebuild holds one."""
+        user = self.user.sudo()
+        club_ids = set()
+        for name in ("portal_club_scope_ids", "portal_team_scope_ids"):
+            if name in user._fields:
+                records = user[name]
+                club_ids |= set(
+                    records.ids
+                    if records._name == "federation.club"
+                    else records.club_id.ids
+                )
+        if not club_ids:
+            club_ids = {_MANAGER_SCOPE}
+        for club_id in sorted(club_ids):
+            self.env.cr.execute(
+                "SELECT pg_try_advisory_xact_lock(%s, %s)", (_LOCK_NAMESPACE, club_id)
+            )
+            if not self.env.cr.fetchone()[0]:
+                return False
+        return True
+
+    def mark_synced(self):
+        if self.http_request is None:
+            return
+        synced = getattr(self.http_request, "_sf_task_synced_users", None)
+        if synced is None:
+            synced = set()
+            try:
+                self.http_request._sf_task_synced_users = synced
+            except AttributeError:  # request objects without a __dict__
+                pass
+        synced.add(self.user.id)
+        if len(_LAST_SYNC) >= _LAST_SYNC_LIMIT:
+            _LAST_SYNC.clear()
+        _LAST_SYNC[self.key] = monotonic()
+
+
+def _current_http_request(env):
+    """The HTTP request that runs on this cursor, or None."""
+    try:
+        from odoo.http import request
+    except ImportError:  # pragma: no cover - always importable in Odoo
+        return None
+    if not request:
+        return None
+    try:
+        if request.env.cr is not env.cr:
+            return None
+    except (AttributeError, RuntimeError):
+        return None
+    return request

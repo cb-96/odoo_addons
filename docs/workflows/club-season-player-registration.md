@@ -9,7 +9,8 @@ history, budgets, public discovery and reporting remain in place.
 1. Open the season in Administration. Configure the Season Player Registration Fee
    (`player_season_registration`) and optional category/gender fee schedules.
 2. Club representatives open **Season players** from `/my/preparation`, choose
-   their club and season, select players, and submit pending registrations.
+  their club and season, select players, and submit pending registrations. The
+  detail page lists each season licence with its approval state and expiry date.
 3. Set the club billing contact before approving positive-fee registrations.
    Federation managers review **Clubs & People > Season Player Registrations**.
    They can collect all current club players as drafts or add players individually.

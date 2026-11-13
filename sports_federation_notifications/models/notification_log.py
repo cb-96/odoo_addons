@@ -8,6 +8,8 @@ from odoo.addons.sports_federation_base.models.failure_feedback import (
     FAILURE_CATEGORY_SELECTION,
 )
 
+from odoo.addons.sports_federation_base.batch_jobs import for_each_chunk
+
 _logger = logging.getLogger(__name__)
 
 
@@ -147,11 +149,16 @@ class FederationNotificationLog(models.Model):
                 )
                 ._retention_deletable()
             )
-            mails = logs.mapped("mail_id")
-            deleted += len(logs)
-            logs.unlink()
-            mails._purge_notification_orphans()
+            deleted += for_each_chunk(logs, self._unlink_log_chunk)
         return deleted
+
+    @api.model
+    def _unlink_log_chunk(self, logs):
+        mails = logs.mapped("mail_id")
+        count = len(logs)
+        logs.unlink()
+        mails._purge_notification_orphans()
+        return count
 
     @api.model
     def _retention_candidate_count(self, reference_dt=None):

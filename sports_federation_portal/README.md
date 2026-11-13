@@ -11,6 +11,7 @@ Role-oriented self-service portal for club representatives, officials and match-
 ### Club representative
 
 - manage club teams and players
+- register players for a season and review each licence's approval state and expiry
 - register teams for a season and enter competitions
 - prepare and activate rosters
 - complete match sheets and readiness tasks

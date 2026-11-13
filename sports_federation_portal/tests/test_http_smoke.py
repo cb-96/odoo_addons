@@ -10,9 +10,13 @@ from odoo.addons.sports_federation_base.tests.route_inventory import (
 )
 from odoo.tests.common import HttpCase, tagged
 
+<<<<<<< ours
 from odoo.addons.sports_federation_people.tests.registration_fixtures import (
     create_registered_roster_lines,
 )
+=======
+from odoo.addons.sports_federation_base.tests import relative_dates
+>>>>>>> theirs
 
 
 def _extract_csrf_token(response_text):
@@ -143,12 +147,13 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "gender": "male",
                 }
             )
+            season_start, season_end = relative_dates.current_season()
             open_season = env["federation.season"].create(
                 {
                     "name": "Portal Smoke Season",
                     "code": "PSS",
-                    "date_start": "2026-01-01",
-                    "date_end": "2026-12-31",
+                    "date_start": season_start,
+                    "date_end": season_end,
                     "state": "open",
                 }
             )
@@ -177,8 +182,8 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                 {
                     "name": "Portal Officiating Smoke Season",
                     "code": "POSS",
-                    "date_start": "2026-01-01",
-                    "date_end": "2026-12-31",
+                    "date_start": season_start,
+                    "date_end": season_end,
                 }
             )
             officiating_tournament = env["federation.tournament"].create(
@@ -186,7 +191,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "name": "Portal Officiating Smoke Tournament",
                     "code": "POST",
                     "season_id": officiating_season.id,
-                    "date_start": "2026-06-01",
+                    "date_start": relative_dates.day(-150),
                 }
             )
             competition = env["federation.competition"].create(
@@ -268,12 +273,13 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             env["federation.referee.availability"].create(
                 {
                     "referee_id": referee.id,
-                    "date_start": "2026-01-01 00:00:00",
-                    "date_end": "2027-01-01 00:00:00",
+                    "date_start": relative_dates.moment(-180, hour=0),
+                    "date_end": relative_dates.moment(180, hour=0),
                 }
             )
             assignment_match = fixture.action_materialize_match()
-            assignment_match.write({"date_scheduled": "2026-12-12 18:00:00"})
+            # An upcoming assignment: always 30 days ahead of the test run.
+            assignment_match.write({"date_scheduled": relative_dates.moment(30)})
             venue = env["federation.venue"].create(
                 {"name": "Portal Officiating Smoke Venue"}
             )
@@ -281,7 +287,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                 {
                     "name": "Portal Officiating Smoke Match Day",
                     "edition_id": edition.id,
-                    "date": "2026-12-12",
+                    "date": relative_dates.day(30),
                     "venue_id": venue.id,
                 }
             )
@@ -292,8 +298,8 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                 {
                     "matchday_id": matchday.id,
                     "court_id": court.id,
-                    "start_datetime": "2026-12-12 18:00:00",
-                    "end_datetime": "2026-12-12 18:30:00",
+                    "start_datetime": relative_dates.moment(30),
+                    "end_datetime": relative_dates.moment(30, minute=30),
                 }
             )
             schedule = env["federation.schedule"].create(

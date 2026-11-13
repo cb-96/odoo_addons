@@ -6,6 +6,8 @@ from odoo.addons.sports_federation_base import readiness_vocabulary as vocabular
 from ..coverage_policy import project
 from .assignment import MANAGER
 
+from odoo.addons.sports_federation_base.batch_jobs import process_each
+
 ROLES = ("head", "assistant_1", "assistant_2", "fourth", "table")
 
 
@@ -425,7 +427,13 @@ class Match(models.Model):
             ],
             order="id",
         )
-        matches._coverage_sync_escalations()
+        # One match whose escalation cannot be synced (missing activity type,
+        # access problem on a related record) must not block all the others.
+        process_each(
+            matches,
+            lambda match: match._coverage_sync_escalations(),
+            label="Coverage escalation",
+        )
         return len(matches)
 
     def _get_officiating_issues(self):

@@ -25,6 +25,57 @@ class FederationPortalPrivilege(models.AbstractModel):
         },
         "federation.team.roster.line": {"unlink"},
     }
+    # Fields a portal command may change on an existing record. Deny by
+    # default, like creation: a model or field that is not listed cannot be
+    # written through ``portal_write``, whatever the caller passes. Keep each
+    # set equal to what the owning portal method prepares.
+    PORTAL_WRITE_FIELDS = {
+        "federation.competition.entry": {"submission_note"},
+        "federation.document.submission": {
+            "issue_date",
+            "expiry_date",
+            "notes",
+            # Resubmitting resets the review: back to draft, reviewer cleared.
+            "status",
+            "reviewer_id",
+            "reviewed_on",
+            "attachment_ids",
+        },
+        "federation.match.referee": {"response_note"},
+        "federation.match.sheet": {
+            "coach_id",
+            "coach_name",
+            "manager_id",
+            "manager_name",
+            "notes",
+            "roster_id",
+        },
+        "federation.match.sheet.line": {
+            "is_starter",
+            "is_substitute",
+            "is_captain",
+            "jersey_number",
+        },
+        "federation.team.roster": {
+            "season_registration_id",
+            "name",
+            "valid_from",
+            "valid_to",
+            "notes",
+        },
+        "federation.team.roster.line": {
+            "roster_id",
+            "player_id",
+            "status",
+            "jersey_number",
+            "is_captain",
+            "is_vice_captain",
+            "license_id",
+            "date_from",
+            "date_to",
+            "notes",
+        },
+    }
     PORTAL_CREATE_FIELDS = {
         "federation.competition.entry": {
             "window_id",
@@ -133,6 +184,11 @@ class FederationPortalPrivilege(models.AbstractModel):
         changed_fields=False,
     ):
         """Capture one audit row per portal-managed target record."""
+        # Every portal change can change the actor's tasks: their next page
+        # view rebuilds the projection instead of reusing a recent one.
+        self.env["federation.operation.task"]._forget_projection_for(
+            user or self.env.user
+        )
         audit_model = self.env.get("federation.audit.event")
         if audit_model is None:
             return False
@@ -186,6 +242,17 @@ class FederationPortalPrivilege(models.AbstractModel):
     @api.model
     def portal_write(self, records, values, scope_domain=None, user=None):
         """Write through the shared portal privilege boundary."""
+        policy = self.PORTAL_WRITE_FIELDS.get(records._name)
+        if not policy:
+            raise AccessError(_("Portal changes are not allowed for this model."))
+        rejected = set(values) - policy
+        if rejected:
+            raise AccessError(
+                _(
+                    "Portal change rejected unsupported fields: %(fields)s",
+                    fields=", ".join(sorted(rejected)),
+                )
+            )
         if not scope_domain:
             raise AccessError(
                 _(

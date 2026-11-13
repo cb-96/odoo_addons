@@ -1,3 +1,4 @@
+from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -30,3 +31,49 @@ class TestPortalCreateFields(TransactionCase):
                 self.assertIn(
                     requirement._portal_get_target_field_name(target_model), allowed
                 )
+
+
+@tagged("post_install", "-at_install", "sf_portal_create_fields")
+class TestPortalWriteFields(TransactionCase):
+    """Portal writes are deny-by-default per model and field."""
+
+    def test_every_write_allowlisted_field_exists(self):
+        policy = self.env["federation.portal.privilege"].PORTAL_WRITE_FIELDS
+        for model_name, field_names in policy.items():
+            if model_name not in self.env:
+                continue
+            with self.subTest(model=model_name):
+                self.assertFalse(
+                    sorted(set(field_names) - set(self.env[model_name]._fields)),
+                    "Unknown fields in the portal write allowlist.",
+                )
+
+    def test_unlisted_model_and_field_are_refused_before_any_write(self):
+        Privilege = self.env["federation.portal.privilege"]
+        club = self.env["federation.club"].create({"name": "Write Policy Club"})
+        team = self.env["federation.team"].create(
+            {"name": "Write Policy Team", "club_id": club.id}
+        )
+        with self.assertRaisesRegex(AccessError, "not allowed for this model"):
+            Privilege.portal_write(
+                team, {"name": "Renamed"}, scope_domain=[("id", "=", team.id)]
+            )
+        season = self.env["federation.season"].create(
+            {
+                "name": "Write Policy Season",
+                "code": "WPS",
+                "date_start": "2090-01-01",
+                "date_end": "2090-12-31",
+            }
+        )
+        roster = self.env["federation.team.roster"].create(
+            {"team_id": team.id, "season_id": season.id}
+        )
+        with self.assertRaisesRegex(AccessError, "unsupported fields: status"):
+            Privilege.portal_write(
+                roster,
+                {"notes": "ok", "status": "active"},
+                scope_domain=[("id", "=", roster.id)],
+            )
+        self.assertEqual(roster.status, "draft")
+        self.assertFalse(roster.notes)

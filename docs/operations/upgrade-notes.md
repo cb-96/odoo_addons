@@ -36,6 +36,7 @@ passed unless they ran.
 
 ## Entries
 
+<<<<<<< ours
 ### Portal ORM isolation, tenure expiry and version correction
 
 Affected modules: `sports_federation_portal` 19.0.7.16.0 → 19.0.7.17.0,
@@ -119,6 +120,39 @@ target the 157 failures of run 20261113_200640.
 
 **Rollback**: code-only rollback; remove the implied Contact Creation group from
 Federation Manager by hand if it is no longer wanted.
+=======
+### Medium-priority hardening: escaped email, portal write allowlist, shared task projection, batched jobs
+
+Affected modules: `sports_federation_notifications`, `sports_federation_portal`,
+`sports_federation_base`, `sports_federation_discipline`,
+`sports_federation_duty_coverage`, `sports_federation_import_tools`,
+`sports_federation_member_services`, `sports_federation_reporting`
+(code and tests; versions unchanged)
+
+**Data changes**: None. No new fields, no migration. New optional system
+parameter `sports_federation_portal.task_projection_max_age` (seconds, default 30).
+
+**Behaviour to verify**:
+
+- The suspension email shows player, case and notes as text (no markup from
+  typed values) and is translated in the player's language when set.
+- Portal saves still work for rosters, roster lines, match sheets, line-ups,
+  competition entries, compliance submissions and official responses;
+  `portal_write` refuses any model or field outside `PORTAL_WRITE_FIELDS`.
+- Portal pages show tasks as before; a user's own change shows at once;
+  another user's change can take up to 30 s on a page view.
+- Suspension start/end and coverage escalation keep going when one record
+  fails (logged with its id); retention purges commit in batches of 200 when
+  run as a scheduled job.
+
+**Dry-run evidence**: static checks only (Black, Flake8 F-codes, the lint job's
+contract checks, `check_test_date_horizon.py` and its unit tests). The Odoo
+suites were NOT run; new tests: `test_task_projection_freshness.py`,
+`test_batch_jobs.py`, `TestPortalWriteFields`,
+`test_suspension_email_escapes_typed_values`.
+
+**Rollback**: code-only rollback.
+>>>>>>> theirs
 
 ### Registry load order and schedule-owned match planning
 

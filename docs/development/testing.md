@@ -1,7 +1,7 @@
 # Testing guide
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 This guide explains the project's test taxonomy, how to write tests for each
@@ -234,6 +234,19 @@ python ci/court_app_browser/run.py --chromium PATH  # optional browser check (Pl
 server (`policy.py`) and the phone (`policy.js`) must accept or refuse in the
 same way; add a case whenever a scoring rule changes. The browser check runs
 the real app against a stand-in server, including a reload without a network.
+
+### Dates in fixtures
+
+A fixed date written as "upcoming" or "current" turns into a past date one day
+and the test starts failing with no code change. Use a past date when the test
+needs a past event, a date on or after 2070-01-01 when it only needs "later",
+and `sports_federation_base/tests/relative_dates.py` (`day()`, `moment()`,
+`current_season()`) when the meaning is relative to today.
+`ci/check_test_date_horizon.py` (part of `ci/run_repo_lint.sh`) fails when a
+test file gains fixed dates between 2026-11-13 and 2070-01-01 beyond its
+baseline in `ci/contracts/test_date_horizon.json`, and warns when a baselined
+date is about to pass. After fixing a file, run
+`python3 ci/check_test_date_horizon.py --update-baseline` to lower its count.
 
 ## Query-count budgets
 

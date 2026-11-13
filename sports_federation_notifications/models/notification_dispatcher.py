@@ -17,6 +17,8 @@ Usage (from any model override):
         Dispatcher.send_result_approved(self)
 """
 
+from markupsafe import Markup, escape
+
 from odoo import models
 
 
@@ -352,24 +354,42 @@ class FederationNotificationDispatcher(models.AbstractModel):
 
     @notification_effect()
     def send_suspension_issued(self, suspension):
-        """Notify the player and club contact when a suspension is issued."""
+        """Notify the player and club contact when a suspension is issued.
+
+        Every value comes from records that clubs or staff typed (player and
+        case names, notes), so the body is built with ``Markup`` and each value
+        is escaped. Text is translated in the player's language when set.
+        """
         player = suspension.player_id
         club = player.club_id
         emails = [player.email, club.email]
-        subject = f"Suspension issued: {suspension.name}"
+        lang = player.lang or self.env.lang
+        env = self.with_context(lang=lang).env
+        no_notes = env._("No additional notes provided.")
+        lines = [
+            (env._("Case"), suspension.case_id.display_name or ""),
+            (env._("Start date"), suspension.date_start or ""),
+            (env._("End date"), suspension.date_end or ""),
+            (env._("Notes"), suspension.notes or no_notes),
+        ]
         body_html = (
-            "<p>Dear federation contact,</p>"
-            f"<p>A suspension has been activated for <strong>{player.display_name}</strong>.</p>"
-            f"<p>Case: {suspension.case_id.display_name}</p>"
-            f"<p>Start date: {suspension.date_start}</p>"
-            f"<p>End date: {suspension.date_end}</p>"
-            f"<p>Notes: {suspension.notes or 'No additional notes provided.'}</p>"
-            "<p>Best regards,<br/>Sports Federation</p>"
+            Markup("<p>%s</p>") % env._("Dear federation contact,")
+            + Markup("<p>%s</p>")
+            # Translations are text, not markup: escape them, then fill in.
+            % Markup(escape(env._("A suspension has been activated for %s.")))
+            % (Markup("<strong>%s</strong>") % (player.display_name or ""))
+            + Markup("").join(
+                Markup("<p>%s: %s</p>") % (label, value) for label, value in lines
+            )
+            + Markup("<p>%s<br/>%s</p>")
+            % (env._("Best regards,"), env._("Sports Federation"))
         )
+        subject = env._("Suspension issued: %s", suspension.name)
         return self._send_direct_email_or_log(
             suspension,
             subject,
             body_html,
+            # Internal log name: stable English text for operators and search.
             f"Suspension issued: {suspension.name}",
             emails,
         )
