@@ -1,7 +1,7 @@
 # Workflow: Match-day operations
 
 Owner: Federation Competition Operations
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Everything that happens around a single match — roster management, match-sheet
@@ -364,6 +364,11 @@ printed scoresheet remains the fallback. See the
 5. Resolve incidents and complete or cancel every published match.
 6. Select **Close Match Day**. Forced closure requires a reason and retains the
    blocker IDs in the competition event.
+
+Kickoff, location and publication pointers of a published match are
+schedule-owned. Only the publication handoff and the deviation command above may
+change them; direct edits, and round date or venue changes, leave published
+matches untouched.
 
 Publication replacement is impossible while a match day is open. Different
 match days in the same edition retain independent live publications and version

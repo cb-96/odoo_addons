@@ -1,7 +1,7 @@
 # Upgrade notes
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Upgrade-sensitive changes, newest first. Each entry records the affected
@@ -35,6 +35,29 @@ Do not describe work that is not in the code, and do not mark runtime checks as
 passed unless they ran.
 
 ## Entries
+
+### Registry load order and schedule-owned match planning
+
+Affected modules: `sports_federation_schedule_approval` 19.0.1.4.0,
+`sports_federation_matchday` 19.0.2.5.1, `sports_federation_tournament`
+19.0.1.7.0, `sports_federation_venues` 19.0.1.1.1 (versions unchanged; code only)
+
+**Data changes**: None. The publication-replay extension of
+`federation.schedule.approval.commands` moved from `models/match_journey.py` to
+`services/publication_replay.py`, so it is built after the model it extends.
+Before this change the registry could not load the addon.
+
+**Behaviour to verify**: the addon installs and upgrades; publishing a schedule
+and replaying the publish command work; **Delay or Move Match** moves, delays,
+postpones and cancels published matches; changing a round's date or venue no
+longer touches published matches; direct edits of a published match's kickoff
+are still refused.
+
+**Dry-run evidence**: static checks only (Black, `check_model_load_order.py`,
+the lint job's contract checks and `ci/test_*.py`). Odoo install, upgrade and
+ORM tests were NOT run.
+
+**Rollback**: code-only rollback; no data was changed.
 
 ### Translation foundation: language registry, Weblate tooling, translatable portal messages
 

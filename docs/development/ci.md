@@ -41,7 +41,7 @@ privilege, reliability, readiness and documentation contracts).
 
 | Area | Checks |
 | --- | --- |
-| Lint and structure | `ci/run_repo_lint.sh --strict` (Black, Flake8), `check_addon_integrity.py`, `check_application_entrypoint.py`, `check_module_dependency_drift.py`, `check_test_discovery.py`, `check_ci_hygiene.py`, `check_access_csv_integrity.py`, `check_scss_contrast.py` |
+| Lint and structure | `ci/run_repo_lint.sh --strict` (Black, Flake8), `check_addon_integrity.py`, `check_model_load_order.py`, `check_application_entrypoint.py`, `check_module_dependency_drift.py`, `check_test_discovery.py`, `check_ci_hygiene.py`, `check_access_csv_integrity.py`, `check_scss_contrast.py` |
 | Documentation | `check_doc_freshness.py`, `check_markdown_links.py`, `check_delivery_language.py`, `check_release_train.py`, `check_module_owners.py`, `check_competition_ui_workflow.py`, `check_public_route_cutover_docs.py` |
 | Migrations | `check_migration_review.py`, `check_constraint_index_contracts.py`, `check_explain_snapshots.py`, `check_migration_rehearsal_contract.py`, `check_legacy_engine_removed.py` |
 | Security boundaries | `check_portal_sudo_guard.py`, `check_privileged_inventory_quality.py`, `check_privileged_mutation_boundaries.py`, `check_privileged_command_contracts.py`, `check_audit_acl_integrity.py`, `check_http_route_ownership.py` |

@@ -118,6 +118,11 @@ jobs:
       - name: Verify addon manifests, dependencies, imports and ACLs
         run: python ci/check_addon_integrity.py
 
+      - name: Verify model load order
+        run: |
+          python -m unittest ci/test_check_model_load_order.py
+          python ci/check_model_load_order.py
+
       - name: Verify single application entry point
         run: python ci/check_application_entrypoint.py
 

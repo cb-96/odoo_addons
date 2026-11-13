@@ -58,6 +58,7 @@ and query budgets in the [testing guide](docs/development/testing.md).
 ```bash
 bash ci/run_repo_lint.sh --strict
 python3 ci/check_addon_integrity.py
+python3 ci/check_model_load_order.py
 python3 ci/check_module_dependency_drift.py
 python3 ci/check_access_csv_integrity.py
 python3 ci/check_translations.py

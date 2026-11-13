@@ -1,7 +1,10 @@
-from odoo import _, api, fields, models
+from odoo import _, fields, models
 from odoo.exceptions import ValidationError
 
-_PUBLICATION_HANDOFF = object()
+from ..planning_tokens import (
+    PUBLISHED_PLANNING_CONTEXT_KEY,
+    PUBLISHED_PLANNING_TOKEN,
+)
 
 
 class MatchJourney(models.Model):
@@ -21,8 +24,8 @@ class MatchJourney(models.Model):
         }
         if (
             protected.intersection(vals)
-            and self.env.context.get("publication_handoff_token")
-            is not _PUBLICATION_HANDOFF
+            and self.env.context.get(PUBLISHED_PLANNING_CONTEXT_KEY)
+            is not PUBLISHED_PLANNING_TOKEN
         ):
             if self.filtered("schedule_publication_id"):
                 raise ValidationError(
@@ -220,60 +223,3 @@ class MatchRescheduleWizard(models.TransientModel):
                 )
             )
             return replacement.get_formview_action()
-
-
-class PublicationReplay(models.AbstractModel):
-    _inherit = "federation.schedule.approval.commands"
-
-    def _link_match_to_publication(self, match, assignment, publication):
-        if match.state not in ("draft", "scheduled"):
-            if match.published_slot_id != assignment.slot_id:
-                raise ValidationError(
-                    _("A publication cannot move a started or completed match.")
-                )
-            # Keep the operational record's original publication provenance.
-            return True
-        return super()._link_match_to_publication(
-            match.with_context(publication_handoff_token=_PUBLICATION_HANDOFF),
-            assignment,
-            publication,
-        )
-
-    @api.model
-    def publish(self, schedule_id, reason=False, expected_publication_id=None):
-        schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
-        if not schedule:
-            raise ValidationError(_("The schedule no longer exists."))
-        self.env["federation.competition.role.assignment"].assert_role(
-            schedule.edition_id,
-            "schedule_planner",
-            "schedule_approver",
-            "competition_director",
-        )
-        self.env.cr.execute(
-            "SELECT id FROM federation_matchday WHERE id = %s FOR UPDATE",
-            [schedule.matchday_id.id],
-        )
-        schedule.invalidate_recordset()
-        schedule.matchday_id.invalidate_recordset()
-        live = schedule.matchday_id.current_publication_id
-        if (
-            live
-            and live.state == "live"
-            and live.schedule_id == schedule
-            and schedule.state == "published"
-        ):
-            if (
-                expected_publication_id is not None
-                and expected_publication_id != live.id
-            ):
-                raise ValidationError(
-                    _("Publication changed. Refresh before replaying the command.")
-                )
-            return live
-        with self.env.cr.savepoint():
-            return super().publish(
-                schedule_id,
-                reason=reason,
-                expected_publication_id=expected_publication_id,
-            )

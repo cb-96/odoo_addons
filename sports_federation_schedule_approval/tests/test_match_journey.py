@@ -314,3 +314,20 @@ class TestMatchJourney(TransactionCase):
         match = schedule.assignment_ids[0].fixture_id.operational_match_id
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             match.write({"date_scheduled": "2026-10-03 22:00:00"})
+
+    def test_planning_token_is_the_only_bypass(self):
+        from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+            PUBLISHED_PLANNING_CONTEXT_KEY,
+            with_published_planning_token,
+        )
+
+        schedule, review = self._valid_schedule_review(self.days[0], "Token")
+        self.env["federation.schedule.approval.commands"].publish(schedule.id)
+        match = schedule.assignment_ids[0].fixture_id.operational_match_id
+        forged = match.with_context(**{PUBLISHED_PLANNING_CONTEXT_KEY: True})
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            forged.write({"date_scheduled": "2026-10-03 21:00:00"})
+        with_published_planning_token(match).write(
+            {"date_scheduled": "2026-10-03 10:00:00"}
+        )
+        self.assertEqual(str(match.date_scheduled), "2026-10-03 10:00:00")

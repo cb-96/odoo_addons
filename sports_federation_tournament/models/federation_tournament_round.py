@@ -107,6 +107,7 @@ class FederationTournamentRound(models.Model):
                 lambda round_match: round_match._has_scheduled_time(
                     round_match.scheduled_time
                 )
+                and not round_match._is_schedule_owned()
             ):
                 target_dt = datetime.combine(
                     rec.round_date,
