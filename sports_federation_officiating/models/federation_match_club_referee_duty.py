@@ -225,6 +225,26 @@ class FederationMatchClubRefereeDuty(models.Model):
                 and now > rec.nomination_deadline
             )
 
+    @api.model
+    def _cron_refresh_deadline_overdue(self):
+        """A deadline passes by time, not by an edit: refresh the stored flag."""
+        now = fields.Datetime.now()
+        open_states = ("draft", "open", "nominated", "rejected")
+        newly_overdue = self.sudo().search(
+            [
+                ("state", "in", open_states),
+                ("is_deadline_overdue", "=", False),
+                ("nomination_deadline", "!=", False),
+                ("nomination_deadline", "<", now),
+            ]
+        )
+        # A deadline can also move later (match rescheduled): those recompute on
+        # the match change already, so only the flag turning on needs this job.
+        if newly_overdue:
+            self.env.add_to_compute(self._fields["is_deadline_overdue"], newly_overdue)
+            self.env.flush_all()
+        return len(newly_overdue)
+
     # ------------------------------------------------------------------
     # State actions
     # ------------------------------------------------------------------

@@ -309,9 +309,6 @@ class FederationPortalcurrent(FederationPortalBase):
                 "operations_load_path": (
                     f"/sports/match-days/{matchday_id}/operations/data"
                 ),
-                "operations_action_path_template": (
-                    f"/sports/match-days/{matchday_id}/matches/__MATCH_ID__/action"
-                ),
             },
         )
 
@@ -417,70 +414,3 @@ class FederationPortalcurrent(FederationPortalBase):
                 for deviation in workspace["deviations"]
             ],
         }
-
-    @http.route(
-        ["/sports/match-days/<int:matchday_id>/matches/<int:match_id>/action"],
-        type="jsonrpc",
-        auth="user",
-        methods=["POST"],
-        csrf=True,
-    )
-    def portal_matchday_action(self, matchday_id, match_id, **kw):
-        try:
-            workspace = request.env["federation.portal.matchday.queries"].detail(
-                matchday_id, user=request.env.user, manager=True
-            )
-            match = workspace["matches"].filtered(lambda item: item.id == match_id)
-            if not match:
-                raise AccessError()
-            privilege = request.env["federation.portal.privilege"]
-            action = kw.get("action")
-            if action == "start":
-                privilege.portal_call(match, "action_start", user=request.env.user)
-            elif action == "finish":
-                privilege.portal_call(match, "action_done", user=request.env.user)
-            elif action == "save_score":
-                if kw.get("home_score") in (None, "") or kw.get("away_score") in (
-                    None,
-                    "",
-                ):
-                    raise ValidationError(
-                        _("Enter both scores before saving the result.")
-                    )
-                home_score = int(kw["home_score"])
-                away_score = int(kw["away_score"])
-                if home_score < 0 or away_score < 0:
-                    raise ValidationError(_("Scores cannot be negative."))
-                zero_zero_confirmed = kw.get("confirm_zero_zero") in (
-                    True,
-                    1,
-                    "1",
-                    "true",
-                    "on",
-                    "yes",
-                )
-                if home_score == 0 and away_score == 0 and not zero_zero_confirmed:
-                    raise ValidationError(
-                        _("Both scores are 0. Confirm the 0–0 result before saving.")
-                    )
-                privilege.portal_write(
-                    match,
-                    {
-                        "home_score": home_score,
-                        "away_score": away_score,
-                        "score_entry_confirmed": True,
-                        "zero_zero_confirmed": zero_zero_confirmed,
-                    },
-                    user=request.env.user,
-                )
-            else:
-                raise ValidationError(_("Unsupported match-day action."))
-        except (AccessError, ValidationError, ValueError) as exc:
-            return {
-                "ok": False,
-                "error": {
-                    "type": "validation",
-                    "message": str(exc) or _("Action failed."),
-                },
-            }
-        return {"ok": True, "payload": self._serialize_matchday_workspace(workspace)}

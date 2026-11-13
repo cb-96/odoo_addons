@@ -1,7 +1,7 @@
 # Route inventory
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Every HTTP route served by the `sports_federation_*` addons, grouped by
@@ -152,7 +152,6 @@ current live publication.
 | --- | --- | --- |
 | GET | `/sports/match-days/<matchday_id>/operations` | Operations board |
 | POST (JSON-RPC) | `/sports/match-days/<matchday_id>/operations/data` | Current live operations payload |
-| POST (JSON-RPC) | `/sports/match-days/<matchday_id>/matches/<match_id>/action` | Match action constrained to that publication |
 
 ## Federation staff (front end)
 

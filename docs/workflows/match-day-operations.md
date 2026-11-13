@@ -286,8 +286,10 @@ game-day staff (organizers, court managers, result-table volunteers) for one
 game day:
 
 - **Access**: portal users with club or team activity on that game day, and
-  federation staff through their normal session. Data and actions are
-  constrained to the game day's current live publication.
+  federation staff through their normal session. The board is read-only: it
+  shows the game day's current live publication. Matches are started, scored
+  and finished on court (**Run this court**) and approved in the result
+  pipeline, never from the portal board.
 - **Not for preparation**: line-up and roster work stays in the portal
   preparation pages until play is underway.
 - **Sections**: header with match counts, a ranked action queue, summary

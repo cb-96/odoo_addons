@@ -63,16 +63,56 @@ class ResUsers(models.Model):
     @api.depends(
         "representative_ids.club_id",
         "representative_ids.team_id",
-        "representative_ids.is_current",
+        "representative_ids.active",
+        "representative_ids.date_start",
+        "representative_ids.date_end",
     )
     def _compute_portal_scope_ids(self):
         """Compute portal scope IDs."""
+        today = fields.Date.context_today(self)
         for rec in self:
-            current_reps = rec.representative_ids.filtered("is_current")
-            rec.portal_club_scope_ids = current_reps.filtered(
-                lambda rep: not rep.team_id
-            ).mapped("club_id")
-            rec.portal_team_scope_ids = current_reps.mapped("team_id")
+            clubs, teams = rec._portal_scopes_on(today)
+            rec.portal_club_scope_ids = clubs
+            rec.portal_team_scope_ids = teams
+
+    def _portal_scopes_on(self, today):
+        """(whole-club scope, team scope) from the tenures valid on ``today``."""
+        self.ensure_one()
+        current = self.representative_ids.filtered(
+            lambda rep: rep._is_current_on(today)
+        )
+        return (
+            current.filtered(lambda rep: not rep.team_id).mapped("club_id"),
+            current.mapped("team_id"),
+        )
+
+    @api.model
+    def _refresh_portal_scopes(self):
+        """Recompute the stored portal scopes that changed only because time passed.
+
+        Record rules read ``portal_club_scope_ids``/``portal_team_scope_ids``.
+        They are stored, so a tenure that ended (or started) by date must be
+        recomputed here; no edit triggers it.
+        """
+        today = fields.Date.context_today(self)
+        timed = (
+            self.env["federation.club.representative"]
+            .sudo()
+            .with_context(active_test=False)
+            .search(["|", ("date_start", "!=", False), ("date_end", "!=", False)])
+        )
+        stale = self.browse()
+        for user in timed.mapped("user_id").sudo():
+            clubs, teams = user._portal_scopes_on(today)
+            if (
+                clubs != user.portal_club_scope_ids
+                or teams != user.portal_team_scope_ids
+            ):
+                stale |= user
+        if stale:
+            for name in ("portal_club_scope_ids", "portal_team_scope_ids"):
+                self.env.add_to_compute(self._fields[name], stale)
+        return stale
 
     def action_view_federation_representatives(self):
         """Open the representative roles list for this user."""

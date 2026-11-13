@@ -41,6 +41,15 @@ Every new privileged route requires:
 4. model/helper ownership assertions when elevation is used
 5. CSRF enforcement for state-changing browser or JSON-RPC routes
 
+Portal users can also reach the ORM directly, so access rights alone never
+carry the scope: players, clubs, teams, season registrations, tournament
+participants, rosters, match sheets and club referee duties each have a
+record rule limited to the user's current whole-club or team scope.
+`ci/check_portal_record_rules.py` fails when a portal access right has no
+matching rule. A tenure ends by date: `federation.club.representative.is_current`
+is computed for today (not stored), and an hourly job refreshes the stored
+portal scopes that the rules read.
+
 ## Portal UX direction
 
 The landing page should remain task-first. Common tasks are teams, registrations, upcoming matches, and action items. Specialist tools should be progressively disclosed instead of presented as an undifferentiated module catalogue.

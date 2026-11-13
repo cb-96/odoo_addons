@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 class FederationClubRepresentative(models.Model):
@@ -109,10 +109,13 @@ class FederationClubRepresentative(models.Model):
         compute="_compute_display_name",
         store=True,
     )
+    # Not stored: a tenure ends by date, not by an edit, so a stored flag would
+    # keep granting access after ``date_end``. Searches on this field are
+    # translated to the exact date conditions (see ``_search_is_current``).
     is_current = fields.Boolean(
         string="Currently Active",
         compute="_compute_is_current",
-        store=True,
+        search="_search_is_current",
         help="True if the representative's tenure is currently active.",
     )
 
@@ -133,18 +136,27 @@ class FederationClubRepresentative(models.Model):
                 parts.append("(Primary)")
             rec.display_name = " - ".join(parts) if parts else "New"
 
-    @api.depends("user_id", "delegated_to_id.user_id", "delegation_until", "active")
+    @api.depends(
+        "user_id",
+        "delegated_to_id.user_id",
+        "delegated_to_id.is_current",
+        "delegation_until",
+        "active",
+    )
     def _compute_effective_user(self):
         today = fields.Date.context_today(self)
         for rec in self:
-            delegate_active = (
-                rec.delegated_to_id
-                and rec.delegated_to_id.is_current
-                and (not rec.delegation_until or rec.delegation_until >= today)
-            )
-            rec.effective_user_id = (
-                rec.delegated_to_id.user_id if delegate_active else rec.user_id
-            )
+            rec.effective_user_id = rec._effective_user_on(today)
+
+    def _effective_user_on(self, today):
+        """The user acting for this representative on ``today``."""
+        self.ensure_one()
+        delegate_active = (
+            self.delegated_to_id
+            and self.delegated_to_id._is_current_on(today)
+            and (not self.delegation_until or self.delegation_until >= today)
+        )
+        return self.delegated_to_id.user_id if delegate_active else self.user_id
 
     @api.constrains("delegated_to_id", "delegation_until")
     def _check_delegation_scope(self):
@@ -152,19 +164,82 @@ class FederationClubRepresentative(models.Model):
             if rec.delegated_to_id and rec.delegated_to_id.club_id != rec.club_id:
                 raise ValidationError(_("Delegation must stay within the same club."))
 
+    def _is_current_on(self, today):
+        """Whether the tenure covers ``today`` (empty dates are open-ended)."""
+        self.ensure_one()
+        if not self.active:
+            return False
+        if self.date_start and self.date_start > today:
+            return False
+        if self.date_end and self.date_end < today:
+            return False
+        return True
+
     @api.depends("date_start", "date_end", "active")
     def _compute_is_current(self):
-        """Compute is current."""
         today = fields.Date.context_today(self)
         for rec in self:
-            if not rec.active:
-                rec.is_current = False
-            elif rec.date_start and rec.date_start > today:
-                rec.is_current = False
-            elif rec.date_end and rec.date_end < today:
-                rec.is_current = False
-            else:
-                rec.is_current = True
+            rec.is_current = rec._is_current_on(today)
+
+    @api.model
+    def _search_is_current(self, operator, value):
+        """Exact date conditions, so the answer never depends on a stored flag."""
+        if operator in ("=", "!="):
+            values = {bool(value)}
+        elif operator in ("in", "not in"):
+            values = {bool(item) for item in value}
+        else:
+            raise UserError(
+                _("Unsupported operator %s for Currently Active.", operator)
+            )
+        if operator in ("!=", "not in"):
+            values = {True, False} - values
+        if values == {True, False}:
+            return [(1, "=", 1)]
+        if not values:
+            return [(0, "=", 1)]
+        today = fields.Date.context_today(self)
+        if True in values:
+            return [
+                ("active", "=", True),
+                "|",
+                ("date_start", "=", False),
+                ("date_start", "<=", today),
+                "|",
+                ("date_end", "=", False),
+                ("date_end", ">=", today),
+            ]
+        return [
+            "|",
+            "|",
+            ("active", "=", False),
+            ("date_start", ">", today),
+            ("date_end", "<", today),
+        ]
+
+    @api.model
+    def _cron_refresh_time_based_state(self):
+        """Bring stored values that depend on today's date up to date.
+
+        A tenure or a delegation ends by date, not by an edit, so nothing
+        recomputes the stored portal scopes of the user or the effective user
+        of a delegation when the date passes. This job does, every hour, so an
+        ended tenure loses its portal access within the hour after UTC midnight.
+        """
+        today = fields.Date.context_today(self)
+        self.env["res.users"].sudo()._refresh_portal_scopes()
+        delegations = (
+            self.sudo()
+            .with_context(active_test=False)
+            .search([("delegated_to_id", "!=", False)])
+        )
+        stale = delegations.filtered(
+            lambda rep: rep.effective_user_id != rep._effective_user_on(today)
+        )
+        if stale:
+            self.env.add_to_compute(self._fields["effective_user_id"], stale)
+        self.env.flush_all()
+        return True
 
     @api.constrains("date_start", "date_end")
     def _check_dates(self):

@@ -1,7 +1,7 @@
 # Technical reference
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Conventions and patterns that apply across the `sports_federation_*` addons.
@@ -214,8 +214,7 @@ can be represented completely.
 - Every POST form carries a `csrf_token`.
 - The match-day operations board
   (`/sports/match-days/<matchday_id>/operations`) is scoped to the current
-  live publication of that game day; actions are constrained to that
-  publication.
+  live publication of that game day and is read-only.
 
 Routes are inventoried in the [route inventory](../reference/routes.md).
 

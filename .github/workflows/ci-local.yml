@@ -109,6 +109,14 @@ jobs:
         python ci/check_model_load_order.py
 
         '
+    - name: Verify portal record rules and migration versions
+      run: 'python -m unittest ci/test_check_portal_record_rules.py
+
+        python ci/check_portal_record_rules.py
+
+        python ci/check_migration_versions.py
+
+        '
     - name: Verify single application entry point
       run: python ci/check_application_entrypoint.py
     - name: Validate known release failure registry

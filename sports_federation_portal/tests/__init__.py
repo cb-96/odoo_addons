@@ -29,3 +29,4 @@ from . import test_journey_event
 from . import test_player_parental_overview
 from . import test_portal_create_fields
 from . import test_club_season_players
+from . import test_portal_orm_isolation

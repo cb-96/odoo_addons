@@ -36,6 +36,55 @@ passed unless they ran.
 
 ## Entries
 
+### Portal ORM isolation, tenure expiry and version correction
+
+Affected modules: `sports_federation_portal` 19.0.7.16.0 → 19.0.7.17.0,
+`sports_federation_officiating` (code, data), `sports_federation_schedule_approval`
+19.0.1.4.0 → 19.0.2.7.0
+
+**Data changes**:
+
+- New record rule `rule_player_portal_own` on `federation.player`; portal clubs
+  lose the create right on players (creation stays in the portal service).
+- The rules for clubs, season registrations and tournament participants now use
+  `portal_club_scope_ids`/`portal_team_scope_ids` instead of every representative
+  record.
+- The club referee duty access right moves from `base.group_portal` to
+  *Portal Club Representative* and now sits in the portal addon's ACL file.
+- `federation.club.representative.is_current` is no longer stored. Migration
+  `19.0.7.17.0/post-migrate.py` drops the column and refreshes stored portal
+  scopes and delegations once, so access that expired by date ends at upgrade.
+- Two hourly jobs: *refresh representative tenures and delegations* (portal) and
+  *refresh overdue club duty deadlines* (officiating).
+- The `sports_federation_schedule_approval` manifest is raised to 19.0.2.7.0. It
+  had fallen back below its migrations `19.0.2.2.0` and `19.0.2.6.0`; both are
+  idempotent (`IF NOT EXISTS`, conditional set-based updates), so databases that
+  recorded 19.0.1.4.0 simply rerun them.
+- The unused portal route `/sports/match-days/<id>/matches/<id>/action` is removed.
+
+**Behaviour to verify**:
+
+- A club representative sees only their club's players through the ORM and
+  cannot create players there; the portal "add player" page still works.
+- A team coach sees their team's players, registrations and participants, not
+  the rest of the club's.
+- A representative whose tenure ended yesterday loses portal access within the
+  hour after UTC midnight (or at once on upgrade); a future-dated tenure starts
+  on its day. The *Currently Active* filter on representatives is exact.
+- Portal match officials no longer read club referee duties.
+- The match-day operations board still loads; it has no action buttons.
+- Overdue club duties get their flag within the hour.
+
+**Dry-run evidence**: static checks only (`check_portal_record_rules.py`,
+`check_migration_versions.py` and their unit tests, Black, Flake8 F-codes, the
+lint job's contract checks). The Odoo suites were NOT run; the new tests are in
+`test_portal_orm_isolation.py`, `test_club_representative.py` and
+`test_club_referee_duty.py`.
+
+**Rollback**: code rollback restores the stored `is_current` column on the next
+upgrade (Odoo recreates it and recomputes it). Restore the previous rules and
+ACLs from the prior revision; no business data was changed.
+
 ### Odoo test-suite repair after the registry load fix
 
 Affected modules: `sports_federation_member_services` 19.0.1.4.0 → 19.0.1.4.1,
@@ -73,9 +122,10 @@ Federation Manager by hand if it is no longer wanted.
 
 ### Registry load order and schedule-owned match planning
 
-Affected modules: `sports_federation_schedule_approval` 19.0.1.4.0,
+Affected modules: `sports_federation_schedule_approval` 19.0.2.7.0 (the manifest
+had fallen back to 19.0.1.4.0; see "Portal ORM isolation" above),
 `sports_federation_matchday` 19.0.2.5.1, `sports_federation_tournament`
-19.0.1.7.0, `sports_federation_venues` 19.0.1.1.1 (versions unchanged; code only)
+19.0.1.7.0, `sports_federation_venues` 19.0.1.1.1 (code only)
 
 **Data changes**: None. The publication-replay extension of
 `federation.schedule.approval.commands` moved from `models/match_journey.py` to

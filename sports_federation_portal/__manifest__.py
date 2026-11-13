@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.7.16.0",
+    "version": "19.0.7.17.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -36,6 +36,7 @@ preparation on top of the federation base modules.
         "data/federation_club_role_type.xml",
         "data/operation_task_cron.xml",
         "data/journey_event_cron.xml",
+        "data/representative_cron.xml",
         "views/federation_club_role_type_views.xml",
         "views/federation_club_representative_views.xml",
         "views/federation_club_views.xml",
