@@ -283,7 +283,7 @@ class TestTaskProjection(unittest.TestCase):
             "task_projection.py",
             "_project_task_specs",
             {
-                "expression": SimpleNamespace(OR=lambda scopes: scopes),
+                "Domain": SimpleNamespace(OR=lambda scopes: scopes),
             },
         )
         inner = SimpleNamespace(
