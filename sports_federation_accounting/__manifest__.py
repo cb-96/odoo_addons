@@ -1,4 +1,5 @@
 {
+    "author": "Sports Federation",
     "name": "Federation Native Accounting",
     "version": "19.0.1.3.0",
     "license": "LGPL-3",

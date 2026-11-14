@@ -32,6 +32,6 @@
       <details t-if="sheets" class="sf-disclosure"><summary>Game days</summary><a t-foreach="sheets" t-as="sheet" t-attf-href="/my/match-sheets/#{sheet.id}" class="list-group-item list-group-item-action" data-journey-open="1"><t t-esc="sheet.team_id.display_name"/> · <t t-esc="sheet.match_id.display_name"/> · <t t-esc="sheet.get_portal_state_label()"/></a></details>
     </main></t>
   </template>
-  <template id="competition_preparation_link" inherit_id="sports_federation_portal.portal_my_competitions"><xpath expr="//div[contains(@class, 'container')]" position="inside"><a href="/my/preparation" class="btn btn-outline-secondary my-3" data-journey-open="1">Prepare your team</a></xpath></template>
+  <template id="competition_preparation_link" inherit_id="sports_federation_portal.portal_my_competitions"><xpath expr="//div[hasclass('container')]" position="inside"><a href="/my/preparation" class="btn btn-outline-secondary my-3" data-journey-open="1">Prepare your team</a></xpath></template>
   <template id="roster_preparation_link" inherit_id="sports_federation_portal.portal_my_roster_detail"><xpath expr="//t[@t-call='portal.portal_layout']" position="inside"><a href="/my/preparation" class="btn btn-outline-secondary m-3" data-journey-return="1">Back to team preparation</a></xpath></template>
 </odoo>

@@ -1,4 +1,5 @@
 {
+    "author": "Sports Federation",
     "name": "Court Operations and Visual Planning",
     "version": "19.0.1.8.1",
     "license": "LGPL-3",

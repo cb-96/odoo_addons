@@ -1,4 +1,5 @@
 {
+    "author": "Sports Federation",
     "name": "Member and Family Services",
     "version": "19.0.1.4.1",
     "license": "LGPL-3",

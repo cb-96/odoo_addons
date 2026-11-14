@@ -42,7 +42,7 @@
     </div></t>
   </template>
   <template id="season_players_preparation_link" inherit_id="sports_federation_portal.club_preparation_journey">
-    <xpath expr="//h1" position="after"><div class="alert alert-info">
+    <xpath expr="//h1" position="after"><div class="alert alert-info" role="status">
       Register players for the season before adding them to team rosters.
       <a href="/my/season-players" class="btn btn-outline-primary ms-2">Season players</a>
     </div></xpath>

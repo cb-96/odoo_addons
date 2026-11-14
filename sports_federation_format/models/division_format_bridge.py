@@ -39,7 +39,7 @@ class FederationTournamentFormatBridge(models.Model):
     )
     format_stage_summary = fields.Html(
         compute="_compute_format_structure",
-        string="Stages",
+        string="Format stage summary",
         sanitize=True,
     )
     format_type_label = fields.Char(

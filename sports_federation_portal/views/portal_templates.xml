@@ -90,7 +90,7 @@
         <div t-if="not tasks" class="text-center py-5"><i class="fa fa-check-circle fa-3x text-success"/><h3>All clear</h3><p class="text-muted">There are no actions in this view.</p></div>
       <div t-if="not tasks" class="alert alert-success" role="status"><strong>No action items.</strong> No tasks are visible in this filter. Check participation and publication status separately.</div></div></t>
     </template>
-    <template id="portal_milestones" name="Club Milestones"><t t-call="portal.portal_layout"><div class="container py-4"><div class="d-flex justify-content-between mb-4"><div><h2>Milestones</h2><p class="text-muted">Authoritative deadlines from registrations, rosters, officials and results.</p></div><a href="/my/action-items" class="btn btn-outline-secondary">Work inbox</a></div><t t-foreach="groups.items()" t-as="group"><section class="mb-4"><h3 class="h5"><t t-esc="group[0]"/></h3><div class="list-group"><a t-foreach="group[1]" t-as="task" t-att-href="task.action_url or '/my/action-items'" class="list-group-item list-group-item-action d-flex justify-content-between"><span><strong><t t-esc="task.name"/></strong><br/><small><t t-esc="task.next_step"/></small></span><time><t t-esc="task.deadline" t-options="{'widget':'datetime'}"/></time></a></div></section></t><div t-if="not groups" class="alert alert-success">No upcoming deadlines.</div></div></t></template>
+    <template id="portal_milestones" name="Club Milestones"><t t-call="portal.portal_layout"><div class="container py-4"><div class="d-flex justify-content-between mb-4"><div><h2>Milestones</h2><p class="text-muted">Authoritative deadlines from registrations, rosters, officials and results.</p></div><a href="/my/action-items" class="btn btn-outline-secondary">Work inbox</a></div><t t-foreach="groups.items()" t-as="group"><section class="mb-4"><h3 class="h5"><t t-esc="group[0]"/></h3><div class="list-group"><a t-foreach="group[1]" t-as="task" t-att-href="task.action_url or '/my/action-items'" class="list-group-item list-group-item-action d-flex justify-content-between"><span><strong><t t-esc="task.name"/></strong><br/><small><t t-esc="task.next_step"/></small></span><time><t t-esc="task.deadline" t-options="{'widget':'datetime'}"/></time></a></div></section></t><div t-if="not groups" class="alert alert-success" role="status">No upcoming deadlines.</div></div></t></template>
 
     <!-- ============================================================ -->
     <!-- My Club Page                                                  -->
@@ -112,7 +112,7 @@
                     </div>
                 </div>
 
-                <div t-if="error" class="alert alert-warning">
+                <div t-if="error" class="alert alert-warning" role="status">
                     <t t-esc="error"/>
                     <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>

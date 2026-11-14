@@ -56,19 +56,19 @@
                     </div>
                 </div>
 
-                <div t-if="success" class="alert alert-success">
+                <div t-if="success" class="alert alert-success" role="status">
                     <t t-esc="success"/>
                 </div>
-                <div t-if="error" class="alert alert-danger">
+                <div t-if="error" class="alert alert-danger" role="status">
                     <t t-esc="error"/>
                 </div>
 
-                <div t-if="not has_compliance_access" class="alert alert-warning">
+                <div t-if="not has_compliance_access" class="alert alert-warning" role="status">
                     <i class="fa fa-info-circle me-2"/>
                     You do not currently have a club or official profile with portal-managed compliance responsibilities.
                 </div>
 
-                <div t-elif="not workspace_entries" class="alert alert-info">
+                <div t-elif="not workspace_entries" class="alert alert-info" role="status">
                     <i class="fa fa-info-circle me-2"/>
                     No portal-managed compliance items are assigned to you right now. New uploads and renewals will appear here when federation staff opens them.
                 </div>
@@ -141,10 +141,10 @@
                     </div>
                 </div>
 
-                <div t-if="success" class="alert alert-success">
+                <div t-if="success" class="alert alert-success" role="status">
                     <t t-esc="success"/>
                 </div>
-                <div t-if="error" class="alert alert-danger">
+                <div t-if="error" class="alert alert-danger" role="status">
                     <t t-esc="error"/>
                 </div>
 

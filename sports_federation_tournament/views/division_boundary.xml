@@ -15,8 +15,8 @@
         <button name="action_open_division_game_days" type="object" string="Plan game days" invisible="not edition_id"/>
       </xpath>
       <xpath expr="//sheet" position="inside">
-        <div class="alert alert-info" invisible="not edition_id">This record is a playing division. Dates describe its validity, not a venue booking. Plan dates, venues, courts and capacity in the competition's game days.</div>
-        <div class="alert alert-warning" invisible="edition_id">Legacy standalone tournament: history is preserved. Create new standalone events through a competition edition and its divisions, then plan game days.</div>
+        <div class="alert alert-info" invisible="not edition_id" role="status">This record is a playing division. Dates describe its validity, not a venue booking. Plan dates, venues, courts and capacity in the competition's game days.</div>
+        <div class="alert alert-warning" invisible="edition_id" role="status">Legacy standalone tournament: history is preserved. Create new standalone events through a competition edition and its divisions, then plan game days.</div>
       </xpath>
     </field>
   </record>

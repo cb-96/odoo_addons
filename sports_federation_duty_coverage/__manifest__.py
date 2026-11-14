@@ -1,4 +1,5 @@
 {
+    "author": "Sports Federation",
     "name": "Sports Federation Duty Coverage",
     "version": "19.0.1.0.1",
     "category": "Sports",

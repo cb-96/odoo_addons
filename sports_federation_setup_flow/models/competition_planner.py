@@ -57,7 +57,7 @@ class FederationCompetitionEditionPlanner(models.Model):
 
         model_name, view_mode = self._PLANNER_STEP_MODELS[step]
         model = self.env[model_name]
-        model.check_access_rights("read")
+        model.check_access("read")
         action = {
             "type": "ir.actions.act_window",
             "name": self._planner_step_label(step),
@@ -318,7 +318,7 @@ class FederationCompetitionEditionPlanner(models.Model):
             raise ValidationError(_("Unknown competition operation: %s") % operation)
         model_name, view_mode, name = allowed[operation]
         model = self.env.get(model_name)
-        if model is None or not model.check_access_rights(
+        if model is None or not model.check_access(
             "read", raise_exception=False
         ):
             raise ValidationError(_("This operation is not available to your role."))
@@ -380,7 +380,7 @@ class FederationCompetitionEditionPlanner(models.Model):
                 _("Administration tools are not enabled for your role.")
             )
         Task = self.env.get("federation.operation.task")
-        if Task is not None and Task.check_access_rights("read", raise_exception=False):
+        if Task is not None and Task.check_access("read", raise_exception=False):
             action = self.env["ir.actions.act_window"]._for_xml_id(
                 "sports_federation_portal.action_federation_operation_task"
             )
