@@ -71,17 +71,6 @@ class FederationTeamClubRank(models.Model):
                 vals["club_rank"] = _rank_from_name(vals.get("name"))
         return super().create(vals_list)
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        # A compute without dependencies is not reliably triggered when a
-        # record is created, so set the rank from the name here. A rank given
-        # explicitly always wins.
-        vals_list = [dict(vals) for vals in vals_list]
-        for vals in vals_list:
-            if "club_rank" not in vals:
-                vals["club_rank"] = _rank_from_name(vals.get("name"))
-        return super().create(vals_list)
-
     @api.constrains("club_rank")
     def _check_club_rank(self):
         for team in self:

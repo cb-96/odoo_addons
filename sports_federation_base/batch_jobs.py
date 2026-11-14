@@ -26,8 +26,6 @@ from psycopg2.errors import DeadlockDetected, SerializationFailure
 
 from odoo.tools import config
 
-from odoo.tools import config
-
 _logger = logging.getLogger(__name__)
 
 RETRYABLE_ERRORS = (DeadlockDetected, SerializationFailure)
