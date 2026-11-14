@@ -440,9 +440,13 @@ class MatchCourtScoring(models.Model):
 
     def action_approve_result_one_step(self):
         """Prevent a court scorer from approving their own captured result."""
-        own_captures = self.sudo().mapped("court_capture_ids").filtered(
-            lambda capture: capture.submitted
-            and capture.scorer_user_id == self.env.user
+        own_captures = (
+            self.sudo()
+            .mapped("court_capture_ids")
+            .filtered(
+                lambda capture: capture.submitted
+                and capture.scorer_user_id == self.env.user
+            )
         )
         if own_captures:
             raise ValidationError(

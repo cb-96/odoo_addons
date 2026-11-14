@@ -116,9 +116,7 @@ class ResUsers(models.Model):
             # flushes the transaction later.
             stale.mapped("portal_club_scope_ids")
             stale.mapped("portal_team_scope_ids")
-            stale.flush_recordset(
-                ["portal_club_scope_ids", "portal_team_scope_ids"]
-            )
+            stale.flush_recordset(["portal_club_scope_ids", "portal_team_scope_ids"])
             # Record rules read these fields, and Odoo caches the domain it
             # evaluates for each user. Without this the old scope keeps
             # applying until the cache is cleared by something else.
