@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+from unittest.mock import patch
+
 from dateutil.relativedelta import relativedelta
 
 from odoo import fields

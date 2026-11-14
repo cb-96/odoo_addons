@@ -668,6 +668,7 @@ class TestRosterPortalAccess(TransactionCase):
             }
         )
         register_for_season(fresh_player, self.season, self.club_a)
+        register_for_season(fresh_player, self.season, self.club_a)
 
         # fresh_player should appear; player_a is already on roster_a (class fixture)
         available_before = self.env[
