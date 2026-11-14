@@ -10,13 +10,10 @@ from odoo.addons.sports_federation_base.tests.route_inventory import (
 )
 from odoo.tests.common import HttpCase, tagged
 
-<<<<<<< ours
 from odoo.addons.sports_federation_people.tests.registration_fixtures import (
     create_registered_roster_lines,
 )
-=======
 from odoo.addons.sports_federation_base.tests import relative_dates
->>>>>>> theirs
 
 
 def _extract_csrf_token(response_text):
