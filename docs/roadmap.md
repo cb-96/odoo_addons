@@ -109,6 +109,9 @@ decision before it is closed.
 - Live push updates on the match-day operations board (it polls today).
 - Journey abandonment and time instrumentation beyond the current journey
   events, and role-specific onboarding guides.
+- Use by other federations and other sports. The direction, a sport-neutral
+  data model and the migration path are recorded in
+  [multi-sport direction](architecture/multi-sport-direction.md).
 
 ## Approval criteria
 

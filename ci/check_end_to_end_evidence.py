@@ -152,13 +152,23 @@ def check_human(evidence_dir: Path, commit: str) -> tuple[str, list[str]]:
     if data.get("commit") != commit:
         issues.append("human-acceptance.json: recorded for another commit")
     sessions = data.get("sessions", [])
-    if not isinstance(sessions, list) or any(not isinstance(session, dict) for session in sessions):
-        return "incomplete", ["human-acceptance.json: sessions must be a list of objects"]
-    roles = {session.get("role") for session in sessions if session.get("completed") is True}
+    if not isinstance(sessions, list) or any(
+        not isinstance(session, dict) for session in sessions
+    ):
+        return "incomplete", [
+            "human-acceptance.json: sessions must be a list of objects"
+        ]
+    roles = {
+        session.get("role") for session in sessions if session.get("completed") is True
+    }
     for role in ("club_representative", "organiser", "court_operator"):
-        count = sum(1 for s in sessions if s.get("role") == role and s.get("completed") is True)
+        count = sum(
+            1 for s in sessions if s.get("role") == role and s.get("completed") is True
+        )
         if count < 5:
-            issues.append(f"human-acceptance.json: {count} {role} completed sessions, need at least 5")
+            issues.append(
+                f"human-acceptance.json: {count} {role} completed sessions, need at least 5"
+            )
     if not roles:
         issues.append("human-acceptance.json: no completed sessions")
     if data.get("critical_incidents"):

@@ -115,19 +115,41 @@ def index():
                 if node.tag == "menuitem" and node.get("id"):
                     xmlid = _qualify(module, node.get("id"))
                     record = records.setdefault(
-                        xmlid, {"name": "", "parent": "", "sequence": 10, "groups": set(), "action": ""}
+                        xmlid,
+                        {
+                            "name": "",
+                            "parent": "",
+                            "sequence": 10,
+                            "groups": set(),
+                            "action": "",
+                        },
                     )
                     record["name"] = node.get("name", record["name"])
-                    record["parent"] = _qualify(module, node.get("parent", "")) or record["parent"]
-                    record["action"] = _qualify(module, node.get("action", "")) or record["action"]
+                    record["parent"] = (
+                        _qualify(module, node.get("parent", "")) or record["parent"]
+                    )
+                    record["action"] = (
+                        _qualify(module, node.get("action", "")) or record["action"]
+                    )
                     if node.get("sequence"):
                         record["sequence"] = int(node.get("sequence"))
                     if node.get("groups"):
                         record["groups"] |= _groups(module, node.get("groups"))
-                elif node.tag == "record" and node.get("model") == "ir.ui.menu" and node.get("id"):
+                elif (
+                    node.tag == "record"
+                    and node.get("model") == "ir.ui.menu"
+                    and node.get("id")
+                ):
                     xmlid = _qualify(module, node.get("id"))
                     record = records.setdefault(
-                        xmlid, {"name": "", "parent": "", "sequence": 10, "groups": set(), "action": ""}
+                        xmlid,
+                        {
+                            "name": "",
+                            "parent": "",
+                            "sequence": 10,
+                            "groups": set(),
+                            "action": "",
+                        },
                     )
                     for field in node.findall("field"):
                         name = field.get("name")
@@ -216,6 +238,7 @@ def structure_errors(records):
 
 def landing_menu(records, groups=None):
     """First menu with an action the given groups can see, as Odoo resolves it."""
+
     def visible(xmlid):
         assigned = records[xmlid]["groups"]
         return groups is None or not assigned or bool(assigned & groups)
@@ -292,10 +315,15 @@ def main():
             "ordinary competition entries are "
             f"{ordinary_competition_entries!r}, expected Competitions and Review Queue"
         )
-    for label, groups in (("ordinary manager", ORDINARY_GROUPS), ("advanced operator", None)):
+    for label, groups in (
+        ("ordinary manager", ORDINARY_GROUPS),
+        ("advanced operator", None),
+    ):
         landing = landing_menu(records, groups)
         if landing != LANDING_MENU:
-            errors.append(f"the Federation app opens on {landing} for an {label}, expected {LANDING_MENU}")
+            errors.append(
+                f"the Federation app opens on {landing} for an {label}, expected {LANDING_MENU}"
+            )
 
     for label in TOP_LEVEL:
         if f"**{label}**" not in navigation:

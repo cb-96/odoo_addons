@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_club_invoices" name="Club invoices">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="mb-0"><i class="fa fa-file-text-o me-2"/>Club invoices</h2>
+                    <a href="/my" class="btn btn-outline-secondary btn-sm"><i class="fa fa-arrow-left me-1"/>Back to overview</a>
+                </div>
+                <p class="text-muted">Invoices for your club's registrations, entries and other federation charges. Open an invoice to download it or pay online.</p>
+                <div t-if="not rows" class="alert alert-info" role="status">Your club has no invoices.</div>
+                <div t-if="rows" class="table-responsive">
+                    <table class="table align-middle">
+                        <caption class="visually-hidden">Invoices of your club.</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Invoice</th>
+                                <th scope="col">For</th>
+                                <th scope="col">Date</th>
+                                <th scope="col">Due</th>
+                                <th scope="col" class="text-end">Amount</th>
+                                <th scope="col" class="text-end">Still to pay</th>
+                                <th scope="col">Status</th>
+                                <th scope="col"><span class="visually-hidden">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="rows" t-as="row" t-att-class="'table-danger' if row['overdue'] else None">
+                                <td class="fw-semibold"><t t-esc="row['number']"/><div class="small text-muted" t-if="len(set(r['club'] for r in rows)) &gt; 1" t-esc="row['club']"/></td>
+                                <td><t t-esc="row['description']"/></td>
+                                <td><t t-esc="row['date']" t-options="{'widget': 'date'}"/></td>
+                                <td><t t-esc="row['due']" t-options="{'widget': 'date'}"/><span t-if="row['overdue']" class="badge text-bg-danger ms-1">Overdue</span></td>
+                                <td class="text-end"><t t-esc="row['amount']" t-options="{'widget': 'monetary', 'display_currency': row['currency']}"/></td>
+                                <td class="text-end"><t t-esc="row['residual']" t-options="{'widget': 'monetary', 'display_currency': row['currency']}"/></td>
+                                <td><span t-attf-class="badge #{'text-bg-warning' if row['unpaid'] else 'text-bg-success'}"><t t-esc="row['state_label']"/></span></td>
+                                <td class="text-end"><a t-att-href="row['url']" t-attf-class="btn btn-sm #{'btn-primary' if row['unpaid'] else 'btn-outline-secondary'}"><t t-if="row['unpaid']">View and pay</t><t t-else="">View</t></a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Club overview tile with a badge for open invoices. -->
+    <template id="portal_club_overview_invoices" inherit_id="sports_federation_portal.portal_federation_links" name="Club overview: invoices">
+        <xpath expr="//div[hasclass('o_fed_club_grid')]" position="inside">
+            <t t-set="club_unpaid_invoices" t-value="request.env['federation.finance.event']._portal_unpaid_invoice_count()"/>
+            <a t-if="request.env.user.portal_club_scope_ids" href="/my/club-invoices" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-file-text-o"/></span><span class="o_fed_club_content"><strong>Invoices</strong><small>Fees, payments and receipts</small></span><span t-if="club_unpaid_invoices" class="badge rounded-pill text-bg-danger"><t t-esc="club_unpaid_invoices"/></span><i class="fa fa-chevron-right text-muted"/></a>
+        </xpath>
+    </template>
+</odoo>

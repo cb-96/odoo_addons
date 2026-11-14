@@ -152,3 +152,105 @@ class TestSimpleScheduling(TransactionCase):
         draft = self.env["federation.schedule"].new({})
         self.assertFalse(draft.simple_checked)
         self.assertEqual(draft.simple_scheduled_count, 0)
+
+
+@tagged("post_install", "-at_install", "sf_simple_scheduling")
+class TestCompetitionScheduleGuidance(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        season = cls.env["federation.season"].create(
+            {
+                "name": "Guidance Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
+        )
+        competition = cls.env["federation.competition"].create(
+            {"name": "Guidance Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Guidance Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        division = cls.env["federation.tournament"].create(
+            {
+                "name": "Guidance Division",
+                "edition_id": cls.edition.id,
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "date_start": "2026-10-01",
+            }
+        )
+        participants = cls.env["federation.participant.set"].create(
+            {
+                "name": "Guidance Participants",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "state": "finalized",
+            }
+        )
+        cls.structure = cls.env["federation.competition.structure"].create(
+            {
+                "name": "Guidance Structure",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "participant_set_id": participants.id,
+                "format_type": "custom",
+                "state": "frozen",
+            }
+        )
+        venue = cls.env["federation.venue"].create({"name": "Guidance Venue"})
+        cls.matchday = cls.env["federation.matchday"].create(
+            {
+                "name": "Guidance Game Day",
+                "edition_id": cls.edition.id,
+                "date": "2026-10-10",
+                "venue_id": venue.id,
+            }
+        )
+        cls.env["federation.schedule"].create(
+            {
+                "name": "Guidance Schedule",
+                "edition_id": cls.edition.id,
+                "structure_id": cls.structure.id,
+                "matchday_id": cls.matchday.id,
+                "state": "draft",
+            }
+        )
+
+    def _wizard(self, **values):
+        base = {
+            "edition_id": self.edition.id,
+            "matchday_ids": [(6, 0, self.matchday.ids)],
+            "structure_ids": [(6, 0, self.structure.ids)],
+        }
+        base.update(values)
+        return self.env["federation.competition.schedule.wizard"].new(base)
+
+    def test_without_game_days_the_operator_is_asked_to_choose_them(self):
+        wizard = self._wizard(matchday_ids=[(5, 0, 0)])
+        self.assertIn("Choose the game days to plan", wizard.guidance_status_html)
+
+    def test_unchecked_wizard_explains_that_generation_checks_first(self):
+        wizard = self._wizard()
+        self.assertFalse(wizard.preview_ready)
+        self.assertIn("Ready to check and generate", wizard.guidance_status_html)
+
+    def test_existing_unpublished_planning_is_counted(self):
+        wizard = self._wizard()
+        self.assertEqual(wizard.existing_draft_schedule_count, 1)
+        self.assertEqual(wizard.existing_slot_count, len(self.matchday.slot_ids))
+
+    def test_every_rerun_mode_explains_its_effect(self):
+        fill = self._wizard(mode="fill")
+        self.assertIn("Keeps everything already planned", fill.mode_impact_html)
+        replace = self._wizard(mode="replace_auto")
+        self.assertIn("placed by hand stay where they are", replace.mode_impact_html)
+        rebuild = self._wizard(mode="rebuild")
+        self.assertIn("1 unpublished", rebuild.mode_impact_html)
+        self.assertIn("including matches placed by hand", rebuild.mode_impact_html)
+        self.assertIn("alert-danger", rebuild.mode_impact_html)

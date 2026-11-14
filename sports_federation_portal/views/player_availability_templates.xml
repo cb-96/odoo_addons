@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Upcoming game days of the user's teams and whether players were asked. -->
+    <template id="portal_player_availability" name="Player availability">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="mb-0"><i class="fa fa-hand-paper-o me-2"/>Player availability</h2>
+                    <a href="/my" class="btn btn-outline-secondary btn-sm"><i class="fa fa-arrow-left me-1"/>Back to overview</a>
+                </div>
+                <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div>
+                <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+                <t t-if="not enabled">
+                    <div class="alert alert-info" role="status">
+                        <p class="mb-1"><strong>Your club does not ask players for their availability here.</strong></p>
+                        <p class="mb-0">This is optional. Clubs that already use Spond or another app can leave it off.</p>
+                    </div>
+                    <a t-if="can_configure" href="/my/club" class="btn btn-primary">Switch it on in Club details</a>
+                </t>
+                <t t-else="">
+                    <p class="text-muted">Ask a team's roster players whether they can play on a game day. Players answer through a link in their email, without an account. You see the answers when you make the line-up.</p>
+                    <div t-if="not rows" class="alert alert-info" role="status">Your teams have no upcoming published game days.</div>
+                    <div t-if="rows" class="table-responsive">
+                        <table class="table align-middle">
+                            <caption class="visually-hidden">Upcoming game days of your teams.</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Game day</th>
+                                    <th scope="col">Team</th>
+                                    <th scope="col">Answers</th>
+                                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="rows" t-as="row">
+                                    <td><strong><t t-esc="row['matchday'].date" t-options="{'widget': 'date'}"/></strong><div class="small text-muted"><t t-esc="row['matchday'].name"/></div></td>
+                                    <td><t t-esc="row['team'].name"/><div class="small text-muted"><t t-esc="row['match_count']"/> match(es)</div></td>
+                                    <td>
+                                        <t t-if="row['request']">
+                                            <t t-set="req" t-value="row['request']"/>
+                                            <span class="badge text-bg-success me-1"><t t-esc="req.yes_count"/> available</span>
+                                            <span class="badge text-bg-warning me-1"><t t-esc="req.maybe_count"/> maybe</span>
+                                            <span class="badge text-bg-danger me-1"><t t-esc="req.no_count"/> not available</span>
+                                            <span class="badge text-bg-light border"><t t-esc="req.pending_count"/> no answer</span>
+                                        </t>
+                                        <span t-else="" class="text-muted">Not asked yet</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a t-if="row['request']" t-attf-href="/my/availability/#{row['request'].id}" class="btn btn-sm btn-outline-primary">Open</a>
+                                        <form t-else="" method="POST" action="/my/availability/new" class="d-inline">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <input type="hidden" name="team_id" t-att-value="row['team'].id"/>
+                                            <input type="hidden" name="matchday_id" t-att-value="row['matchday'].id"/>
+                                            <button type="submit" class="btn btn-sm btn-primary">Ask players</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- Answers of one team for one game day; the club can fill in answers itself. -->
+    <template id="portal_player_availability_detail" name="Player availability answers">
+        <t t-call="portal.portal_layout">
+            <t t-set="day" t-value="availability.matchday_id"/>
+            <t t-set="is_open" t-value="availability._is_open()"/>
+            <t t-set="without_email" t-value="availability.line_ids.filtered(lambda l: not l.player_id.email)"/>
+            <t t-set="remind_count" t-value="len(availability.line_ids.filtered(lambda l: l.response == 'pending' and l.player_id.email))"/>
+            <div class="container py-4">
+                <a href="/my/availability" class="btn btn-outline-secondary btn-sm mb-3"><i class="fa fa-arrow-left me-1"/>Player availability</a>
+                <h2 class="mb-1"><t t-esc="availability.team_id.name"/></h2>
+                <p class="text-muted"><t t-esc="day.date" t-options="{'widget': 'date'}"/> · <t t-esc="day.name"/><t t-if="day.venue_id"> · <t t-esc="day.venue_id.display_name"/></t></p>
+                <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div>
+                <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge text-bg-success fs-6"><t t-esc="availability.yes_count"/> available</span>
+                    <span class="badge text-bg-warning fs-6"><t t-esc="availability.maybe_count"/> maybe</span>
+                    <span class="badge text-bg-danger fs-6"><t t-esc="availability.no_count"/> not available</span>
+                    <span class="badge text-bg-light border fs-6"><t t-esc="availability.pending_count"/> no answer</span>
+                </div>
+                <form t-if="is_open and remind_count" method="POST" t-attf-action="/my/availability/#{availability.id}/remind" class="mb-3">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fa fa-envelope-o me-1"/>Send a reminder to <t t-esc="remind_count"/> player(s) without an answer</button>
+                </form>
+                <p t-if="without_email" class="small text-muted"><t t-esc="len(without_email)"/> player(s) have no email address. Ask them yourself and enter their answer below.</p>
+                <p t-if="not is_open" class="alert alert-secondary" role="status">This game day has been played. Answers can no longer change.</p>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <caption class="visually-hidden">Answers of the roster players.</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Player</th>
+                                <th scope="col">Answer</th>
+                                <th scope="col">Note</th>
+                                <th scope="col" t-if="is_open"><span class="visually-hidden">Set answer</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="availability.line_ids" t-as="line">
+                                <td><t t-esc="line.player_id.display_name"/><div t-if="not line.player_id.email" class="small text-muted">No email</div></td>
+                                <td>
+                                    <span t-attf-class="badge #{ {'yes': 'text-bg-success', 'maybe': 'text-bg-warning', 'no': 'text-bg-danger'}.get(line.response, 'text-bg-light border') }"><t t-esc="line.response_label"/></span>
+                                    <div t-if="line.answered_by == 'club'" class="small text-muted">Entered by the club</div>
+                                </td>
+                                <td><t t-esc="line.note or ''"/></td>
+                                <td t-if="is_open" class="text-end">
+                                    <form method="POST" t-attf-action="/my/availability/#{availability.id}/answer" class="d-inline-flex gap-1">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <input type="hidden" name="line_id" t-att-value="line.id"/>
+                                        <button type="submit" name="response" value="yes" class="btn btn-sm btn-outline-success" t-attf-aria-label="#{line.player_id.display_name}: available">Available</button>
+                                        <button type="submit" name="response" value="maybe" class="btn btn-sm btn-outline-warning" t-attf-aria-label="#{line.player_id.display_name}: maybe">Maybe</button>
+                                        <button type="submit" name="response" value="no" class="btn btn-sm btn-outline-danger" t-attf-aria-label="#{line.player_id.display_name}: not available">Not available</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- The page behind the personal link in the player's email. -->
+    <template id="player_availability_link" name="Your availability">
+        <t t-call="website.layout">
+            <t t-set="day" t-value="availability.matchday_id"/>
+            <div class="container py-5" style="max-width: 36rem;">
+                <h1 class="h3">Can you play?</h1>
+                <p class="lead mb-1"><t t-esc="line.player_id.first_name or line.player_id.name"/>, <t t-esc="availability.team_id.name"/> plays on <strong><t t-esc="day.date" t-options="{'widget': 'date'}"/></strong>.</p>
+                <p class="text-muted"><t t-esc="day.name"/><t t-if="day.venue_id"> · <t t-esc="day.venue_id.display_name"/></t></p>
+                <div t-if="saved" class="alert alert-success" role="status">Thank you. Your team can see your answer. You can change it with the same link until the game day.</div>
+                <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+                <p t-if="line.response != 'pending'">Your answer: <strong><t t-esc="line.response_label"/></strong><t t-if="line.note"> (<t t-esc="line.note"/>)</t></p>
+                <form t-if="open" method="POST">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <fieldset class="mb-3">
+                        <legend class="h6">Your answer</legend>
+                        <div class="form-check"><input class="form-check-input" type="radio" name="response" id="availability_yes" value="yes" t-att-checked="line.response == 'yes' or None" required="required"/><label class="form-check-label" for="availability_yes">I can play</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" name="response" id="availability_maybe" value="maybe" t-att-checked="line.response == 'maybe' or None"/><label class="form-check-label" for="availability_maybe">Maybe</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" name="response" id="availability_no" value="no" t-att-checked="line.response == 'no' or None"/><label class="form-check-label" for="availability_no">I cannot play</label></div>
+                    </fieldset>
+                    <div class="mb-3">
+                        <label class="form-label" for="availability_note">Note for your team (optional)</label>
+                        <input class="form-control" id="availability_note" name="note" maxlength="200" t-att-value="line.note or ''" placeholder="For example: only the morning matches"/>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save my answer</button>
+                </form>
+                <p t-else="" class="alert alert-secondary" role="status">This game day has been played. Answers can no longer change.</p>
+            </div>
+        </t>
+    </template>
+
+    <template id="player_availability_link_invalid" name="Availability link not valid">
+        <t t-call="website.layout">
+            <div class="container py-5" style="max-width: 36rem;">
+                <h1 class="h3">This link does not work</h1>
+                <p>The link is incomplete or no longer valid. Ask your team manager for a new one.</p>
+            </div>
+        </t>
+    </template>
+
+    <!-- Club details: the club decides whether it uses this. -->
+    <template id="portal_my_club_player_availability" inherit_id="sports_federation_portal.portal_my_club" name="Club details: player availability">
+        <xpath expr="//t[@t-if='club']/div[hasclass('card')]" position="after">
+            <section t-if="club in request.env.user.portal_club_scope_ids" class="card mb-4" aria-labelledby="club-player-availability">
+                <div class="card-body">
+                    <h3 id="club-player-availability" class="h5">Player availability</h3>
+                    <div t-if="request.params.get('success')" class="alert alert-success" role="status"><t t-esc="request.params.get('success')"/></div>
+                    <p class="mb-2">Ask players by email before each game day whether they can play, and see their answers when you make the line-up. Optional: leave it off if your club already uses Spond or another app.</p>
+                    <form method="POST" action="/my/club/player-availability" class="d-flex flex-wrap align-items-center gap-2">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="club_id" t-att-value="club.id"/>
+                        <t t-if="club.player_availability_enabled">
+                            <span class="badge text-bg-success">On</span>
+                            <button type="submit" name="enabled" value="0" class="btn btn-sm btn-outline-secondary">Switch off</button>
+                            <a href="/my/availability" class="btn btn-sm btn-primary">Ask players</a>
+                        </t>
+                        <t t-else="">
+                            <span class="badge text-bg-light border">Off</span>
+                            <button type="submit" name="enabled" value="1" class="btn btn-sm btn-primary">Switch on</button>
+                        </t>
+                    </form>
+                </div>
+            </section>
+        </xpath>
+    </template>
+
+    <!-- Club overview tile, only for clubs that use it. -->
+    <template id="portal_club_overview_player_availability" inherit_id="sports_federation_portal.portal_federation_links" name="Club overview: player availability">
+        <xpath expr="//div[hasclass('o_fed_club_grid')]" position="inside">
+            <a t-if="request.env['federation.player.availability.request']._portal_enabled()" href="/my/availability" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-hand-paper-o"/></span><span class="o_fed_club_content"><strong>Player availability</strong><small>Who can play on the next game days</small></span><i class="fa fa-chevron-right text-muted"/></a>
+        </xpath>
+    </template>
+
+    <!-- Line-up page: show each player's answer next to their name. -->
+    <template id="portal_match_sheet_player_availability" inherit_id="sports_federation_portal.portal_my_match_sheet_detail" name="Line-up: player availability">
+        <xpath expr="//t[@t-foreach='roster_lines']" position="before">
+            <t t-set="player_availability" t-value="request.env['federation.player.availability.request']._portal_lineup_availability(sheet)"/>
+        </xpath>
+        <xpath expr="//input[@name='squad_player_ids']/../../td[2]" position="inside">
+            <t t-set="answer" t-value="player_availability.get(rline.player_id.id)"/>
+            <span t-if="answer" t-attf-class="badge #{answer['badge']} ms-1" t-att-title="answer['note'] or None"><t t-esc="answer['label']"/></span>
+        </xpath>
+    </template>
+</odoo>

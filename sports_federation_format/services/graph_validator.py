@@ -1,4 +1,4 @@
-from odoo import _, api, models
+from odoo import api, models
 from odoo.exceptions import ValidationError
 
 
@@ -20,7 +20,7 @@ class FederationStageGraphValidator(models.AbstractModel):
 
         def visit(stage_id):
             if stage_id in visiting:
-                raise ValidationError(_("Stage graph contains a cycle."))
+                raise ValidationError(self.env._("Stage graph contains a cycle."))
             if stage_id in completed:
                 return
             visiting.add(stage_id)

@@ -33,7 +33,7 @@ def command(records):
 
 def guarded(env):
     if env.context.get("member_lifecycle_token") is not _COMMAND:
-        raise AccessError(_("Use the reviewed lifecycle command."))
+        raise AccessError(env._("Use the reviewed lifecycle command."))
 
 
 class FamilyPartner(models.Model):

@@ -1,6 +1,6 @@
 {
     "name": "Competition Setup Flow",
-    "version": "19.0.4.11.1",
+    "version": "19.0.4.11.2",
     "category": "Sports",
     "summary": "Continuous and resumable competition setup",
     "author": "Sports Federation",

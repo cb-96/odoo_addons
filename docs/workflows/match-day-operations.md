@@ -1,7 +1,7 @@
 # Workflow: Match-day operations
 
 Owner: Federation Competition Operations
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Everything that happens around a single match — roster management, match-sheet
@@ -286,8 +286,10 @@ game-day staff (organizers, court managers, result-table volunteers) for one
 game day:
 
 - **Access**: portal users with club or team activity on that game day, and
-  federation staff through their normal session. Data and actions are
-  constrained to the game day's current live publication.
+  federation staff through their normal session. The board is read-only: it
+  shows the game day's current live publication. Matches are started, scored
+  and finished on court (**Run this court**) and approved in the result
+  pipeline, never from the portal board.
 - **Not for preparation**: line-up and roster work stays in the portal
   preparation pages until play is underway.
 - **Sections**: header with match counts, a ranked action queue, summary
@@ -336,6 +338,22 @@ entered from the sheet (the QR code opens the match) after the match. The
 signed sheet is kept until the result is approved. See the
 [rosters module](../../sports_federation_rosters/README.md#printable-scoresheet).
 
+## Offline court scoring
+
+Head and assistant referees with a confirmed assignment score their matches on
+their own phone; a club representative may add an optional club scorer per
+match. Before the game day, each scorer opens **My court duties** while online
+and chooses **Prepare this phone**. On the game day the court app works without
+a network: scores per set, crossed-out players, cards, time-outs and
+challenges. It sends changes whenever there is a connection and the match-day
+session is open. The head referee confirms a result scored by someone else
+with their PIN; without it the result is marked as not confirmed.
+
+Every court result waits for the tournament manager, who checks the **Court
+evidence** tab on the match and clicks **Approve Result** (one step). The
+printed scoresheet remains the fallback. See the
+[court operations module](../../sports_federation_live_workspace/README.md#offline-court-app).
+
 ## Live operations and controlled deviations
 
 1. Open **Match-Day Control** and resolve all readiness blockers.
@@ -348,6 +366,11 @@ signed sheet is kept until the result is approved. See the
 5. Resolve incidents and complete or cancel every published match.
 6. Select **Close Match Day**. Forced closure requires a reason and retains the
    blocker IDs in the competition event.
+
+Kickoff, location and publication pointers of a published match are
+schedule-owned. Only the publication handoff and the deviation command above may
+change them; direct edits, and round date or venue changes, leave published
+matches untouched.
 
 Publication replacement is impossible while a match day is open. Different
 match days in the same edition retain independent live publications and version

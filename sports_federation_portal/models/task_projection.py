@@ -1,10 +1,12 @@
 from datetime import datetime, time, timedelta
+from time import monotonic
 
 from odoo import _, api, fields, models
-from odoo.osv import expression
+from odoo.fields import Domain
+
+from odoo.addons.sports_federation_base.batch_jobs import in_test_mode
 
 from .. import task_policy
-
 
 
 class FederationOperationTaskExtension(models.Model):
@@ -196,6 +198,11 @@ class FederationOperationTaskExtension(models.Model):
                     else "/my/rosters/%s" % roster.id
                 ),
             )
+        elif source._name == "federation.player":
+            values.update(
+                responsible_club_id=source.club_id.id,
+                action_url="/my/players/%s/parental-approvals" % source.id,
+            )
         elif source._name == "federation.match.sheet":
             match = source.match_id
             values.update(
@@ -234,7 +241,8 @@ class FederationOperationTaskExtension(models.Model):
             return []
         clubs = set(self._portal_club_ids(user)) & set(user.portal_club_scope_ids.ids)
         return [
-            "|", (team_field + ".club_id", "in", sorted(clubs)),
+            "|",
+            (team_field + ".club_id", "in", sorted(clubs)),
             (team_field, "in", user.portal_team_scope_ids.ids),
         ]
 
@@ -315,10 +323,7 @@ class FederationOperationTaskExtension(models.Model):
         parental_rosters = (
             self.env["federation.team.roster"]
             .sudo()
-            .search(
-                self._task_team_scope(user)
-                + [("status", "!=", "closed")]
-            )
+            .search(self._task_team_scope(user) + [("status", "!=", "closed")])
         )
         roster_lines = parental_rosters.mapped("line_ids").filtered(
             lambda line: line.status == "active"
@@ -331,27 +336,48 @@ class FederationOperationTaskExtension(models.Model):
         self._prefetch_roster_deadlines(
             deadline_cache, self._roster_deadline_keys(roster_lines.mapped("roster_id"))
         )
+        # One task per player: a player on two senior rosters needs one approval,
+        # so the club gets one action, due at the earliest roster deadline.
+        lines_by_player = {}
         for line in roster_lines:
-            specs.append(
-                self._task_spec(
-                    line,
-                    "parental_consent",
-                    "club",
-                    _("Parental consent: %(player)s")
-                    % {"player": line.player_id.display_name},
-                    _(
-                        "A player under 16 in a senior team needs a verified approval covering participation."
-                    ),
-                    _("Upload and verify parental approval"),
-                    priority="2",
-                    deadline=self._roster_deadline(
+            lines_by_player.setdefault(line.player_id, []).append(line)
+        for player, lines in lines_by_player.items():
+            dated = [
+                (
+                    self._roster_deadline(
                         line.roster_id.team_id,
                         line.roster_id.season_id,
                         line.roster_id.competition_id,
                         deadline_cache,
                     ),
+                    line,
                 )
+                for line in lines
+            ]
+            deadline, first_line = min(
+                dated,
+                key=lambda item: (not item[0], item[0] or datetime.max, item[1].id),
             )
+            spec = self._task_spec(
+                player,
+                "parental_consent",
+                "club",
+                _("Parental consent: %(player)s") % {"player": player.display_name},
+                _(
+                    "A player under 16 in a senior team needs a verified approval covering participation."
+                ),
+                _("Upload and verify parental approval"),
+                priority="2",
+                deadline=deadline,
+            )
+            roster = first_line.roster_id
+            spec.update(
+                responsible_club_id=roster.club_id.id,
+                season_id=roster.season_id.id,
+                roster_id=roster.id,
+                journey_team_id=roster.team_id.id,
+            )
+            specs.append(spec)
 
         lineup_domain = self._task_team_scope(user)
         lineup_domain += hidden("federation.match.sheet")
@@ -388,13 +414,22 @@ class FederationOperationTaskExtension(models.Model):
                 sheet,
                 task_type,
                 audience,
-                (_("Review game-day line-up: %(team)s") if reviewing
-                 else _("Game-day lineup: %(team)s"))
+                (
+                    _("Review game-day line-up: %(team)s")
+                    if reviewing
+                    else _("Game-day lineup: %(team)s")
+                )
                 % {"team": sheet.team_id.display_name},
-                (_("The game-day line-up was submitted and needs approval.")
-                 if reviewing else _("Submit the shared lineup for this game day.")),
-                (_("Approve or return the line-up") if reviewing
-                 else _("Prepare game-day lineup")),
+                (
+                    _("The game-day line-up was submitted and needs approval.")
+                    if reviewing
+                    else _("Submit the shared lineup for this game day.")
+                ),
+                (
+                    _("Approve or return the line-up")
+                    if reviewing
+                    else _("Prepare game-day lineup")
+                ),
                 priority="1",
                 deadline=sheet.match_kickoff or False,
             )
@@ -405,11 +440,19 @@ class FederationOperationTaskExtension(models.Model):
             self.env["federation.match.club.referee.duty"]
             .sudo()
             .search(
-                ([] if is_manager else [("club_id", "in", club_ids)]
-                 + expression.OR([
-                     self._task_team_scope(user, "match_id.home_team_id"),
-                     self._task_team_scope(user, "match_id.away_team_id"),
-                 ]))
+                (
+                    []
+                    if is_manager
+                    else [("club_id", "in", club_ids)]
+                    + list(
+                        Domain.OR(
+                            [
+                                self._task_team_scope(user, "match_id.home_team_id"),
+                                self._task_team_scope(user, "match_id.away_team_id"),
+                            ]
+                        )
+                    )
+                )
                 + hidden("federation.match.club.referee.duty")
                 + [("state", "in", ("open", "rejected"))]
             )
@@ -461,7 +504,7 @@ class FederationOperationTaskExtension(models.Model):
         for match in matches:
             reason_by_state = {
                 "submitted": _(
-                    "The result is waiting for verification by a Result Verifier."
+                    "The result is waiting for approval by the tournament manager."
                 ),
                 "verified": _(
                     "The result is waiting for approval by a Result Approver."
@@ -474,7 +517,7 @@ class FederationOperationTaskExtension(models.Model):
                 ),
             }
             next_step_by_state = {
-                "submitted": _("Verify result"),
+                "submitted": _("Approve result"),
                 "verified": _("Approve result"),
                 "contested": _("Correct contested result"),
                 "corrected": _("Submit corrected result"),
@@ -504,14 +547,17 @@ class FederationOperationTaskExtension(models.Model):
                 )
             )
 
-        scope_domain = ([("audience", "=", "manager")] if is_manager
-                        else self._portal_get_domain(user))
+        scope_domain = (
+            [("audience", "=", "manager")]
+            if is_manager
+            else self._portal_get_domain(user)
+        )
         # A handoff changes audience on the same key. Include both audiences
         # for line-ups so approval/locking also closes existing reviewer work.
         lineup_scope = [("task_type", "in", ("gameday_lineup", "lineup_review"))]
         if not is_manager:
             lineup_scope += self._task_team_scope(user, "journey_team_id")
-        return specs, expression.OR([scope_domain, lineup_scope])
+        return specs, list(Domain.OR([scope_domain, lineup_scope]))
 
     @api.model
     def _task_projection_collectors(self):
@@ -527,10 +573,151 @@ class FederationOperationTaskExtension(models.Model):
             collected, scope = getattr(self, name)(user=user)
             specs.extend(collected)
             scopes.append(scope)
-        return specs, expression.OR(scopes) if scopes else [("id", "=", 0)]
+        return specs, list(Domain.OR(scopes)) if scopes else [("id", "=", 0)]
 
     @api.model
     def sync_for_user(self, user=None):
-        return self.env["federation.task.projection"].synchronize(
-            user=user or self.env.user
+        """Bring the user's tasks up to date before a page shows them.
+
+        Rebuilding the projection reads every domain in scope and writes the
+        task rows, so page views share it instead of each paying for it:
+
+        - once per HTTP request, however many page parts ask for it;
+        - for page views (HTTP GET), a projection younger than
+          ``task_projection_max_age`` seconds (system parameter
+          ``sports_federation_portal.task_projection_max_age``, default 30;
+          0 disables) is reused. Any portal change by the user discards it,
+          so their own actions always show at once;
+        - while another transaction is rebuilding the same clubs, this one
+          shows the current tasks instead of writing the same rows (which
+          would only end in a serialization retry).
+
+        Outside HTTP requests (tests, scheduled jobs, commands) it always
+        rebuilds.
+        """
+        user = user or self.env.user
+        freshness = _ProjectionFreshness(self.env, user)
+        if freshness.can_reuse():
+            return self._current_tasks_for(user)
+        if not freshness.try_lock():
+            return self._current_tasks_for(user)
+        result = self.env["federation.task.projection"].synchronize(user=user)
+        freshness.mark_synced()
+        return result
+
+    @api.model
+    def _current_tasks_for(self, user):
+        return self.sudo().search(
+            self._portal_get_domain(user) + [("state", "!=", "done")]
         )
+
+    @api.model
+    def _forget_projection_for(self, user):
+        """Make the next page view of ``user`` rebuild their tasks."""
+        _ProjectionFreshness.forget(self.env, user)
+
+
+# Process-local freshness of task projections: {(database, user id): monotonic
+# time of the last rebuild}. Each worker keeps its own; a stale entry only means
+# one extra rebuild.
+_LAST_SYNC = {}
+_LAST_SYNC_LIMIT = 10000
+# Namespace of the transaction-level advisory locks taken per club while a
+# projection is rebuilt (two-integer form: namespace, club id).
+_LOCK_NAMESPACE = 731_406
+_MANAGER_SCOPE = 0
+
+
+class _ProjectionFreshness:
+    """Decides whether a page view may reuse the user's last task projection."""
+
+    def __init__(self, env, user):
+        self.env = env
+        self.user = user
+        self.key = (env.cr.dbname, user.id)
+        self.http_request = _current_http_request(env)
+
+    @classmethod
+    def forget(cls, env, user):
+        for one in user:
+            _LAST_SYNC.pop((env.cr.dbname, one.id), None)
+        request = _current_http_request(env)
+        if request is not None:
+            getattr(request, "_sf_task_synced_users", set()).difference_update(user.ids)
+
+    def max_age(self):
+        default = "0" if in_test_mode(self.env) else "30"
+        value = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("sports_federation_portal.task_projection_max_age", default)
+        )
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            return 30
+
+    def can_reuse(self):
+        if self.http_request is None:
+            return False
+        synced = getattr(self.http_request, "_sf_task_synced_users", set())
+        if self.user.id in synced:
+            return True
+        if self.http_request.httprequest.method != "GET":
+            return False
+        age = self.max_age()
+        last = _LAST_SYNC.get(self.key)
+        return bool(age and last is not None and monotonic() - last < age)
+
+    def try_lock(self):
+        """Lock the clubs of this projection; False when another rebuild holds one."""
+        user = self.user.sudo()
+        club_ids = set()
+        for name in ("portal_club_scope_ids", "portal_team_scope_ids"):
+            if name in user._fields:
+                records = user[name]
+                club_ids |= set(
+                    records.ids
+                    if records._name == "federation.club"
+                    else records.club_id.ids
+                )
+        if not club_ids:
+            club_ids = {_MANAGER_SCOPE}
+        for club_id in sorted(club_ids):
+            self.env.cr.execute(
+                "SELECT pg_try_advisory_xact_lock(%s, %s)", (_LOCK_NAMESPACE, club_id)
+            )
+            if not self.env.cr.fetchone()[0]:
+                return False
+        return True
+
+    def mark_synced(self):
+        if self.http_request is None:
+            return
+        synced = getattr(self.http_request, "_sf_task_synced_users", None)
+        if synced is None:
+            synced = set()
+            try:
+                self.http_request._sf_task_synced_users = synced
+            except AttributeError:  # request objects without a __dict__
+                pass
+        synced.add(self.user.id)
+        if len(_LAST_SYNC) >= _LAST_SYNC_LIMIT:
+            _LAST_SYNC.clear()
+        _LAST_SYNC[self.key] = monotonic()
+
+
+def _current_http_request(env):
+    """The HTTP request that runs on this cursor, or None."""
+    try:
+        from odoo.http import request
+    except ImportError:  # pragma: no cover - always importable in Odoo
+        return None
+    if not request:
+        return None
+    try:
+        if request.env.cr is not env.cr:
+            return None
+    except (AttributeError, RuntimeError):
+        return None
+    return request

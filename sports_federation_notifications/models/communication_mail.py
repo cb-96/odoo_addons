@@ -7,7 +7,9 @@ from .actionable_communications import _lock
 class CommunicationMail(models.Model):
     _inherit = "mail.mail"
 
-    federation_notification_owned = fields.Boolean(default=False, copy=False, index=True)
+    federation_notification_owned = fields.Boolean(
+        default=False, copy=False, index=True
+    )
 
     def send(self, *args, **kwargs):
         # Last responsible moment: queue creation does not freeze permissions or preferences.
@@ -67,19 +69,35 @@ class CommunicationMail(models.Model):
                 }
             )
         sendable = self - blocked
-        logs = self.env["federation.notification.log"].sudo().search([
-            ("mail_id", "in", sendable.ids),
-            ("mail_id.state", "=", "outgoing"),
-            ("target_model", "!=", "federation.communication.delivery"),
-        ])
+        logs = (
+            self.env["federation.notification.log"]
+            .sudo()
+            .search(
+                [
+                    ("mail_id", "in", sendable.ids),
+                    ("mail_id.state", "=", "outgoing"),
+                    ("target_model", "!=", "federation.communication.delivery"),
+                ]
+            )
+        )
         if logs:
-            self.env.cr.execute("SELECT id FROM mail_mail WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
-                                [sendable.ids])
+            self.env.cr.execute(
+                "SELECT id FROM mail_mail WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                [sendable.ids],
+            )
         for log in logs:
-            log.write({"attempt_count": log.attempt_count + 1,
-                       "last_attempt_on": fields.Datetime.now()})
+            log.write(
+                {
+                    "attempt_count": log.attempt_count + 1,
+                    "last_attempt_on": fields.Datetime.now(),
+                }
+            )
         try:
-            result = super(CommunicationMail, sendable).send(*args, **kwargs) if sendable else True
+            result = (
+                super(CommunicationMail, sendable).send(*args, **kwargs)
+                if sendable
+                else True
+            )
         finally:
             # Mail state is the evidence; queuing is never reported as sent.
             for log in logs:

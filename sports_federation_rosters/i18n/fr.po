@@ -1,0 +1,108 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#	* sports_federation_rosters
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Language: fr\n"
+"Plural-Forms: \n"
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+#, python-format
+msgid "%(club)s does not use player availability."
+msgstr "%(club)s n'utilise pas la disponibilité des joueurs."
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+#, python-format
+msgid "%(team)s plays on %(date)s at %(venue)s. Let your team know whether you can play."
+msgstr "%(team)s joue le %(date)s à %(venue)s. Faites savoir à votre équipe si vous pouvez jouer."
+
+#. module: sports_federation_rosters
+#: model:ir.model.fields,field_description:sports_federation_rosters.field_federation_club__player_availability_enabled
+msgid "Ask players for their availability"
+msgstr "Demander leur disponibilité aux joueurs"
+
+#. module: sports_federation_rosters
+#: model:ir.model.fields,field_description:sports_federation_rosters.field_federation_gameday_lineup_wizard_line__availability
+msgid "Availability"
+msgstr "Disponibilité"
+
+#. module: sports_federation_rosters
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_gameday_lineup_wizard_line__availability__yes
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_player_availability__response__yes
+msgid "Available"
+msgstr "Disponible"
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+#, python-format
+msgid "Can you play on %(date)s?"
+msgstr "Pouvez-vous jouer le %(date)s ?"
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+msgid "Choose Available, Maybe or Not available."
+msgstr "Choisissez Disponible, Peut-être ou Indisponible."
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+msgid "Give your answer"
+msgstr "Donner votre réponse"
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+#, python-format
+msgid "Hello %s,"
+msgstr "Bonjour %s,"
+
+#. module: sports_federation_rosters
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_gameday_lineup_wizard_line__availability__maybe
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_player_availability__response__maybe
+msgid "Maybe"
+msgstr "Peut-être"
+
+#. module: sports_federation_rosters
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_gameday_lineup_wizard_line__availability__pending
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_player_availability__response__pending
+msgid "No answer yet"
+msgstr "Pas encore de réponse"
+
+#. module: sports_federation_rosters
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_gameday_lineup_wizard_line__availability__no
+#: model:ir.model.fields.selection,name:sports_federation_rosters.selection__federation_player_availability__response__no
+msgid "Not available"
+msgstr "Indisponible"
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+#, python-format
+msgid "Reminder: can you play on %(date)s?"
+msgstr "Rappel : pouvez-vous jouer le %(date)s ?"
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+msgid "This game day has already been played."
+msgstr "Cette journée a déjà été jouée."
+
+#. module: sports_federation_rosters
+#. odoo-python
+#: code:addons/sports_federation_rosters/models/player_availability.py:0
+msgid "You can change your answer with the same link until the game day."
+msgstr "Vous pouvez modifier votre réponse avec le même lien jusqu'à la journée."

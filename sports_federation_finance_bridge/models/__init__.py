@@ -8,3 +8,4 @@ from . import referee_reimbursement_hooks
 from . import sanction_finance_hooks
 from . import season_registration_hooks
 from . import venue_finance_hooks
+from . import player_season_registration_hooks

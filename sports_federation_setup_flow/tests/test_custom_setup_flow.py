@@ -2,6 +2,10 @@ from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_registration.models.participant_handoff import (
+    governed,
+)
+
 
 @tagged("post_install", "-at_install", "sf_competition_formats")
 class TestCustomFormatSetupFlow(TransactionCase):
@@ -48,7 +52,7 @@ class TestCustomFormatSetupFlow(TransactionCase):
                 "state": "finalized",
             }
         )
-        cls.env["federation.participant.set.line"].create(
+        governed(cls.env["federation.participant.set.line"]).create(
             [
                 {"participant_set_id": cls.pset.id, "team_id": team.id, "seed": seed}
                 for seed, team in enumerate(cls.teams, 1)
@@ -62,6 +66,20 @@ class TestCustomFormatSetupFlow(TransactionCase):
                 "state": "finalized",
                 "participant_set_id": cls.pset.id,
             }
+        )
+        # The window above is finalized directly, so give the division the
+        # participants finalizing would create. A finalized division only
+        # accepts teams through the amendment command, which the stage engine
+        # must not bypass.
+        governed(cls.env["federation.tournament.participant"]).create(
+            [
+                {
+                    "tournament_id": cls.division.id,
+                    "team_id": team.id,
+                    "state": "confirmed",
+                }
+                for team in cls.teams
+            ]
         )
         venue = cls.env["federation.venue"].create({"name": "Custom Venue"})
         court = cls.env["federation.playing.area"].create(

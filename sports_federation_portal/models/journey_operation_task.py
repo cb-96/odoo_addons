@@ -13,7 +13,7 @@ class OperationTaskJourneys(models.Model):
             task.journey_url = (
                 "/odoo/federation.operation.task/%s" % task.id
                 if task.audience == "manager"
-                else "/my/work/tasks/%s/open" % task.id
+                else "/my/action-items/%s/open" % task.id
             )
 
     journey_team_id = fields.Many2one("federation.team", index=True, readonly=True)
@@ -71,6 +71,22 @@ class OperationTaskJourneys(models.Model):
             source._portal_assert_scope_access(user=user)
         elif source._name == "federation.team.roster.line":
             source.roster_id._portal_assert_scope_access(user=user)
+        elif source._name == "federation.player":
+            # Parental-approval tasks: the player's club, or a team the user
+            # manages that has the player on an active roster.
+            if source.club_id not in user.portal_club_scope_ids and not (
+                self.env["federation.team.roster.line"]
+                .sudo()
+                .search_count(
+                    [
+                        ("player_id", "=", source.id),
+                        ("status", "=", "active"),
+                        ("roster_id.team_id", "in", user.portal_team_scope_ids.ids),
+                    ],
+                    limit=1,
+                )
+            ):
+                raise AccessError(_("You do not have access to this player."))
         elif source._name == "federation.match.sheet":
             source._portal_assert_review_access(user=user)
         elif source._name == "federation.match.club.referee.duty":
@@ -128,7 +144,7 @@ class OperationTaskJourneys(models.Model):
             values.update(
                 responsible_club_id=source.team_id.club_id.id,
                 season_id=source.season_id.id,
-                action_url="/my/work/registrations/%s" % source.id,
+                action_url="/my/season-registrations/%s/roster" % source.id,
             )
         return values
 
@@ -210,13 +226,27 @@ class OperationTaskJourneys(models.Model):
             pending = False
             if source:
                 source_state = source.state if "state" in source._fields else "present"
-                if (
-                    task.task_type == "parental_consent"
-                    and source._name == "federation.team.roster.line"
+                if task.task_type == "parental_consent" and source._name in (
+                    "federation.team.roster.line",
+                    "federation.player",
                 ):
-                    reference = source.roster_id._get_reference_date()
+                    player = (
+                        source
+                        if source._name == "federation.player"
+                        else source.player_id
+                    )
+                    roster = (
+                        task.roster_id
+                        if source._name == "federation.player"
+                        else source.roster_id
+                    )
+                    reference = (
+                        roster._get_reference_date()
+                        if roster
+                        else fields.Date.context_today(task)
+                    )
                     pending = bool(
-                        source.player_id.parental_approval_ids.filtered(
+                        player.parental_approval_ids.filtered(
                             lambda a: a.state == "draft"
                             and a.submitted_on
                             and a.approval_date

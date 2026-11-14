@@ -4,6 +4,10 @@ from unittest.mock import patch
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 @tagged("sf_release_confidence")
 class TestFederationOperationTasks(TransactionCase):
@@ -212,7 +216,7 @@ class TestFederationOperationTasks(TransactionCase):
         self.assertTrue(task)
         self.assertEqual(task.task_type, "result_review")
         self.assertEqual(task.required_role, "result_verifier")
-        self.assertEqual(task.next_step, "Verify result")
+        self.assertEqual(task.next_step, "Approve result")
 
     def test_parental_consent_uses_the_existing_action_projection(self):
         player = self.env["federation.player"].create(
@@ -240,8 +244,9 @@ class TestFederationOperationTasks(TransactionCase):
             }
         )
         approval.action_verify()
-        line = self.env["federation.team.roster.line"].create(
-            {"roster_id": roster.id, "player_id": player.id}
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster.id, "player_id": player.id},
         )
         approval.revocation_reason = "Consent withdrawn"
         approval.action_revoke()
@@ -250,8 +255,8 @@ class TestFederationOperationTasks(TransactionCase):
         task = self.env["federation.operation.task"].search(
             [
                 ("task_type", "=", "parental_consent"),
-                ("source_model", "=", line._name),
-                ("source_record_id", "=", line.id),
+                ("source_model", "=", player._name),
+                ("source_record_id", "=", player.id),
                 ("state", "!=", "done"),
             ],
             limit=1,
@@ -259,10 +264,79 @@ class TestFederationOperationTasks(TransactionCase):
 
         self.assertTrue(task)
         self.assertEqual(task.priority, "2")
+        self.assertEqual(task.roster_id, line.roster_id)
+        self.assertEqual(
+            task.action_url, "/my/players/%s/parental-approvals" % player.id
+        )
         self.assertEqual(
             task.action_open_source()["res_model"],
             "federation.player.parental.approval",
         )
+
+    def test_parental_consent_is_one_task_per_player(self):
+        """A minor on two senior rosters needs one approval, so one task."""
+        player = self.env["federation.player"].create(
+            {
+                "first_name": "Twice",
+                "last_name": "Rostered",
+                "birth_date": "2013-01-01",
+                "club_id": self.team.club_id.id,
+            }
+        )
+        second_team = self.env["federation.team"].create(
+            {
+                "name": "Action Queue Second Team",
+                "club_id": self.team.club_id.id,
+                "category": "senior",
+                "gender": "mixed",
+            }
+        )
+        # Lines are created while an approval is valid, as in real use; the
+        # approval is withdrawn afterwards.
+        approval = self.env["federation.player.parental.approval"].create(
+            {
+                "player_id": player.id,
+                "guardian_name": "Twice Guardian",
+                "approval_date": "2020-01-01",
+                "valid_until": "2030-01-01",
+                "approval_document": b"c2lnbmVk",
+            }
+        )
+        approval.action_verify()
+        for team in self.team | second_team:
+            roster = self.env["federation.team.roster"].create(
+                {
+                    "team_id": team.id,
+                    "season_id": self.season.id,
+                    "competition_id": self.competition.id,
+                }
+            )
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
+                {"roster_id": roster.id, "player_id": player.id},
+            )
+        approval.revocation_reason = "Consent withdrawn"
+        approval.action_revoke()
+
+        self.env["federation.operation.task"].sync_for_user(user=self.manager)
+        tasks = self.env["federation.operation.task"].search(
+            [("task_type", "=", "parental_consent"), ("state", "!=", "done")]
+        )
+        lines = self.env["federation.team.roster.line"].search(
+            [("player_id", "=", player.id)]
+        )
+        tasks = tasks.filtered(
+            lambda task: (
+                task.source_model == "federation.player"
+                and task.source_record_id == player.id
+            )
+            or (
+                task.source_model == "federation.team.roster.line"
+                and task.source_record_id in lines.ids
+            )
+        )
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks.source_model, "federation.player")
 
     def test_shared_gameday_lineup_projects_one_task_per_team_and_day(self):
         away_club = self.env["federation.club"].create({"name": "Lineup Away Club"})
@@ -318,9 +392,13 @@ class TestFederationOperationTasks(TransactionCase):
     def test_task_collection_does_not_mutate_tasks_or_shared_methods(self):
         Task = self.env["federation.operation.task"]
         collector = type(Task)._project_task_specs
-        with patch.object(type(Task), "create", side_effect=AssertionError("collector created task")), \
-                patch.object(type(Task), "write", side_effect=AssertionError("collector wrote task")), \
-                patch.object(type(Task), "unlink", side_effect=AssertionError("collector deleted task")):
+        with patch.object(
+            type(Task), "create", side_effect=AssertionError("collector created task")
+        ), patch.object(
+            type(Task), "write", side_effect=AssertionError("collector wrote task")
+        ), patch.object(
+            type(Task), "unlink", side_effect=AssertionError("collector deleted task")
+        ):
             first, first_scope = Task._project_task_specs(user=self.manager)
             second, second_scope = Task._project_task_specs(user=self.manager)
         self.assertIs(type(Task)._project_task_specs, collector)
@@ -330,25 +408,39 @@ class TestFederationOperationTasks(TransactionCase):
         self.assertFalse(hasattr(Task, "_sync_specs"))
 
     def test_lineup_handoff_uses_one_writer_and_preserves_task_identity(self):
-        away = self.env["federation.team"].create({
-            "name": "Projection opponent", "club_id": self.club.id,
-        })
-        match = self.env["federation.match"].create({
-            "tournament_id": self.tournament.id,
-            "home_team_id": self.team.id, "away_team_id": away.id,
-            "date_scheduled": "2026-06-01 10:00:00", "state": "scheduled",
-        })
+        away = self.env["federation.team"].create(
+            {
+                "name": "Projection opponent",
+                "club_id": self.club.id,
+            }
+        )
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team.id,
+                "away_team_id": away.id,
+                "date_scheduled": "2026-06-01 10:00:00",
+                "state": "scheduled",
+            }
+        )
         Task = self.env["federation.operation.task"]
         Service = self.env["federation.task.projection"]
-        sheets = self.env["federation.match.sheet"].search([
-            ("match_id", "=", match.id), ("team_id", "=", self.team.id),
-        ])
+        sheets = self.env["federation.match.sheet"].search(
+            [
+                ("match_id", "=", match.id),
+                ("team_id", "=", self.team.id),
+            ]
+        )
         self.assertTrue(sheets)
         Task.sync_for_user(user=self.manager)
-        task = Task.search([
-            ("match_id", "=", match.id), ("journey_team_id", "=", self.team.id),
-            ("task_type", "=", "gameday_lineup"), ("state", "!=", "done"),
-        ])
+        task = Task.search(
+            [
+                ("match_id", "=", match.id),
+                ("journey_team_id", "=", self.team.id),
+                ("task_type", "=", "gameday_lineup"),
+                ("state", "!=", "done"),
+            ]
+        )
         self.assertEqual(len(task), 1)
         identity, key = task.id, task.source_key
         # Seed lifecycle states to isolate projection from eligibility commands.
@@ -376,7 +468,9 @@ class TestFederationOperationTasks(TransactionCase):
     def test_unchanged_projection_does_not_write_task(self):
         Task = self.env["federation.operation.task"]
         Task.sync_for_user(user=self.manager)
-        with patch.object(type(Task), "write", side_effect=AssertionError("unchanged task written")):
+        with patch.object(
+            type(Task), "write", side_effect=AssertionError("unchanged task written")
+        ):
             Task.sync_for_user(user=self.manager)
 
     def test_projection_batches_task_creation(self):
@@ -384,13 +478,18 @@ class TestFederationOperationTasks(TransactionCase):
         Service = self.env["federation.task.projection"]
         specs = []
         for index in range(3):
-            specs.append({
-                "name": "Batch projection %s" % index,
-                "task_type": "registration", "audience": "manager",
-                "blocking_reason": "Review required", "next_step": "Review",
-                "source_model": self.window._name, "source_record_id": self.window.id,
-                "source_key": "batch-projection:%s" % index,
-            })
+            specs.append(
+                {
+                    "name": "Batch projection %s" % index,
+                    "task_type": "registration",
+                    "audience": "manager",
+                    "blocking_reason": "Review required",
+                    "next_step": "Review",
+                    "source_model": self.window._name,
+                    "source_record_id": self.window.id,
+                    "source_key": "batch-projection:%s" % index,
+                }
+            )
         original = type(Task).create
         calls = []
 
@@ -399,6 +498,8 @@ class TestFederationOperationTasks(TransactionCase):
             return original(recordset, values)
 
         with patch.object(type(Task), "create", create_batch):
-            Service._apply(specs, [("source_key", "in", [item["source_key"] for item in specs])])
+            Service._apply(
+                specs, [("source_key", "in", [item["source_key"] for item in specs])]
+            )
         self.assertEqual(len(calls), 1)
         self.assertEqual(len(calls[0]), 3)

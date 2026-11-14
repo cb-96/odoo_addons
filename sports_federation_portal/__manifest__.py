@@ -1,14 +1,14 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.7.14.5",
+    "version": "19.0.7.17.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
 Portal and website flows for sports federation club representatives.
 
-Provides club representative ownership, portal dashboards, season and
-tournament registration workflows, and the live tournament operations board
-on top of the federation base modules.
+Provides club representative ownership, the portal overview (one page with a
+section per role), season registrations, competition entries and team
+preparation on top of the federation base modules.
 """,
     "author": "Sports Federation",
     "website": "",
@@ -36,6 +36,7 @@ on top of the federation base modules.
         "data/federation_club_role_type.xml",
         "data/operation_task_cron.xml",
         "data/journey_event_cron.xml",
+        "data/representative_cron.xml",
         "views/federation_club_role_type_views.xml",
         "views/federation_club_representative_views.xml",
         "views/federation_club_views.xml",
@@ -49,17 +50,19 @@ on top of the federation base modules.
         "views/qol_search_templates.xml",
         "views/portal_templates.xml",
         "views/portal_parental_approval_templates.xml",
-        "views/portal_data_api_templates.xml",
         "views/competition_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_roster_templates.xml",
         "views/portal_result_templates.xml",
         "views/portal_referee_duty_templates.xml",
+        "views/player_availability_templates.xml",
         "views/preparation_journey_templates.xml",
+        "views/club_season_players_templates.xml",
         "views/operation_task_views.xml",
         "views/menu_items.xml",
         "views/journey_event_views.xml",
         "views/role_journey_templates.xml",
+        "views/club_rank_portal_templates.xml",
     ],
     "assets": {
         "web.assets_frontend": [

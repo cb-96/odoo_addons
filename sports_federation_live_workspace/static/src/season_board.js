@@ -10,7 +10,7 @@ const MODEL = "federation.season.board";
 const UNDO_LIMIT = 20;
 
 /**
- * Season match board: unplanned matches on the left, a court × time grid of
+ * Competition match board: unplanned matches on the left, a court × time grid of
  * the chosen game day on the right and every game day as a drop target.
  * Drag a match, or click it and then click a slot or a day. Changes apply
  * at once and can be undone.

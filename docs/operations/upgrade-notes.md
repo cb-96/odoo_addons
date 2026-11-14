@@ -1,7 +1,7 @@
 # Upgrade notes
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Upgrade-sensitive changes, newest first. Each entry records the affected
@@ -35,6 +35,450 @@ Do not describe work that is not in the code, and do not mark runtime checks as
 passed unless they ran.
 
 ## Entries
+
+### Portal ORM isolation, tenure expiry and version correction
+
+Affected modules: `sports_federation_portal` 19.0.7.16.0 → 19.0.7.17.0,
+`sports_federation_officiating` (code, data), `sports_federation_schedule_approval`
+19.0.1.4.0 → 19.0.2.7.0
+
+**Data changes**:
+
+- New record rule `rule_player_portal_own` on `federation.player`; portal clubs
+  lose the create right on players (creation stays in the portal service).
+- The rules for clubs, season registrations and tournament participants now use
+  `portal_club_scope_ids`/`portal_team_scope_ids` instead of every representative
+  record.
+- The club referee duty access right moves from `base.group_portal` to
+  *Portal Club Representative* and now sits in the portal addon's ACL file.
+- `federation.club.representative.is_current` is no longer stored. Migration
+  `19.0.7.17.0/post-migrate.py` drops the column and refreshes stored portal
+  scopes and delegations once, so access that expired by date ends at upgrade.
+- Two hourly jobs: *refresh representative tenures and delegations* (portal) and
+  *refresh overdue club duty deadlines* (officiating).
+- The `sports_federation_schedule_approval` manifest is raised to 19.0.2.7.0. It
+  had fallen back below its migrations `19.0.2.2.0` and `19.0.2.6.0`; both are
+  idempotent (`IF NOT EXISTS`, conditional set-based updates), so databases that
+  recorded 19.0.1.4.0 simply rerun them.
+- The unused portal route `/sports/match-days/<id>/matches/<id>/action` is removed.
+
+**Behaviour to verify**:
+
+- A club representative sees only their club's players through the ORM and
+  cannot create players there; the portal "add player" page still works.
+- A team coach sees their team's players, registrations and participants, not
+  the rest of the club's.
+- A representative whose tenure ended yesterday loses portal access within the
+  hour after UTC midnight (or at once on upgrade); a future-dated tenure starts
+  on its day. The *Currently Active* filter on representatives is exact.
+- Portal match officials no longer read club referee duties.
+- The match-day operations board still loads; it has no action buttons.
+- Overdue club duties get their flag within the hour.
+
+**Dry-run evidence**: static checks only (`check_portal_record_rules.py`,
+`check_migration_versions.py` and their unit tests, Black, Flake8 F-codes, the
+lint job's contract checks). The Odoo suites were NOT run; the new tests are in
+`test_portal_orm_isolation.py`, `test_club_representative.py` and
+`test_club_referee_duty.py`.
+
+**Rollback**: code rollback restores the stored `is_current` column on the next
+upgrade (Odoo recreates it and recomputes it). Restore the previous rules and
+ACLs from the prior revision; no business data was changed.
+
+### Odoo test-suite repair after the registry load fix
+
+Affected modules: `sports_federation_member_services` 19.0.1.4.0 → 19.0.1.4.1,
+`sports_federation_rosters`, `sports_federation_matchday`,
+`sports_federation_schedule_approval`, `sports_federation_portal`,
+`sports_federation_live_workspace` (code, data and tests)
+
+**Data changes**: `sports_federation_member_services/security/res_groups.xml`
+makes Federation Manager imply Contact Creation (`base.group_partner_manager`),
+because the reviewed identity commands write `res.partner`. No migration
+script. Code translations in the portal, rosters and live workspace `.po`
+files gain the `#. odoo-python` marker that Odoo needs to apply them.
+
+**Behaviour to verify**:
+
+- Manager action items (`/federation/operations/action-items`) and the portal
+  action items render instead of returning HTTP 500.
+- Identity review, family references and duplicate resolution work for
+  federation managers who are not administrators.
+- Schedule planners publish (streamlined policy) and replay publication
+  without Calendar Planner rights.
+- Deleting a closed game day releases its published matches.
+- Dutch and French messages raised from Python code are translated.
+- A roster from an ended season is judged on its last day, not today, so its
+  players do not turn ineligible once their season licences expire.
+- Demo data installs again.
+
+**Dry-run evidence**: static checks (Black, Flake8 F-codes, test discovery,
+addon integrity, model load order, ACL, privileged mutation and handoff
+contracts). The Odoo suites were NOT re-run after these changes; the fixes
+target the 157 failures of run 20261113_200640.
+
+**Rollback**: code-only rollback; remove the implied Contact Creation group from
+Federation Manager by hand if it is no longer wanted.
+### Medium-priority hardening: escaped email, portal write allowlist, shared task projection, batched jobs
+
+Affected modules: `sports_federation_notifications`, `sports_federation_portal`,
+`sports_federation_base`, `sports_federation_discipline`,
+`sports_federation_duty_coverage`, `sports_federation_import_tools`,
+`sports_federation_member_services`, `sports_federation_reporting`
+(code and tests; versions unchanged)
+
+**Data changes**: None. No new fields, no migration. New optional system
+parameter `sports_federation_portal.task_projection_max_age` (seconds, default 30).
+
+**Behaviour to verify**:
+
+- The suspension email shows player, case and notes as text (no markup from
+  typed values) and is translated in the player's language when set.
+- Portal saves still work for rosters, roster lines, match sheets, line-ups,
+  competition entries, compliance submissions and official responses;
+  `portal_write` refuses any model or field outside `PORTAL_WRITE_FIELDS`.
+- Portal pages show tasks as before; a user's own change shows at once;
+  another user's change can take up to 30 s on a page view.
+- Suspension start/end and coverage escalation keep going when one record
+  fails (logged with its id); retention purges commit in batches of 200 when
+  run as a scheduled job.
+
+**Dry-run evidence**: static checks only (Black, Flake8 F-codes, the lint job's
+contract checks, `check_test_date_horizon.py` and its unit tests). The Odoo
+suites were NOT run; new tests: `test_task_projection_freshness.py`,
+`test_batch_jobs.py`, `TestPortalWriteFields`,
+`test_suspension_email_escapes_typed_values`.
+
+**Rollback**: code-only rollback.
+
+### Registry load order and schedule-owned match planning
+
+Affected modules: `sports_federation_schedule_approval` 19.0.2.7.0 (the manifest
+had fallen back to 19.0.1.4.0; see "Portal ORM isolation" above),
+`sports_federation_matchday` 19.0.2.5.1, `sports_federation_tournament`
+19.0.1.7.0, `sports_federation_venues` 19.0.1.1.1 (code only)
+
+**Data changes**: None. The publication-replay extension of
+`federation.schedule.approval.commands` moved from `models/match_journey.py` to
+`services/publication_replay.py`, so it is built after the model it extends.
+Before this change the registry could not load the addon.
+
+**Behaviour to verify**: the addon installs and upgrades; publishing a schedule
+and replaying the publish command work; **Delay or Move Match** moves, delays,
+postpones and cancels published matches; changing a round's date or venue no
+longer touches published matches; direct edits of a published match's kickoff
+are still refused.
+
+**Dry-run evidence**: static checks only (Black, `check_model_load_order.py`,
+the lint job's contract checks and `ci/test_*.py`). Odoo install, upgrade and
+ORM tests were NOT run.
+
+**Rollback**: code-only rollback; no data was changed.
+
+### Translation foundation: language registry, Weblate tooling, translatable portal messages
+
+Affected modules: `sports_federation_people` 19.0.1.2.2 → 19.0.1.3.0,
+`sports_federation_portal` (controllers only; version unchanged), and new
+repository tooling (`i18n/`, `scripts/i18n/`, `ci/check_translations.py`).
+
+**Data changes**: new optional field `federation.player.lang` (language for
+emails to the player; empty means the federation's language). No migration
+script.
+
+**Behaviour to verify**: portal success and error messages (for example after
+creating a team or saving a roster) appear in the user's language once
+translations exist; in English nothing changes. The player form shows
+**Language**. `python3 ci/check_translations.py` passes and lists the
+glossary completeness for Dutch, French and German.
+
+**Dry-run evidence**: Python syntax, the translation check and its unit tests,
+the PO round trip and the static contract checks ran in the patch environment.
+`scripts/i18n/export_pot.sh` and the Odoo tests did not run there (no Docker
+or Odoo). Run the export once, review the generated templates, and run the
+`sf_translations` tests on staging.
+
+**Rollback**: code-only; the player language field stays unused.
+
+### Game-day printouts, club invoices, Dutch and French portal, optional player availability
+
+Affected modules: `sports_federation_live_workspace` 19.0.1.7.0 → 19.0.1.8.0,
+`sports_federation_accounting` 19.0.1.1.1 → 19.0.1.2.0,
+`sports_federation_rosters`, `sports_federation_portal` (models, views,
+translations; manifest versions unchanged).
+
+**Data changes**: new stored field `federation.club.player_availability_enabled`
+(default off) and new models `federation.player.availability.request` and
+`federation.player.availability` with ACLs in the rosters CSV. New report
+`action_report_gameday_schedule` with an A4 landscape paper format. The
+accounting addon now depends on `sports_federation_portal`; the live workspace
+declares its existing use of `sports_federation_calendar`. New
+`i18n/nl.po` and `i18n/fr.po` in the portal, rosters, accounting and live
+workspace addons. No migration script.
+
+**Behaviour to verify**: on a game day with a live publication, **Print
+schedule** shows courts across and event-local times down with teams,
+officials and club duties; **Print score sheets** prints every published match.
+A whole-club representative sees **Invoices** on the club overview with an
+unpaid badge, and **View and pay** opens the invoice payment page. Activate
+Dutch (Belgium) and French (Belgium) under Settings > Languages (this loads the
+new files) and on the website, then check the club overview, rosters,
+line-ups, officials and results pages in both languages. Under Club details,
+switch **Player availability** on, ask players for an upcoming game day, answer
+through the emailed link (outgoing mail must be configured), enter an answer for
+a player without email, and check the badges on the line-up page and in the
+backend line-up wizard. With the option off, nothing appears.
+
+**Dry-run evidence**: Python syntax, XML well-formedness, template XPath
+anchors, `.po` round-trip parsing and placeholder/markup checks of every
+translation, and the static contract checks ran in the patch environment. No
+Odoo upgrade, Odoo test run, PDF rendering, email delivery or browser check ran
+there. Run the `sf_gameday_print`, `sf_club_invoices`, `sf_player_availability`
+and `sf_portal_translations` tests and upgrade the four modules on a staging copy.
+
+**Rollback**: code-only rollback removes the pages and buttons; restore the
+pre-upgrade backup to remove the new tables and the club field.
+
+### Portal overview replaces `/my/work`; club portal cleanup
+
+Affected modules: `sports_federation_portal` 19.0.7.14.x → 19.0.7.15.0,
+`sports_federation_rosters` 19.0.1.14.0 → 19.0.1.15.0 (models, views,
+security), and view-only changes in `sports_federation_compliance`,
+`sports_federation_duty_coverage`, `sports_federation_live_workspace`,
+`sports_federation_member_services`, `sports_federation_notifications` and
+`sports_federation_setup_flow`.
+
+**Data changes**: no migration script and no stored-field change.
+- Removed templates and routes: `role_home`, `portal_journey_entry` and the
+  Data API page (`/my/data-api`, `portal_home_data_api_link`). The
+  `/my/work` routes now only redirect (301) to `/my`, `/my/result-reviews`,
+  `/my/action-items/<id>/open` and `/my/season-registrations/<id>/roster`.
+  Task `journey_url`/`action_url` values are recomputed on the next task
+  refresh. Inheriting views in the other modules were removed or retargeted
+  to `portal_federation_links`; upgrade all affected modules in the same run.
+- Parental-consent tasks are now one per player (`source_model`
+  `federation.player`) instead of one per roster line. The first refresh
+  closes the old per-line tasks and opens one per player.
+- `federation.club.rank.promotion` ACLs moved from
+  `security/club_rank_access.xml` to `security/ir.model.access.csv` (same
+  xml ids, same rights). The orphan file `views/federation_tournament_views.xml`
+  (never loaded, pointing at methods that do not exist) is deleted.
+- Journey event retention defaults to 90 days (was 180) unless
+  `federation.journey_event_retention_days` is set.
+
+**Behaviour to verify**: `/my` for a club representative shows the club
+hero, **Prepare your team** and the club areas; for an account with other
+roles it shows a section per role with at most five cards and a link to the
+full list; an account without any role sees the access notice. Old `/my/work`
+bookmarks land on the overview. Other portal pages no longer refresh tasks on
+every load. A representative of two clubs can switch `/my/club?club=<id>` and
+must choose the club when adding a player. The backend roster picker and the
+portal "Add players" page hide the same players (already on the roster,
+blocked by club ranking, or on another club team in the same division), and
+saving such a line is refused. Portal compliance uploads for officials and
+club representatives are accepted (the create allowlist now contains
+`referee_id` and `club_representative_id`).
+
+**Dry-run evidence**: Python syntax, XML well-formedness, the pure-helper CI
+tests and the static contract checks ran in the patch environment. No Odoo
+upgrade, Odoo test run or browser check ran there.
+
+**Rollback**: code-only rollback restores the previous routes and templates;
+per-player consent tasks close and per-line tasks reopen on the next refresh.
+
+### Players needing parental approval on the club portal
+
+Affected modules: `sports_federation_portal` (portal template and a read-only
+helper on the parental-approval model; manifest version unchanged).
+
+**Data changes**: None. No stored field, migration, ACL or menu change. The
+players page `/my/players` gains a summary card and a status per player.
+
+**Behaviour to verify**: as a club representative, open `/my/players`. A card
+shows a stacked bar and four tiles: needed now (player under 16 on an active
+senior roster of the current season, no valid approval), needed for senior play
+(under 16, not on a senior roster), awaiting review, approved. Rows that need
+action are highlighted; each row shows a status badge with a short explanation
+and *Upload approval*, *View status*, *Upload renewal* or *Manage document*.
+*Show only players who need action* filters the list and keeps the gender and
+status filters. Players who are 16 or older read *Not required*; a player
+without a birth date reads *Birth date missing*. A verified approval that
+expires within 30 days is shown as *Approved, expires soon*. The rule mirrors
+roster eligibility: under 16 on the date, senior team, verified approval that
+covers the date. A junior team entered in a senior tournament is not detected
+from the roster alone.
+
+**Dry-run evidence**: Python and XML syntax, the template XPaths against a
+reconstruction of the base players template, and the status logic against test
+doubles ran in the patch environment. No Odoo upgrade, Odoo test run or browser
+check ran there. Run the `sf_player_parental_overview` tests and upgrade
+`sports_federation_portal` on a staging copy.
+
+**Rollback**: code-only; revert the change and upgrade the module.
+
+### Club team ranking: playing up and promotion
+
+Affected modules: `sports_federation_rosters` 19.0.1.13.0 → 19.0.1.14.0,
+`sports_federation_portal` (template only; version unchanged).
+
+**Data changes**: new stored field `federation.team.club_rank`, computed once
+for existing teams from the name suffix (A-F, 1-9; otherwise 0) and editable
+afterwards. New model `federation.club.rank.promotion` with access rules in
+`security/club_rank_access.xml` (read for internal users, full for federation
+managers). No migration script.
+
+**Behaviour to verify**: check **Rank within club** on teams of clubs with
+several teams, and set it by hand where the name has no suffix (for example a
+first team without "A"). On the higher team's roster, players of the lower
+team are offered and show *Playing up*; on the lower team's roster, players of
+the higher team are not offered and adding one is refused. In the game-day
+line-up wizard, on the match sheet and on the portal line-up page, a player
+who would reach two matches for the higher team gets a warning. After the
+second played match (line-up approved, not crossed out, match done) the
+player has a team promotion, cannot be added to the lower roster, and the
+lower line is removed or explained in the roster chatter.
+
+**Dry-run evidence**: Python syntax and XML well-formedness were checked in the
+patch environment. No Odoo upgrade, Odoo test run or browser check ran there.
+Run the `sf_club_rank` tests and upgrade both modules on a staging copy.
+
+**Rollback**: code-only rollback leaves the `club_rank` column and promotion
+table unused; restore the pre-upgrade backup to remove them.
+
+### Game-day handoff in the Competition Hub and event-time court times
+
+Affected modules: `sports_federation_setup_flow`, `sports_federation_calendar`,
+`sports_federation_live_workspace` (models, views and planner assets; manifest
+versions unchanged).
+
+**Data changes**: None. New non-stored computed fields:
+`federation.schedule.slot.event_window`,
+`federation.matchday.user_timezone_differs` and
+`federation.matchday.timezone_notice`. The slot display name is now computed in
+the event timezone of its game day instead of the viewer's timezone. No stored
+column, migration, ACL or menu change.
+
+**Behaviour to verify**: in the Competition Hub, every listed blocker of the
+next game day has *Fix this*, which opens the exact record or list the blocker
+names; a blocker solved in another tab is refused with a refresh message.
+*Open game day* opens the game day. *Later game days* lists up to three
+further open game days with their readiness and open items. On a game-day
+form, *Courts and times* shows an *Event time* column; with a user timezone
+whose clock differs from the event timezone, a notice explains which times are
+yours and which teams see. Court-time names in schedule dropdowns read the
+same for every user. The visual planner header reads *Start (event time)*.
+Assets must be rebuilt for the planner changes.
+
+**Dry-run evidence**: Python and XML syntax and a JavaScript parse check ran in
+the patch environment. No Odoo upgrade, Odoo test run or browser check ran
+there. Run the setup-flow, calendar and live-workspace module tests and the
+`competition_planner_intent` tour, and upgrade the modules on a staging copy.
+
+**Rollback**: code-only. Revert the change and upgrade the three modules; no
+data needs to be restored.
+
+### Clearer schedule generation and auto-schedule guidance
+
+Affected modules: `sports_federation_scheduling` (views and a transient-model
+extension; manifest version unchanged).
+
+**Data changes**: None. The competition schedule wizard gains non-stored
+computed fields (`guidance_status_html`, `mode_impact_html`,
+`existing_slot_count`, `existing_draft_schedule_count`). No stored column,
+migration script, ACL or menu change.
+
+**Behaviour to verify**: open **Generate schedule** for a competition and
+confirm the step strip and status card; without a check the card says
+*Ready to check and generate*; with blocking findings it lists the count and
+points to Feasibility; with only rest warnings it offers *Generate anyway*. As
+an advanced operator, switch the rerun mode and confirm the explanation; for
+*rebuild* it shows the number of court times and unpublished schedules that
+will be deleted. On a draft schedule, run **Auto-schedule**: *Preview* is the
+primary action, and a proposal with unplaced matches shows the explanation.
+Generation, preview signatures, governance and publication behave as before.
+
+**Dry-run evidence**: Python syntax and XML well-formedness were checked in the
+patch environment. No Odoo upgrade, Odoo test run or browser check was executed
+there. Run `bash ./ci/run_tests.sh --module sports_federation_scheduling` and
+upgrade the module on a staging copy before release.
+
+**Rollback**: code-only. Revert the change and upgrade
+`sports_federation_scheduling`; no data needs to be restored.
+
+### Offline court scoring on personal phones
+
+Affected modules: `sports_federation_live_workspace` 19.0.1.6.3 → 19.0.1.7.0,
+`sports_federation_result_control` 19.0.1.6.0 → 19.0.1.7.0,
+`sports_federation_portal` 19.0.7.14.5 → 19.0.7.14.6,
+`sports_federation_setup_flow` 19.0.4.11.2 (see the next entry).
+
+**Data changes**: new models `federation.court.device` (prepared phones, token
+hashes only) and `federation.match.scorer` (club scorer nominations). New
+columns on `federation.court.capture` (device, scorer, scorer source and club,
+referee confirmation, match log, conflict count), `federation.court.receipt`
+(device) and `federation.referee` (PIN hash, set date, failures, lock). New
+ACLs for match-day managers and result validators, two record rules, an
+hourly cron that expires codes and tokens, and the menus **Match Operations >
+Scoring Phones** and **Club Scorers** (Advanced Federation Tools). No
+migration script; existing captures get empty evidence fields.
+
+Behaviour changes for existing data: a result submitted from a court app
+(backend **Run This Court** included) no longer auto-verifies or
+auto-approves when the competition does not require review; it stays
+*submitted* until a result approver clicks **Approve Result**. On the match
+form and the result list, **Approve Result** now verifies and approves a
+submitted result in one step; the submitter can still never approve their own
+result. The Review Queue shows *Approve result* for submitted results.
+
+**Behaviour to verify**: with a portal referee whose head-referee assignment
+is confirmed, open **My court duties**, prepare a phone, open the court app,
+switch the phone to aeroplane mode, reload the app, score sets, cross out
+players and record a card, then reconnect: the changes arrive. Submit as head
+referee; on the match, the **Court evidence** tab shows the scores, cards,
+scorer, phone and confirmation; **Approve Result** makes it official. Repeat
+with an assistant referee and the head referee's PIN, with a club scorer added
+by a club representative, with a revoked phone and with a second phone taking
+over a match. Test on Android Chrome and iPhone Safari, also installed on the
+home screen. The site must be served over HTTPS for the service worker.
+
+**Dry-run evidence**: `python -m unittest ci.test_court_app_logic` passes (21
+shared scoring cases on the server rules, device-command validation, and the
+32 Node.js tests of the phone logic). The phone app was run in headless
+Chromium against a stand-in server (`ci/court_app_browser/run.py`): 24 checks
+pass, including reloading the app without a network, keeping unsent changes,
+sending them when back online, PIN confirmation, conflicts, a revoked phone,
+and a 320 px dark-mode layout. The new Odoo tests
+(`sports_federation_live_workspace/tests/test_court_devices.py`), the module
+upgrade and real-device tests were not run in this change.
+
+**Rollback**: code-only rollback followed by a module update removes the
+routes, menus and cron; the new tables and columns remain unused. Court
+results then auto-approve again where the competition does not require
+review. Revoke all phones before rolling back.
+
+### Readable Competition Hub next-action card
+
+Affected modules (static assets only): `sports_federation_setup_flow`
+19.0.4.11.1 → 19.0.4.11.2, `sports_federation_base` 19.0.1.6.1 → 19.0.1.6.2;
+the `sports_federation_live_workspace` stylesheets ship with 19.0.1.7.0
+(previous entry).
+
+**Data changes**: none. `planner.scss` contained two rules for the
+next-action card: the second replaced the purple background with white but
+kept the white text. The file now has one rule set built on Bootstrap 5.3
+theme variables. The same files in the live workspace, stage builder and base
+UX stylesheet referenced CSS variables Odoo does not define (`--body-bg`,
+`--border-color`, `--text-muted`, `--o-brand-primary`,
+`--o-view-background-color`), so their light fallbacks were also used in dark
+mode; they now use the `--bs-*` equivalents.
+
+**Behaviour to verify**: in light and dark mode, the Competition Hub
+**Next action** card, setup steps, season board and court workspace are
+readable. Clear the browser cache or regenerate assets after the update.
+
+**Dry-run evidence**: the new `ci/check_scss_contrast.py` passes and fails on
+the previous `planner.scss`. The browser tours were not run in this change.
+
+**Rollback**: code-only rollback followed by a module update.
 
 ### Printable match scoresheet, drawn sets and set points
 

@@ -5,6 +5,8 @@ from odoo.addons.sports_federation_import_tools.workflow_states import (
     INBOUND_DELIVERY_PROCESSED_STATES,
 )
 
+from odoo.addons.sports_federation_base.batch_jobs import for_each_chunk
+
 
 class FederationIntegrationDeliveryRetentionMixin(models.AbstractModel):
     _name = "federation.integration.delivery.retention.mixin"
@@ -30,11 +32,16 @@ class FederationIntegrationDeliveryRetentionMixin(models.AbstractModel):
                     (cutoff_field, "<", cutoff),
                 ]
             )
-            attachments = deliveries.mapped("attachment_id").sudo()
-            total_deleted += len(deliveries)
-            attachments.unlink()
-            deliveries.unlink()
+            total_deleted += for_each_chunk(deliveries, self._unlink_delivery_chunk)
         return total_deleted
+
+    @api.model
+    def _unlink_delivery_chunk(self, deliveries):
+        attachments = deliveries.mapped("attachment_id").sudo()
+        count = len(deliveries)
+        attachments.unlink()
+        deliveries.unlink()
+        return count
 
     @api.model
     def _retention_candidates(self, reference_dt=None):

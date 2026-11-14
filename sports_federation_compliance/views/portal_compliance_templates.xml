@@ -4,8 +4,9 @@
     <template id="portal_federation_links_compliance"
               inherit_id="sports_federation_portal.portal_federation_links"
               priority="40">
-        <xpath expr="//div[@t-if='not federation_representative and not federation_referee']" position="before">
-            <div class="row" t-if="federation_representative or federation_referee">
+        <!-- Club representatives reach compliance from the club area tiles. -->
+        <xpath expr="//div[@data-fed-overview='no-role']" position="before">
+            <div class="row" t-if="federation_referee and not federation_representative">
                 <div class="col-12 col-lg-6 mb-4">
                     <div class="card">
                         <div class="card-body">
@@ -55,19 +56,19 @@
                     </div>
                 </div>
 
-                <div t-if="success" class="alert alert-success">
+                <div t-if="success" class="alert alert-success" role="status">
                     <t t-esc="success"/>
                 </div>
-                <div t-if="error" class="alert alert-danger">
+                <div t-if="error" class="alert alert-danger" role="status">
                     <t t-esc="error"/>
                 </div>
 
-                <div t-if="not has_compliance_access" class="alert alert-warning">
+                <div t-if="not has_compliance_access" class="alert alert-warning" role="status">
                     <i class="fa fa-info-circle me-2"/>
                     You do not currently have a club or official profile with portal-managed compliance responsibilities.
                 </div>
 
-                <div t-elif="not workspace_entries" class="alert alert-info">
+                <div t-elif="not workspace_entries" class="alert alert-info" role="status">
                     <i class="fa fa-info-circle me-2"/>
                     No portal-managed compliance items are assigned to you right now. New uploads and renewals will appear here when federation staff opens them.
                 </div>
@@ -140,10 +141,10 @@
                     </div>
                 </div>
 
-                <div t-if="success" class="alert alert-success">
+                <div t-if="success" class="alert alert-success" role="status">
                     <t t-esc="success"/>
                 </div>
-                <div t-if="error" class="alert alert-danger">
+                <div t-if="error" class="alert alert-danger" role="status">
                     <t t-esc="error"/>
                 </div>
 

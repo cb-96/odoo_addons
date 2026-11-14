@@ -4,7 +4,7 @@ Owner: Federation Platform Team
 Last reviewed: 2026-11-06
 Review cadence: Every release
 
-Acceptance scenarios for the role home (`/my/work`), team preparation, task
+Acceptance scenarios for the portal overview (`/my`), team preparation, task
 priority, context continuity, empty and error states, the Competition Hub
 hierarchy, terminology and event time zones across the portal, planner,
 court workspace and public site.

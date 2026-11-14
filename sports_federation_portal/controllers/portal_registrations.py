@@ -112,7 +112,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             season_id = int(season_id)
         except (ValueError, TypeError):
             return self._redirect_with_query(
-                "/my/season-registration/new", error="Invalid selection"
+                "/my/season-registration/new", error=request.env._("Invalid selection")
             )
 
         try:
@@ -128,12 +128,14 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/season-registration/new",
                 error=str(error),
-                error_hint="Check all required fields are completed and the season is still open for registration.",
+                error_hint=request.env._(
+                    "Check all required fields are completed and the season is still open for registration."
+                ),
             )
 
         return self._redirect_with_query(
             "/my/season-registrations",
-            success="Season registration submitted",
+            success=request.env._("Season registration submitted"),
         )
 
     @http.route(
@@ -153,7 +155,7 @@ class FederationRegistrationPortal(FederationPortalBase):
         if not registration.exists() or registration.club_id not in clubs:
             return self._redirect_with_query(
                 "/my/season-registrations",
-                error="Registration not found",
+                error=request.env._("Registration not found"),
             )
 
         try:
@@ -167,10 +169,12 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/season-registrations",
                 error=str(error),
-                error_hint="This registration may not be cancellable at its current stage. Contact the federation if needed.",
+                error_hint=request.env._(
+                    "This registration may not be cancellable at its current stage. Contact the federation if needed."
+                ),
             )
 
         return self._redirect_with_query(
             "/my/season-registrations",
-            success="Registration cancelled",
+            success=request.env._("Registration cancelled"),
         )

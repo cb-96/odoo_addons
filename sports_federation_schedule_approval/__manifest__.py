@@ -1,6 +1,6 @@
 {
     "name": "Schedule Approval",
-    "version": "19.0.2.6.0",
+    "version": "19.0.2.7.0",
     "category": "Sports",
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
@@ -12,6 +12,7 @@
         "views/approval_views.xml",
         "wizards/publish_schedule_wizard_views.xml",
         "views/menu.xml",
+        "views/match_journey.xml",
     ],
     "installable": True,
     "application": False,

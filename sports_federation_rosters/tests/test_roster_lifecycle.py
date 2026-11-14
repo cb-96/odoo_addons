@@ -7,6 +7,10 @@ keeping setup cost and assertion scope narrow.
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestRosterLifecycle(TransactionCase):
     """State transitions, lock guards, and constraint checks for team rosters."""
@@ -51,12 +55,13 @@ class TestRosterLifecycle(TransactionCase):
         return self.env["federation.team.roster"].create(vals)
 
     def _add_active_line(self, roster, player):
-        return self.env["federation.team.roster.line"].create(
+        return create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": player.id,
                 "status": "active",
-            }
+            },
         )
 
     # ── activation ──────────────────────────────────────────────────────────
@@ -106,44 +111,48 @@ class TestRosterLifecycle(TransactionCase):
     def test_two_captains_raises(self):
         roster = self._make_roster()
         self._add_active_line(roster, self.player1)
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
                 "status": "active",
                 "is_captain": True,
                 "date_from": "2025-01-01",
-            }
+            },
         )
         with self.assertRaises(Exception):
-            self.env["federation.team.roster.line"].create(
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": self.player2.id,
                     "status": "active",
                     "is_captain": True,
                     "date_from": "2025-01-02",
-                }
+                },
             )
 
     def test_two_vice_captains_raises(self):
         roster = self._make_roster()
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player1.id,
                 "status": "active",
                 "is_vice_captain": True,
-            }
+            },
         )
         with self.assertRaises(Exception):
-            self.env["federation.team.roster.line"].create(
+            create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": self.player2.id,
                     "status": "active",
                     "is_vice_captain": True,
-                }
+                },
             )
 
     # ── match-day lock guard ─────────────────────────────────────────────────
@@ -270,12 +279,13 @@ class TestMatchSheetLifecycle(TransactionCase):
                 "season_id": self.season.id,
             }
         )
-        roster_line = self.env["federation.team.roster.line"].create(
+        roster_line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player.id,
                 "status": "active",
-            }
+            },
         )
         roster.action_activate()
         sheet = self._make_sheet(roster_id=roster.id)
@@ -320,12 +330,13 @@ class TestMatchSheetLifecycle(TransactionCase):
                 "season_id": self.season.id,
             }
         )
-        line = self.env["federation.team.roster.line"].create(
+        line = create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": self.player.id,
                 "status": "active",
-            }
+            },
         )
         roster.action_activate()
         sheet = self._make_sheet(roster_id=roster.id)

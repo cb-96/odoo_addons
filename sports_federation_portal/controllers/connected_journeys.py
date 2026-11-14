@@ -6,20 +6,13 @@ from .officiating import FederationOfficiatingPortal
 from odoo.addons.sports_federation_rosters.models.roster_line import (
     _get_parental_approval_reasons,
 )
-from ..journey_cards import choose_role, bucket_for, group_cards, participation_status
+from ..journey_cards import bucket_for, group_cards, participation_status
 
-ROLE_LABELS = {
-    "club": "Club and team preparation",
-    "official": "My official assignments",
-    "planner": "Competition planning",
-    "reviewer": "Result review",
-    "manager": "Manager work queue",
-}
 ROLE_URLS = {
     "club": "/my/preparation",
     "official": "/my/referee-assignments",
     "planner": "/odoo/action-sports_federation_setup_flow.action_competition_setup_home",
-    "reviewer": "/my/work/reviews",
+    "reviewer": "/my/result-reviews",
     "manager": "/federation/operations/action-items",
 }
 
@@ -142,7 +135,17 @@ def review_cards(matches, controller):
     return cards
 
 
+OVERVIEW_CARD_LIMIT = 5
+
+
 class ConnectedRoleJourneys(RoleJourneys):
+    """The portal overview: one page with a section per responsibility.
+
+    Club representatives see their club first. Officials, competition
+    planners, result reviewers and federation managers get their own section
+    below it, each with the most urgent work and a link to the full list.
+    """
+
     @staticmethod
     def _is_club_representative(user):
         """Match the persona lookup that renders the club overview on /my."""
@@ -154,231 +157,215 @@ class ConnectedRoleJourneys(RoleJourneys):
 
     @http.route()
     def home(self, **kw):
-        user = request.env.user
-        if self._is_club_representative(user):
-            # "My account" (/my and /my/home) opens the club overview, the single
-            # page that lists everything a club representative can manage.
-            return super().home(**kw)
-        model = request.env["federation.operation.task"]
-        federation_access = (
-            bool(model._portal_club_ids(user))
-            or bool(request.env["federation.referee"]._portal_get_for_user(user=user))
-            or any(
-                user.has_group(group)
-                for group in (
-                    "sports_federation_competition_core.group_competition_administrator",
-                    "sports_federation_result_control.group_result_validator",
-                    "sports_federation_result_control.group_result_approver",
-                    "sports_federation_base.group_federation_manager",
-                )
-            )
-        )
-        if federation_access and kw.get("generic") != "1":
-            return request.redirect("/my/work")
-        return super().home(**kw)
-
-    @http.route()
-    def role_home(self, role=None, club=None, **kw):
-        response = super().role_home(**kw)
-        context = response.qcontext
-        allowed = [key for key in ROLE_LABELS if context.get(key + "_access")]
-        session_key = "federation_journey_role:%s" % request.env.user.id
-        if role and role not in allowed:
-            return self._render_access_denied()
-        selected = choose_role(allowed, role, request.session.get(session_key))
-        if selected:
-            request.session[session_key] = selected
-        clubs = request.env["federation.club"].browse([])
-        selected_club = None
-        if selected == "club":
-            club_ids = request.env["federation.operation.task"]._portal_club_ids(
-                request.env.user
-            )
-            clubs = request.env["federation.portal.privilege"].portal_search(
-                request.env["federation.club"],
-                [("id", "in", club_ids)],
-                user=request.env.user,
-            )
-            club_key = "federation_journey_club:%s" % request.env.user.id
-            if club is not None:
-                try:
-                    selected_club = int(club) if club else None
-                except (ValueError, TypeError):
-                    return self._render_access_denied()
-                if selected_club and selected_club not in clubs.ids:
-                    return self._render_access_denied()
-            else:
-                remembered = request.session.get(club_key)
-                selected_club = remembered if remembered in clubs.ids else None
-            request.session[club_key] = selected_club
-        context.update(
-            journey_clubs=clubs,
-            journey_club=selected_club,
-            club_overview_access=self._is_club_representative(request.env.user),
-        )
-        cards = []
-        if selected == "club":
-            model = request.env["federation.operation.task"].with_context(
-                journey_viewer_id=request.env.user.id
-            )
-            tasks = request.env["federation.portal.privilege"].portal_search(
-                model,
-                model._portal_get_domain(request.env.user)
-                + (
-                    [("responsible_club_id", "=", selected_club)]
-                    if selected_club
-                    else []
-                ),
-                user=request.env.user,
-                order="blocking desc, deadline asc, id asc",
-                limit=200,
-            )
-            cards = task_cards(tasks)
-            existing = {
-                task.source_record_id
-                for task in tasks
-                if task.source_model == "federation.competition.entry"
-                and task.state != "done"
-            }
-            for entry in model._journey_waiting_entries(user=request.env.user):
-                if selected_club and entry.team_id.club_id.id != selected_club:
-                    continue
-                if entry.id not in existing:
-                    cards.append(
-                        {
-                            "key": "entry:%s" % entry.id,
-                            "title": entry.team_id.display_name,
-                            "url": "/my/competition-entries/%s" % entry.id,
-                            "owner": _("Federation registration reviewer"),
-                            "deadline": False,
-                            "blocker": _(
-                                "Awaiting an independent registration decision"
-                            ),
-                            "next_action": _("View submission status"),
-                            "handoff": _(
-                                "Submitted successfully. No resubmission is needed while review is pending."
-                            ),
-                            "bucket": "waiting",
-                        }
-                    )
-        elif selected == "manager":
-            model = request.env["federation.operation.task"]
-            model.sync_for_user(user=request.env.user)
-            cards = task_cards(
-                model.search(
-                    [("audience", "=", "manager")],
-                    order="blocking desc, deadline asc, id asc",
-                    limit=200,
-                )
-            )
-        elif selected == "reviewer":
-            states = ["approved"]
-            if request.env.user.has_group(
-                "sports_federation_result_control.group_result_validator"
-            ):
-                states.append("submitted")
-            if request.env.user.has_group(
-                "sports_federation_result_control.group_result_approver"
-            ):
-                states.append("verified")
-            cards = review_cards(
-                request.env["federation.match"].search(
-                    [("result_state", "in", states)]
-                    + request.env["federation.portal.archive.scope"].exclusion_domain(
-                        "federation.match"
-                    ),
-                    order="id desc",
-                    limit=100,
-                ),
-                self,
-            )
-        elif selected == "official":
-            model = request.env["federation.match.referee"]
-            assignments = request.env["federation.portal.privilege"].portal_search(
-                model,
-                model._portal_get_domain(user=request.env.user)
-                + [
-                    (
-                        "publication_id",
-                        "in",
-                        request.env["federation.matchday"]
-                        .sudo()
-                        .search([("current_publication_id.state", "=", "live")])
-                        .mapped("current_publication_id")
-                        .ids,
-                    )
-                ],
-                user=request.env.user,
-                order="id desc",
-                limit=100,
-            )
-            cards = assignment_cards(assignments)
-        elif selected == "planner":
-            for edition in request.env["federation.competition.edition"].search(
-                [], order="id desc", limit=50
-            ):
-                data = edition.get_competition_planner_data()
-                issue = data.get("current_issue") or {}
-                cards.append(
-                    {
-                        "key": "edition:%s" % edition.id,
-                        "title": edition.display_name,
-                        "url": "/odoo/federation.competition.edition/%s" % edition.id,
-                        "owner": issue.get("owner") or _("Competition organiser"),
-                        "deadline": (
-                            fields.Datetime.to_datetime(edition.date_start)
-                            if edition.date_start
-                            else False
-                        ),
-                        "blocking": bool(issue),
-                        "blocker": issue.get("message") or "",
-                        "next_action": _("Continue: %s") % data["current_label"],
-                        "handoff": _(
-                            "The existing planner resumes at the first incomplete step. Publication still requires independent review."
-                        ),
-                        "bucket": bucket_for(
-                            complete=data["complete"],
-                            waiting=issue.get("step") == "publication",
-                            deadline=(
-                                fields.Datetime.to_datetime(edition.date_start)
-                                if edition.date_start
-                                else None
-                            ),
-                            now=fields.Datetime.now(),
-                            blocking=bool(issue),
-                        ),
-                    }
-                )
-        context.update(
-            journey_role=selected,
-            journey_roles=[
-                {"key": key, "label": _(ROLE_LABELS[key])} for key in allowed
-            ],
-            journey_role_label=(
-                _(ROLE_LABELS[selected])
-                if selected
-                else _("No federation responsibility assigned")
-            ),
-            journey_role_url=(
-                (
-                    ROLE_URLS.get(selected)
-                    + (
-                        "?club=%s" % selected_club
-                        if selected == "club" and selected_club
-                        else ""
-                    )
-                )
-                if selected
-                else None
-            ),
-            journey_groups=group_cards(cards),
-            journey_limit=(
-                200
-                if selected in ("club", "manager")
-                else 50 if selected == "planner" else 100
-            ),
-        )
+        response = super().home(**kw)
+        if getattr(response, "qcontext", None) is not None:
+            response.qcontext["federation_overview"] = self._federation_overview()
+            response.qcontext["journey_user_id"] = request.env.user.id
         return response
+
+    # ------------------------------------------------------------------
+    # Overview data
+    # ------------------------------------------------------------------
+
+    def _federation_overview(self):
+        user = request.env.user
+        overview = {"club": {}, "sections": []}
+        if self._is_club_representative(user):
+            overview["club"] = self._overview_club(user)
+        builders = (
+            ("official", self._overview_official),
+            ("planner", self._overview_planner),
+            ("reviewer", self._overview_reviewer),
+            ("manager", self._overview_manager),
+        )
+        for key, builder in builders:
+            section = builder(user)
+            if section:
+                section["key"] = key
+                overview["sections"].append(section)
+        return overview
+
+    @staticmethod
+    def _overview_section(title, intro, cards, url, url_label):
+        groups = group_cards(cards)
+        todo = request.env["federation.operation.task"]._journey_actionable_cards(
+            groups
+        )
+        return {
+            "title": title,
+            "intro": intro,
+            "todo": todo[:OVERVIEW_CARD_LIMIT],
+            "todo_count": len(todo),
+            "waiting_count": len(groups["waiting"]),
+            "url": url,
+            "url_label": url_label,
+        }
+
+    def _overview_club(self, user):
+        """Counts and attention badges for the club area tiles."""
+        clubs = self._get_portal_clubs()
+        club_ids = clubs.ids
+        privilege = request.env["federation.portal.privilege"]
+        Task = request.env["federation.operation.task"]
+        Task.sync_for_user(user=user)
+        open_tasks = privilege.portal_search(
+            Task,
+            Task._portal_get_domain(user) + [("state", "!=", "done")],
+            user=user,
+        )
+        task_counts = {}
+        for task in open_tasks:
+            task_counts[task.task_type] = task_counts.get(task.task_type, 0) + 1
+        roster_model = request.env["federation.team.roster"]
+        return {
+            "clubs": clubs,
+            "teams": privilege.portal_search_count(
+                request.env["federation.team"],
+                [("club_id", "in", club_ids), ("active", "=", True)],
+                user=user,
+            ),
+            "players": privilege.portal_search_count(
+                request.env["federation.player"],
+                [("club_id", "in", club_ids), ("active", "=", True)],
+                user=user,
+            ),
+            "rosters": privilege.portal_search_count(
+                roster_model,
+                roster_model._portal_get_scope_domain(user=user)
+                + [("active", "=", True)],
+                user=user,
+            ),
+            "competitions": len(
+                request.env["federation.portal.competition.queries"].visible_editions(
+                    user=user
+                )
+            ),
+            "tasks": len(open_tasks),
+            "badges": {
+                "teams": task_counts.get("registration", 0),
+                "players": task_counts.get("parental_consent", 0),
+                "rosters": task_counts.get("roster_readiness", 0),
+                "preparation": task_counts.get("gameday_lineup", 0),
+                "officials": task_counts.get("referee_duty", 0),
+                "results": task_counts.get("result_review", 0),
+            },
+        }
+
+    def _overview_official(self, user):
+        if not request.env["federation.referee"]._portal_get_for_user(user=user):
+            return None
+        model = request.env["federation.match.referee"]
+        live_publications = (
+            request.env["federation.matchday"]
+            .sudo()
+            .search([("current_publication_id.state", "=", "live")])
+            .mapped("current_publication_id")
+        )
+        assignments = request.env["federation.portal.privilege"].portal_search(
+            model,
+            model._portal_get_domain(user=user)
+            + [("publication_id", "in", live_publications.ids)],
+            user=user,
+            order="id desc",
+            limit=100,
+        )
+        return self._overview_section(
+            _("My official assignments"),
+            _("Accept or decline assignments before their confirmation deadline."),
+            assignment_cards(assignments),
+            "/my/referee-assignments",
+            _("All my assignments"),
+        )
+
+    def _overview_planner(self, user):
+        if not user.has_group(
+            "sports_federation_competition_core.group_competition_administrator"
+        ):
+            return None
+        cards = []
+        now = fields.Datetime.now()
+        for edition in request.env["federation.competition.edition"].search(
+            [], order="id desc", limit=10
+        ):
+            data = edition.get_competition_planner_data()
+            issue = data.get("current_issue") or {}
+            start = (
+                fields.Datetime.to_datetime(edition.date_start)
+                if edition.date_start
+                else False
+            )
+            cards.append(
+                {
+                    "key": "edition:%s" % edition.id,
+                    "title": edition.display_name,
+                    "url": "/odoo/federation.competition.edition/%s" % edition.id,
+                    "owner": issue.get("owner") or _("Competition organiser"),
+                    "deadline": start,
+                    "blocking": bool(issue),
+                    "blocker": issue.get("message") or "",
+                    "next_action": _("Continue: %s") % data["current_label"],
+                    "handoff": _(
+                        "The planner resumes at the first incomplete step. "
+                        "Publication still requires independent review."
+                    ),
+                    "bucket": bucket_for(
+                        complete=data["complete"],
+                        waiting=issue.get("step") == "publication",
+                        deadline=start or None,
+                        now=now,
+                        blocking=bool(issue),
+                    ),
+                }
+            )
+        return self._overview_section(
+            _("Competition planning"),
+            _("Competitions that still need a setup or scheduling step."),
+            cards,
+            ROLE_URLS["planner"],
+            _("Open the competition planner"),
+        )
+
+    def _overview_reviewer(self, user):
+        states = []
+        if user.has_group("sports_federation_result_control.group_result_validator"):
+            states.append("submitted")
+        if user.has_group("sports_federation_result_control.group_result_approver"):
+            states.append("verified")
+        if not states:
+            return None
+        matches = request.env["federation.match"].search(
+            [("result_state", "in", states)]
+            + request.env["federation.portal.archive.scope"].exclusion_domain(
+                "federation.match"
+            ),
+            order="id desc",
+            limit=100,
+        )
+        return self._overview_section(
+            _("Result review"),
+            _("Results waiting for your verification or approval."),
+            review_cards(matches, self),
+            ROLE_URLS["reviewer"],
+            _("All results to review"),
+        )
+
+    def _overview_manager(self, user):
+        if not user.has_group("sports_federation_base.group_federation_manager"):
+            return None
+        model = request.env["federation.operation.task"]
+        model.sync_for_user(user=user)
+        tasks = model.search(
+            [("audience", "=", "manager"), ("state", "!=", "done")],
+            order="blocking desc, deadline asc, id asc",
+            limit=200,
+        )
+        return self._overview_section(
+            _("Federation work queue"),
+            _("Reviews and follow-up that wait for the federation."),
+            task_cards(tasks),
+            ROLE_URLS["manager"],
+            _("Open the work queue"),
+        )
 
     @http.route()
     def review_work(self, **kw):
@@ -490,7 +477,7 @@ class ConnectedPreparation(ClubPreparationJourney):
                     label=_("Registration"),
                     state="complete",
                     detail=_("Confirmed registration"),
-                    url="/my/work/registrations/%s" % row["registration"].id,
+                    url="/my/season-registrations/%s/roster" % row["registration"].id,
                 )
             ]
             roster_issues = roster._get_readiness_issues() if roster else []
@@ -512,7 +499,8 @@ class ConnectedPreparation(ClubPreparationJourney):
                     url=(
                         "/my/rosters/%s" % roster.id
                         if roster
-                        else "/my/work/registrations/%s" % row["registration"].id
+                        else "/my/season-registrations/%s/roster"
+                        % row["registration"].id
                     ),
                 )
             )

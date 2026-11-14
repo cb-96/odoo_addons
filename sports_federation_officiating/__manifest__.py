@@ -16,6 +16,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "data/duty_deadline_cron.xml",
         "views/federation_referee_views.xml",
         "views/federation_referee_availability_views.xml",
         "views/federation_referee_certification_views.xml",

@@ -3,6 +3,10 @@ from datetime import timedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+    with_published_planning_token,
+)
+
 
 class FederationMatchdayCommands(models.AbstractModel):
     _name = "federation.matchday.commands"
@@ -305,8 +309,10 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "state": "cancelled",
             }
         operational_status = values.pop("operational_status")
+        # Deviations change the kickoff and location of a published match.
+        # They are audited match-day commands, so they carry the planning token.
         result = self.env["federation.workflow.transition"].execute(
-            match.sudo(),
+            with_published_planning_token(match.sudo()),
             operational_status,
             {"as_published", "moved", "delayed", "postponed", "cancelled"},
             values=values,

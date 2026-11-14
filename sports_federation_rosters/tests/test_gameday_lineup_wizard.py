@@ -3,6 +3,10 @@ import json
 
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestGamedayLineupWizard(TransactionCase):
     @classmethod
@@ -141,8 +145,9 @@ class TestGamedayLineupWizard(TransactionCase):
                 "rule_set_id": rule_set.id,
             }
         )
-        cls.env["federation.team.roster.line"].create(
-            {"roster_id": cls.roster.id, "player_id": player.id, "jersey_number": "7"}
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
+            {"roster_id": cls.roster.id, "player_id": player.id, "jersey_number": "7"},
         )
         cls.roster.action_activate()
 
@@ -218,6 +223,9 @@ class TestGamedayLineupWizard(TransactionCase):
         )
 
     def test_wizard_reports_gameday_and_match_limits(self):
+        self.assertIn(
+            "club_rank_warning", self.env["federation.gameday.lineup.wizard"]._fields
+        )
         self.roster.rule_set_id.write(
             {"gameday_roster_max_size": 14, "match_player_max_size": 12}
         )

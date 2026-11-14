@@ -6,7 +6,9 @@ Review cadence: Every release
 
 Use these terms in menus, help text, workflows and user guides. Model names
 belong in technical sections only. The [competition model](../architecture/competition-model.md)
-describes how the competition records relate to each other.
+describes how the competition records relate to each other. The translated
+terms per language live in the [translation glossary](../../i18n/glossary/glossary.pot)
+(see [Translations](../development/translations.md)).
 
 ## Competition terms
 

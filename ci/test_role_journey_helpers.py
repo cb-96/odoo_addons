@@ -18,7 +18,7 @@ class JourneyHelpers(unittest.TestCase):
         for path in (
             "/my/rosters/1",
             "/my/competition-entries/23",
-            "/my/work/registrations/12",
+            "/my/season-registrations/12/roster",
             "/my/players/3/parental-approvals",
         ):
             self.assertTrue(nav.safe_destination(path), path)

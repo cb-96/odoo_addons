@@ -242,7 +242,9 @@ class FederationCompetitionDivisionSetupLine(models.TransientModel):
         required=True,
         ondelete="cascade",
     )
-    division_id = fields.Many2one("federation.tournament", readonly=True)
+    division_id = fields.Many2one(
+        "federation.tournament", string="Existing Division", readonly=True
+    )
     name = fields.Char(string="Division", required=True)
     category = fields.Selection(
         selection=lambda self: self.env["federation.tournament"]

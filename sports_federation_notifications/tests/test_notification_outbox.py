@@ -11,18 +11,27 @@ class TestNotificationOutbox(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.club = cls.env["federation.club"].create({
-            "name": "Outbox club", "code": "OUTBOX", "email": "outbox@example.test",
-        })
+        cls.club = cls.env["federation.club"].create(
+            {
+                "name": "Outbox club",
+                "code": "OUTBOX",
+                "email": "outbox@example.test",
+            }
+        )
 
     def _queue(self):
         return self.env["federation.notification.service"].queue_direct_email(
-            self.club, "Review work", "<p>Review work</p>", "recipient@example.test",
+            self.club,
+            "Review work",
+            "<p>Review work</p>",
+            "recipient@example.test",
         )
 
     def test_business_action_does_not_send_smtp(self):
         Mail = self.env["mail.mail"]
-        with patch.object(type(Mail), "send", side_effect=AssertionError("SMTP in business action")):
+        with patch.object(
+            type(Mail), "send", side_effect=AssertionError("SMTP in business action")
+        ):
             log = self._queue()
         self.assertEqual(log.state, "pending")
         self.assertTrue(log.mail_id)
@@ -57,7 +66,11 @@ class TestNotificationOutbox(TransactionCase):
         log.write({"attempt_count": 1})
         log._reconcile_mail()
         log.write({"next_attempt_on": fields.Datetime.now() - timedelta(minutes=1)})
-        with patch.object(type(self.env["mail.mail"]), "send", side_effect=AssertionError("cron sent SMTP")):
+        with patch.object(
+            type(self.env["mail.mail"]),
+            "send",
+            side_effect=AssertionError("cron sent SMTP"),
+        ):
             self.env["federation.notification.log"]._cron_reconcile_outbox()
         self.assertEqual(log.state, "pending")
         self.assertEqual(log.mail_id.state, "outgoing")
@@ -84,26 +97,36 @@ class TestNotificationOutbox(TransactionCase):
 
     def test_template_render_failure_rolls_back_only_side_effect(self):
         Template = self.env["mail.template"]
-        template = Template.create({
-            "name": "Outbox render test",
-            "model_id": self.env["ir.model"]._get_id(self.club._name),
-            "subject": "Outbox", "body_html": "<p>Outbox</p>",
-        })
-        self.env["ir.model.data"].create({
-            "module": "sports_federation_notifications", "name": "outbox_test_template",
-            "model": template._name, "res_id": template.id,
-        })
+        template = Template.create(
+            {
+                "name": "Outbox render test",
+                "model_id": self.env["ir.model"]._get_id(self.club._name),
+                "subject": "Outbox",
+                "body_html": "<p>Outbox</p>",
+            }
+        )
+        self.env["ir.model.data"].create(
+            {
+                "module": "sports_federation_notifications",
+                "name": "outbox_test_template",
+                "model": template._name,
+                "res_id": template.id,
+            }
+        )
         self.club.write({"name": "Business decision retained"})
         Mail = self.env["mail.mail"]
         before = Mail.search_count([])
 
         def fail_after_create(recordset, *args, **kwargs):
-            Mail.create({"subject": "Must roll back", "email_to": "recipient@example.test"})
+            Mail.create(
+                {"subject": "Must roll back", "email_to": "recipient@example.test"}
+            )
             raise RuntimeError("render failed")
 
         with patch.object(type(Template), "send_mail", fail_after_create):
             log = self.env["federation.notification.service"].send_email_template(
-                self.club, "sports_federation_notifications.outbox_test_template",
+                self.club,
+                "sports_federation_notifications.outbox_test_template",
                 email_to="recipient@example.test",
             )
         self.assertEqual(log.state, "failed")
@@ -112,10 +135,17 @@ class TestNotificationOutbox(TransactionCase):
         self.assertEqual(self.club.name, "Business decision retained")
 
     def test_portal_user_cannot_retry(self):
-        user = self.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Outbox portal", "login": "outbox-portal@example.test",
-            "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
-        })
+        user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Outbox portal",
+                    "login": "outbox-portal@example.test",
+                    "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
+                }
+            )
+        )
         log = self._queue()
         log.write({"state": "failed"})
         with self.assertRaises(AccessError):

@@ -1,4 +1,5 @@
 from . import test_rosters
+from . import test_player_availability
 from . import test_match_sheets
 from . import test_participant_readiness
 from . import test_season_registration_handoff
@@ -9,3 +10,6 @@ from . import test_gameday_lineup_wizard
 from . import test_gameday_participation
 from . import test_participant_rosters
 from . import test_scoresheet
+from . import test_club_rank
+from . import test_roster_availability
+from . import test_season_player_registration

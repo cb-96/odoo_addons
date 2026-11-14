@@ -27,7 +27,7 @@
                     </p>
                 </div>
 
-                <div t-if="not matches" class="alert alert-info">
+                <div t-if="not matches" class="alert alert-info" role="status">
                     No match results to review at this time.
                 </div>
 
@@ -194,7 +194,7 @@
 
                         <!-- Pending verification notice (submitted only) -->
                         <t t-if="match.result_state == 'submitted'">
-                            <div class="alert alert-info mb-3">
+                            <div class="alert alert-info mb-3" role="status">
                                 <i class="fa fa-clock-o me-1"/>
                                 <strong>Awaiting verification.</strong>
                                 A federation official must verify this result before it can be approved.
@@ -234,7 +234,7 @@
 
                         <!-- Already contested -->
                         <t t-if="match.result_state == 'contested'">
-                            <div class="alert alert-warning mb-0">
+                            <div class="alert alert-warning mb-0" role="status">
                                 <i class="fa fa-exclamation-circle me-1"/>
                                 This result has been contested and is under federation review.
                                 No further action is required from your club at this time.
@@ -243,7 +243,7 @@
 
                         <!-- Approved -->
                         <t t-if="match.result_state == 'approved'">
-                            <div class="alert alert-success mb-0 mt-2">
+                            <div class="alert alert-success mb-0 mt-2" role="status">
                                 <i class="fa fa-trophy me-1"/>
                                 This result is approved and included in official standings.
                             </div>

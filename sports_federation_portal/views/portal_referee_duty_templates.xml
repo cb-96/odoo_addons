@@ -24,7 +24,7 @@
                     <t t-esc="error"/>
                 </div>
 
-                <div t-if="not duties" class="alert alert-info">
+                <div t-if="not duties" class="alert alert-info" role="status">
                     No referee duties assigned to your club at this time.
                 </div>
 
@@ -189,14 +189,14 @@
                 </div>
 
                 <!-- Read-only view when confirmed or state doesn't allow nomination -->
-                <div t-if="duty.state == 'confirmed'" class="alert alert-success">
+                <div t-if="duty.state == 'confirmed'" class="alert alert-success" role="status">
                     <i class="fa fa-check-circle me-1"/>
                     This duty has been confirmed.
                     <t t-if="duty.assignment_id">
                         Referee assignment created.
                     </t>
                 </div>
-                <div t-if="duty.state == 'nominated'" class="alert alert-info">
+                <div t-if="duty.state == 'nominated'" class="alert alert-info" role="status">
                     <i class="fa fa-clock-o me-1"/>
                     Your nomination is awaiting federation review.
                 </div>

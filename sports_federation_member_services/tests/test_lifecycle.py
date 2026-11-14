@@ -113,6 +113,7 @@ class FamilyFixture:
                     "person_id": (person or self.child_a).id,
                     "purpose": "Membership evidence review",
                     "guardian_required": True,
+                    "deadline": fields.Date.today() + timedelta(days=30),
                     **values,
                 }
             )
@@ -530,6 +531,7 @@ class TestMemberLifecycle(FamilyFixture, TransactionCase):
                     "person_id": self.child_a.id,
                     "company_id": company.id,
                     "purpose": "Other company review",
+                    "deadline": fields.Date.today() + timedelta(days=30),
                 }
             )
         )

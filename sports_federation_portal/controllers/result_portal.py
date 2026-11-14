@@ -57,7 +57,7 @@ class FederationResultPortal(FederationPortalBase):
         if domain == [("id", "=", False)]:
             return self._redirect_with_query(
                 "/my/club",
-                error="You are not assigned as a club representative.",
+                error=request.env._("You are not assigned as a club representative."),
             )
 
         total = Match.search_count(domain)
@@ -131,7 +131,7 @@ class FederationResultPortal(FederationPortalBase):
         if match.result_state != "verified":
             return self._redirect_with_query(
                 f"/my/results/{match_id}",
-                error="Only verified results can be approved.",
+                error=request.env._("Only verified results can be approved."),
             )
 
         try:
@@ -146,7 +146,7 @@ class FederationResultPortal(FederationPortalBase):
 
         return self._redirect_with_query(
             f"/my/results/{match_id}",
-            success="Result approved successfully.",
+            success=request.env._("Result approved successfully."),
         )
 
     @http.route(
@@ -168,7 +168,9 @@ class FederationResultPortal(FederationPortalBase):
         if match.result_state not in ("submitted", "verified", "approved"):
             return self._redirect_with_query(
                 f"/my/results/{match_id}",
-                error="Only submitted, verified, or approved results can be contested.",
+                error=request.env._(
+                    "Only submitted, verified, or approved results can be contested."
+                ),
                 error_hint=(
                     "This result has already been contested."
                     if match.result_state == "contested"
@@ -180,7 +182,7 @@ class FederationResultPortal(FederationPortalBase):
         if not reason:
             return self._redirect_with_query(
                 f"/my/results/{match_id}",
-                error="A contest reason is required.",
+                error=request.env._("A contest reason is required."),
             )
 
         try:
@@ -195,5 +197,7 @@ class FederationResultPortal(FederationPortalBase):
 
         return self._redirect_with_query(
             f"/my/results/{match_id}",
-            success="Result contested. The federation has been notified.",
+            success=request.env._(
+                "Result contested. The federation has been notified."
+            ),
         )

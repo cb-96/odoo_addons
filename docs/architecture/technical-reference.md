@@ -1,7 +1,7 @@
 # Technical reference
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Conventions and patterns that apply across the `sports_federation_*` addons.
@@ -214,8 +214,7 @@ can be represented completely.
 - Every POST form carries a `csrf_token`.
 - The match-day operations board
   (`/sports/match-days/<matchday_id>/operations`) is scoped to the current
-  live publication of that game day; actions are constrained to that
-  publication.
+  live publication of that game day and is read-only.
 
 Routes are inventoried in the [route inventory](../reference/routes.md).
 
@@ -292,8 +291,25 @@ version. See the [data import workflow](../workflows/data-import.md).
   WARNING for recoverable issues, ERROR for failures. Use `message_post` for
   user-visible audit trails.
 - Follow the [exception handling policy](exception-handling.md).
+- Scheduled jobs that touch many records use
+  `sports_federation_base/batch_jobs.py`: `process_each` runs each record in
+  its own savepoint (a failing record is logged and skipped, concurrency
+  errors are re-raised for a retry) and `for_each_chunk` handles set-based
+  work such as retention purges in batches. Both commit between batches when
+  running as a scheduled job (`cron_id` in the context), never in tests.
+  Suspension start/end, coverage escalation and the five retention purges
+  (integration deliveries, member evidence, inbox, notification logs,
+  generated report files) use them.
 
 ## Performance
+
+- Portal pages share the operation-task projection instead of rebuilding it
+  on every view: once per HTTP request, reused by page views (GET) for
+  `sports_federation_portal.task_projection_max_age` seconds (system parameter,
+  default 30, 0 disables), discarded by any portal change of the same user,
+  and skipped while another transaction rebuilds the same clubs
+  (transaction-level advisory lock per club). Outside HTTP requests it always
+  rebuilds.
 
 - Index `tournament_id`, `stage_id`, `group_id`, `match_date`, `state` and
   other frequently filtered fields.

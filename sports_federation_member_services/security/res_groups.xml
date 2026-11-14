@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Member services reviews identities: linking players to people, issuing
+        family references and resolving duplicates change res.partner records.
+        Odoo 19 limits contact writes to "Contact / Creation", so federation
+        managers need that group to perform the reviewed identity commands.
+    -->
+    <record id="sports_federation_base.group_federation_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('base.group_partner_manager'))]"/>
+    </record>
+</odoo>

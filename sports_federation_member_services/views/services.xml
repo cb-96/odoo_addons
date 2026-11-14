@@ -17,7 +17,7 @@
 
 <template id="family" name="Member and Family Services"><t t-call="portal.portal_layout"><main class="container py-4">
 <h1>My membership and family</h1><p>Membership, document verification and sporting eligibility are separate checks. Payer status does not grant access to personal documents.</p>
-<a href="/my/work">Return to my work</a><a href="/my/invoices" class="btn btn-link">My invoices</a>
+<a href="/my">Back to overview</a><a href="/my/invoices" class="btn btn-link">My invoices</a>
 <p role="status" t-esc="feedback"/>
 <h2>Memberships</h2><div t-foreach="memberships" t-as="m" class="card p-3 mb-3"><h3 t-esc="m['person']"/>
 <p><t t-esc="m['club']"/> · <t t-esc="m['season']"/> · <t t-esc="m['role']"/> · <t t-esc="m['state']"/></p><p t-esc="m['note']"/>

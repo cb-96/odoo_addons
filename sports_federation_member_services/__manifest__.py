@@ -1,6 +1,7 @@
 {
+    "author": "Sports Federation",
     "name": "Member and Family Services",
-    "version": "19.0.1.3.1",
+    "version": "19.0.1.4.1",
     "license": "LGPL-3",
     "depends": [
         "sports_federation_people",
@@ -9,6 +10,7 @@
         "sports_federation_finance_bridge",
     ],
     "data": [
+        "security/res_groups.xml",
         "security/ir.model.access.csv",
         "security/rules.xml",
         "views/services.xml",
@@ -17,6 +19,7 @@
         "views/identity_backfill_views.xml",
         "views/evidence_retention_views.xml",
         "data/evidence_retention_data.xml",
+        "views/player_registration_boundary.xml",
     ],
     "installable": True,
     "application": False,

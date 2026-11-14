@@ -1,7 +1,7 @@
 # Route inventory
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 Every HTTP route served by the `sports_federation_*` addons, grouped by
@@ -73,17 +73,17 @@ Owner: `sports_federation_portal` unless noted. Auth: user (portal).
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| GET | `/my/club` | Club overview: teams, rosters, competitions and what needs attention |
-| GET | `/my/work` | Role-aware home: club/team preparation, official assignments, planning, follow-up and reviews |
-| GET | `/my/work/context` | Switch active role or club context |
-| GET | `/my/work/reviews` | Results waiting for the user's verification or approval |
-| GET | `/my/work/registrations/<registration_id>` | Missing-roster explanation for a confirmed registration |
-| GET | `/my/work/tasks/<task_id>/open` | Open the source record of a task after rechecking access |
+| GET | `/my`, `/my/home` | Portal overview: the club first, then one section per other role (official, planning, result review, federation work queue) |
+| GET | `/my/club` | Club details; `?club=<id>` for representatives of several clubs |
+| GET | `/my/journey-context` | User and database id for return navigation (not cached) |
+| GET | `/my/result-reviews` | Results waiting for the user's verification or approval |
+| GET | `/my/season-registrations/<registration_id>/roster` | Missing-roster explanation for a confirmed registration |
+| GET | `/my/action-items/<task_id>/open` | Open the source record of a task after rechecking access |
+| GET | `/my/work`, `/my/work/…` | Retired: permanent redirects to the routes above |
 | GET | `/my/action-items` | Club task list |
 | POST | `/my/action-items/assign` | Assign a task to a team or club representative |
 | GET | `/my/milestones` | Club milestones |
 | GET | `/my/preparation` | Team preparation: registration, roster, line-ups and consent documents |
-| GET | `/my/data-api` | Tutorial for the public data API |
 
 ### Teams, players and registrations
 
@@ -92,6 +92,10 @@ Owner: `sports_federation_portal` unless noted. Auth: user (portal).
 | GET | `/my/teams`; GET, POST `/my/teams/new` | Club teams; create a team (`federation.team._portal_create_team`) |
 | GET | `/my/players`; GET, POST `/my/players/new` | Club players; create a player (`federation.player._portal_create_player`) |
 | GET, POST | `/my/players/<player_id>/parental-approvals[/upload]`, GET `…/<approval_id>/download` | Parental approval evidence |
+| GET | `/my/availability`; POST `/my/availability/new`; GET `/my/availability/<request_id>`; POST `…/answer`, `…/remind` | Optional player availability per game day (clubs that switched it on) |
+| POST | `/my/club/player-availability` | Whole-club representative switches player availability on or off |
+| GET, POST | `/availability/<token>` | Player answers through the personal link in the email (public, no account) |
+| GET | `/my/club-invoices` | Club invoices with online payment (owner: `sports_federation_accounting`) |
 | GET | `/my/season-registrations`; GET, POST `/my/season-registration/new`; POST `/my/season-registration/<reg_id>/cancel` | Season registrations (`federation.season.registration._portal_submit_registration_request`) |
 | GET | `/my/competitions`, `/my/competitions/<edition_id>` | Competitions the club's teams take part in |
 | GET | `/my/competition-entries`, `/my/competition-entries/<entry_id>` | Competition entries |
@@ -122,6 +126,9 @@ Owner: `sports_federation_portal` unless noted. Auth: user (portal).
 | GET | `/my/duty-assignments`, `/my/duty-assignments/<assignment_id>`; POST `…/respond` | Individual official assignment workspace (owner: `sports_federation_duty_coverage`) |
 | POST | `/my/duty-assignments/<assignment_id>/checkin` | Signed check-in request (owner: `sports_federation_live_workspace`) |
 | GET | `/my/matchday-mobile` | Mobile match-day entry (owner: `sports_federation_live_workspace`) |
+| GET | `/my/court-duties`; POST `/my/court-duties/prepare`, `/my/court-duties/devices/<device_id>/revoke`, `/my/court-duties/pin`, `/my/court-duties/scorers`, `/my/court-duties/scorers/<scorer_id>/withdraw` | Matches to score, phone preparation, own phones, referee PIN, club scorers (owner: `sports_federation_live_workspace`) |
+| GET | `/court/app`, `/court/sw.js`, `/court/manifest.webmanifest` | Offline court app shell, service worker and manifest; public, no data |
+| POST | `/court/api/activate`, `/court/api/pack`, `/court/api/sync`, `/court/api/claim`, `/court/api/forget` | Offline court app API; bearer device token except `activate` (one-time code); rate limited |
 | POST | `/my/matchday-mobile/assignments/<assignment_id>/present`; GET, POST `…/replace` | Manager attendance confirmation and official replacement |
 
 ### Notifications and family
@@ -145,7 +152,6 @@ current live publication.
 | --- | --- | --- |
 | GET | `/sports/match-days/<matchday_id>/operations` | Operations board |
 | POST (JSON-RPC) | `/sports/match-days/<matchday_id>/operations/data` | Current live operations payload |
-| POST (JSON-RPC) | `/sports/match-days/<matchday_id>/matches/<match_id>/action` | Match action constrained to that publication |
 
 ## Federation staff (front end)
 

@@ -215,7 +215,9 @@ class FederationMatch(models.Model):
     def _check_team_roster_deadlines(self):
         """Validate team roster deadlines."""
         for record in self:
-            if record.state == "cancelled":
+            # The deadline guards matches that are still to be played;
+            # cancelling or completing one is never blocked by it.
+            if record.state in ("cancelled", "done"):
                 continue
             issues = record._get_team_roster_deadline_issues()
             if issues:

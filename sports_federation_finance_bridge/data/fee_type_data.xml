@@ -9,5 +9,12 @@
             <field name="default_amount">0</field>
             <field name="active">True</field>
         </record>
+        <record id="fee_type_player_season_registration" model="federation.fee.type">
+            <field name="name">Season Player Registration Fee</field>
+            <field name="code">player_season_registration</field>
+            <field name="category">registration</field>
+            <field name="default_amount">0</field>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>

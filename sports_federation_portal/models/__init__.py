@@ -2,6 +2,7 @@ from . import portal_privilege
 from . import federation_club_role_type
 from . import federation_club_representative
 from . import federation_club
+from . import player_availability_portal
 from . import federation_team
 from . import res_partner
 from . import res_users

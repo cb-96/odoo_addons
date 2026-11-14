@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Court evidence on the match: what the tournament manager checks before Approve. -->
+    <record id="match_form_court_evidence" model="ir.ui.view">
+        <field name="name">federation.match.form.court.evidence</field>
+        <field name="model">federation.match</field>
+        <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Court evidence" name="court_evidence"
+                      invisible="not court_capture_ids and not court_scorer_ids"
+                      groups="sports_federation_matchday.group_matchday_manager,sports_federation_result_control.group_result_validator">
+                    <field name="court_capture_ids" readonly="1" nolabel="1">
+                        <form string="Court evidence">
+                            <group>
+                                <group string="Scorer">
+                                    <field name="scorer_user_id"/>
+                                    <field name="scorer_source"/>
+                                    <field name="scorer_club_id" invisible="not scorer_club_id"/>
+                                    <field name="scorer_club_note" invisible="not scorer_club_note" decoration-warning="scorer_club_note"/>
+                                    <field name="device_id"/>
+                                </group>
+                                <group string="Confirmation">
+                                    <field name="referee_confirmation" decoration-danger="referee_confirmation == 'none'"/>
+                                    <field name="referee_confirmed_by_id" invisible="not referee_confirmed_by_id"/>
+                                    <field name="conflict_count" decoration-warning="conflict_count &gt; 0"/>
+                                    <field name="review_required"/>
+                                    <field name="revision"/>
+                                </group>
+                            </group>
+                            <group string="What was recorded on court">
+                                <field name="evidence_summary" nolabel="1" colspan="2"/>
+                            </group>
+                            <field name="receipt_ids">
+                                <list>
+                                    <field name="create_date" string="Received"/>
+                                    <field name="operation"/>
+                                    <field name="actor_id"/>
+                                    <field name="device_id"/>
+                                    <field name="key"/>
+                                </list>
+                            </field>
+                        </form>
+                        <list>
+                            <field name="scorer_user_id"/>
+                            <field name="scorer_source"/>
+                            <field name="scorer_club_note"/>
+                            <field name="referee_confirmation" decoration-danger="referee_confirmation == 'none'"/>
+                            <field name="device_id"/>
+                            <field name="conflict_count" decoration-warning="conflict_count &gt; 0"/>
+                            <field name="submitted"/>
+                        </list>
+                    </field>
+                    <separator string="Club scorers"/>
+                    <field name="court_scorer_ids" readonly="1" nolabel="1">
+                        <list>
+                            <field name="user_id"/>
+                            <field name="club_id"/>
+                            <field name="nominated_by_id"/>
+                            <field name="active"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="court_device_list" model="ir.ui.view">
+        <field name="name">federation.court.device.list</field>
+        <field name="model">federation.court.device</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0" decoration-muted="state in ('revoked', 'expired')">
+                <field name="matchday_id"/>
+                <field name="user_id"/>
+                <field name="label"/>
+                <field name="state" widget="badge"/>
+                <field name="last_seen_at"/>
+                <field name="expires_at"/>
+                <button name="action_revoke" type="object" string="Revoke" invisible="state not in ('pending', 'active')"
+                        confirm="Revoke this phone? It can no longer send scores."/>
+            </list>
+        </field>
+    </record>
+
+    <record id="court_device_form" model="ir.ui.view">
+        <field name="name">federation.court.device.form</field>
+        <field name="model">federation.court.device</field>
+        <field name="arch" type="xml">
+            <form create="0" delete="0" edit="0">
+                <header>
+                    <button name="action_revoke" type="object" string="Revoke" invisible="state not in ('pending', 'active')"
+                            confirm="Revoke this phone? It can no longer send scores."/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="matchday_id"/>
+                            <field name="label"/>
+                            <field name="user_agent"/>
+                        </group>
+                        <group>
+                            <field name="activated_on"/>
+                            <field name="last_seen_at"/>
+                            <field name="expires_at"/>
+                            <field name="revoked_on" invisible="not revoked_on"/>
+                            <field name="revoked_by_id" invisible="not revoked_by_id"/>
+                        </group>
+                    </group>
+                    <field name="capture_ids" readonly="1">
+                        <list>
+                            <field name="match_id"/>
+                            <field name="scorer_user_id"/>
+                            <field name="referee_confirmation"/>
+                            <field name="submitted"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="court_device_search" model="ir.ui.view">
+        <field name="name">federation.court.device.search</field>
+        <field name="model">federation.court.device</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="matchday_id"/>
+                <filter name="live" string="Active" domain="[('state', 'in', ('pending', 'active'))]"/>
+                <group>
+                    <filter name="group_matchday" string="Game day" context="{'group_by': 'matchday_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_court_devices" model="ir.actions.act_window">
+        <field name="name">Scoring Phones</field>
+        <field name="res_model">federation.court.device</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="court_device_search"/>
+        <field name="context">{'search_default_live': 1}</field>
+        <field name="help" type="html"><p>Phones appear here when a referee or club scorer prepares one from My court duties.</p></field>
+    </record>
+
+    <record id="match_scorer_list" model="ir.ui.view">
+        <field name="name">federation.match.scorer.list</field>
+        <field name="model">federation.match.scorer</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0" edit="0">
+                <field name="match_id"/>
+                <field name="club_id"/>
+                <field name="user_id"/>
+                <field name="nominated_by_id"/>
+                <field name="active" widget="boolean_toggle" readonly="1"/>
+                <button name="action_withdraw" type="object" string="Withdraw" invisible="not active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_match_scorers" model="ir.actions.act_window">
+        <field name="name">Club Scorers</field>
+        <field name="res_model">federation.match.scorer</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html"><p>Club representatives add optional club scorers from My court duties. Referees always score.</p></field>
+    </record>
+
+    <menuitem id="menu_court_devices" name="Scoring Phones" parent="sports_federation_base.menu_federation_match_day"
+              action="action_court_devices" sequence="15" groups="sports_federation_base.group_federation_advanced_operator"/>
+    <menuitem id="menu_match_scorers" name="Club Scorers" parent="sports_federation_base.menu_federation_match_day"
+              action="action_match_scorers" sequence="16" groups="sports_federation_base.group_federation_advanced_operator"/>
+
+    <record id="cron_court_device_expiry" model="ir.cron">
+        <field name="name">Court devices: expire codes and tokens</field>
+        <field name="model_id" ref="model_federation_court_device"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

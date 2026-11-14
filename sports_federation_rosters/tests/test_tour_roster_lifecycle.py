@@ -19,6 +19,10 @@ Key invariants verified:
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestTourRosterLifecycle(TransactionCase):
     """T-04: Roster lifecycle and match sheet workflow tour."""
@@ -54,6 +58,9 @@ class TestTourRosterLifecycle(TransactionCase):
             {
                 "name": "Roster Tour Cup",
                 "date_start": "2026-03-01",
+                # Match-sheet players must hold a registration for the
+                # tournament's season, which the fixture gives them.
+                "season_id": cls.season.id,
                 "rule_set_id": rule_set.id,
             }
         )
@@ -91,12 +98,13 @@ class TestTourRosterLifecycle(TransactionCase):
         # STEP 2: Add players and activate
         lines = self.env["federation.team.roster.line"]
         for player in self.players:
-            line = self.env["federation.team.roster.line"].create(
+            line = create_registered_roster_lines(
+                self.env["federation.team.roster.line"],
                 {
                     "roster_id": roster.id,
                     "player_id": player.id,
                     "status": "active",
-                }
+                },
             )
             lines |= line
         roster.action_activate()

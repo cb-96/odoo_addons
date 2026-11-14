@@ -165,6 +165,11 @@ class FederationMatchSheetLine(models.Model):
     @api.depends(
         "player_id",
         "player_id.birth_date",
+        "player_id.license_ids.state",
+        "player_id.license_ids.club_id",
+        "player_id.license_ids.season_id",
+        "player_id.license_ids.issue_date",
+        "player_id.license_ids.expiry_date",
         "player_id.parental_approval_ids.state",
         "player_id.parental_approval_ids.approval_date",
         "player_id.parental_approval_ids.valid_until",

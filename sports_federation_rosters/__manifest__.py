@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Rosters",
-    "version": "19.0.1.13.0",
+    "version": "19.0.1.16.0",
     "category": "Sports",
     "summary": "Season/competition-bound team rosters and match sheets",
     "description": """
@@ -24,6 +24,7 @@
         "views/team_roster_views.xml",
         "views/match_sheet_views.xml",
         "views/gameday_lineup_wizard_views.xml",
+        "views/player_availability_views.xml",
         "views/gameday_participation_views.xml",
         "views/season_registration_views_inherit.xml",
         "views/tournament_participant_views_inherit.xml",
@@ -31,6 +32,8 @@
         "views/player_views_inherit.xml",
         "views/match_views_inherit.xml",
         "views/menu_views.xml",
+        "views/club_rank_views.xml",
+        "views/season_player_registration_views.xml",
         "report/scoresheet_report.xml",
     ],
     "assets": {

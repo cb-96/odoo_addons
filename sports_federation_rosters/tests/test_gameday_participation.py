@@ -1,6 +1,10 @@
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 @tagged("post_install", "-at_install", "sf_gameday_participation")
 class TestGamedayParticipation(TransactionCase):
@@ -79,8 +83,9 @@ class TestGamedayParticipation(TransactionCase):
                 }
             )
             cls.players |= player
-            cls.roster_lines |= cls.env["federation.team.roster.line"].create(
-                {"roster_id": cls.roster.id, "player_id": player.id}
+            cls.roster_lines |= create_registered_roster_lines(
+                cls.env["federation.team.roster.line"],
+                {"roster_id": cls.roster.id, "player_id": player.id},
             )
         cls.roster.action_activate()
 

@@ -44,6 +44,7 @@ retained until an operator resolves it.
 | Inbound deliveries | `processed_with_errors` | 180 days | `processed_on` | Delete delivery and staged payload attachment |
 | Inbound deliveries | `failed` | 365 days | `received_on` | Delete delivery and staged payload attachment |
 | Generated report files | Last successful export snapshot | 60 days | `last_run_on` | Clear stored file payload and filename, keep schedule |
+| Portal journey events | All | 90 days (`federation.journey_event_retention_days`) | `occurred_on` | Delete anonymous event row |
 
 ## Automation
 

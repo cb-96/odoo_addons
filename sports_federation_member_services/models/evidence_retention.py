@@ -23,6 +23,8 @@ from odoo.exceptions import ValidationError
 from .lifecycle import command, lock
 from .membership import manager
 
+from odoo.addons.sports_federation_base.batch_jobs import for_each_chunk
+
 RETENTION_PARAMETER = "sports_federation_member_services.evidence_retention_days"
 RETENTION_POLICY_CODE = "member_evidence_revisions"
 ERASURE_POLICY_CODE = "member_evidence_erasure"
@@ -42,11 +44,11 @@ def evidence_retention_days_from_value(value):
     return (days, False) if days > 0 else (0, False)
 
 
-def _require_reason(reason):
+def _require_reason(env, reason):
     reason = (reason or "").strip()
     if len(reason) < MIN_REASON_LENGTH:
         raise ValidationError(
-            _("Record a reason of at least %s characters.") % MIN_REASON_LENGTH
+            env._("Record a reason of at least %s characters.") % MIN_REASON_LENGTH
         )
     return reason
 
@@ -59,7 +61,7 @@ class EvidenceRevisionGovernance(models.Model):
     # ------------------------------------------------------------------
     def _set_legal_hold(self, reason):
         manager(self.env)
-        reason = _require_reason(reason)
+        reason = _require_reason(self.env, reason)
         rows = self.sudo()
         lock(rows)
         command(rows).write(
@@ -75,7 +77,7 @@ class EvidenceRevisionGovernance(models.Model):
 
     def _release_legal_hold(self, reason):
         manager(self.env)
-        reason = _require_reason(reason)
+        reason = _require_reason(self.env, reason)
         rows = self.sudo()
         lock(rows)
         if rows.filtered(lambda row: not row.legal_hold):
@@ -97,7 +99,7 @@ class EvidenceRevisionGovernance(models.Model):
     def _erase(self, reason):
         """Delete these revisions on a documented request."""
         manager(self.env)
-        reason = _require_reason(reason)
+        reason = _require_reason(self.env, reason)
         rows = self.sudo()
         lock(rows)
         held = rows.filtered("legal_hold")
@@ -179,13 +181,14 @@ class EvidenceRevisionGovernance(models.Model):
             ]
         )
         rows = self._evidence_retention_candidates(cutoff)
-        count = len(rows)
-        if rows:
-            rows._post_governance_note(
-                _("Evidence removed after the %s-day retention period.") % days,
-                per_revision=True,
-            )
-            command(rows).unlink()
+        note = _("Evidence removed after the %s-day retention period.") % days
+
+        def purge(chunk):
+            chunk._post_governance_note(note, per_revision=True)
+            command(chunk).unlink()
+            return len(chunk)
+
+        count = for_each_chunk(rows, purge)
         return {"days": days, "problem": problem, "deleted": count, "held": held}
 
     @api.model

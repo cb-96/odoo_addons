@@ -11,7 +11,8 @@ Role-oriented self-service portal for club representatives, officials and match-
 ### Club representative
 
 - manage club teams and players
-- submit season and tournament registrations
+- register players for a season and review each licence's approval state and expiry
+- register teams for a season and enter competitions
 - prepare and activate rosters
 - complete match sheets and readiness tasks
 - nominate officials
@@ -40,6 +41,15 @@ Every new privileged route requires:
 3. direct-ID or guessed-record coverage
 4. model/helper ownership assertions when elevation is used
 5. CSRF enforcement for state-changing browser or JSON-RPC routes
+
+Portal users can also reach the ORM directly, so access rights alone never
+carry the scope: players, clubs, teams, season registrations, tournament
+participants, rosters, match sheets and club referee duties each have a
+record rule limited to the user's current whole-club or team scope.
+`ci/check_portal_record_rules.py` fails when a portal access right has no
+matching rule. A tenure ends by date: `federation.club.representative.is_current`
+is computed for today (not stored), and an hourly job refreshes the stored
+portal scopes that the rules read.
 
 ## Portal UX direction
 
@@ -102,18 +112,26 @@ cues. The focused accessibility suite covers these contracts together with
 mobile table and action wrapping.
 
 
-## Club representative home
+## Portal overview
 
-**My account** (`/my` and `/my/home`) opens the club overview for club
-representatives: one page with teams, players, rosters, competitions,
-game-day preparation, officials, results, compliance and club details.
-**My work** (`/my/work`) stays one click away and links back with
-**Club overview**. Users without a club representative record are still
-redirected to **My work** when they have another federation role.
+**My account** (`/my` and `/my/home`) is the one overview for every portal
+user. Club representatives see their club first: **Prepare your team**
+(`/my/preparation`, the single next-step flow per team) and the club areas
+(teams, players, rosters and line-ups, competitions, officials, results,
+compliance and club details), each with a badge when something needs
+attention. Every other responsibility of the account gets its own section
+below: official assignments, competition planning, result review and the
+federation work queue. A section shows the five most urgent items and links
+to its full list. Other modules add shortcuts (for example match-day work).
 
-## Club competition data tutorial
+The former role switchboard `/my/work` is retired; its old URLs redirect
+permanently (`/my/work` to `/my`, `/my/work/reviews` to `/my/result-reviews`,
+`/my/work/tasks/<id>/open` to `/my/action-items/<id>/open`,
+`/my/work/registrations/<id>` to `/my/season-registrations/<id>/roster`).
 
-Club representatives use **My Account > Data API** (`/my/data-api`) for live URLs, curl and JavaScript examples, privacy rules, and caching guidance.
+Portal layout values are limited to the representative and official persona
+lookups; counts are computed by the overview only, so other portal pages do
+not refresh tasks on every load.
 
 
 ## Owned portal command boundaries
@@ -143,10 +161,10 @@ Manager and club portal refreshes reuse operational tasks by their global source
 Task queues expose overdue status for unfinished tasks whose deadline has passed. Tasks without a deadline and completed tasks are not overdue.
 
 ## Role workspaces and scoped handoffs
-`/my/work` is the role switchboard for club/team preparation, referee
-assignments, competition planning, result review, and manager operations. It
-links to existing workflow owners rather than introducing a second task or
-approval system. The manager queue route is
+The portal overview (`/my`) has a section per role for club/team preparation,
+referee assignments, competition planning, result review, and manager
+operations. It links to existing workflow owners rather than introducing a
+second task or approval system. The manager queue route is
 `/federation/operations/action-items`.
 
 Team-scoped representatives see and assign work only for their assigned team;
@@ -231,3 +249,26 @@ The portal's primary-roster lookup falls back to the team's season baseline
 roster (`federation.team.roster._pick_season_baseline`) when no roster is linked
 to the registration, so a roster created for a competition is found and adopted
 instead of a second roster being offered.
+
+## Player availability (optional per club)
+
+A whole-club representative switches it on or off under **Club details**
+(`/my/club`). It is off by default, so clubs that already use Spond or another
+app are not affected. When it is on, **Player availability**
+(`/my/availability`) lists the upcoming published game days of the user's
+teams. **Ask players** emails each active roster player a personal link
+(`/availability/<token>`, no account needed) to answer Available, Maybe or
+Not available with an optional note, until the game day. The club can enter
+answers itself for players without an email address and send one reminder to
+players who did not answer. Answers appear as badges next to the players on the
+game-day line-up page and in the backend line-up wizard; nothing is selected
+automatically. Scope checks and writes live in
+`federation.player.availability.request` portal commands.
+
+## Translations
+
+The portal ships Dutch (`i18n/nl.po`) and French (`i18n/fr.po`) translations,
+used for Dutch (Belgium) and French (Belgium). Activate the languages under
+**Settings > Languages** and add them to the website; portal users then see
+their own language. Messages that controllers pass as plain text in the URL
+(for example "Team created successfully") are not translated yet.

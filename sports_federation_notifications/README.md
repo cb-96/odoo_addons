@@ -30,7 +30,7 @@ The test suite covers dispatch, triggers, templates, scheduled actions, failure 
 
 ## Participant inbox and actionable communications
 
-- Participant inbox at `/my/notifications`, linked from the portal home and `/my/work`.
+- Participant inbox at `/my/notifications`, linked from the portal overview.
 - Current action, next owner, correction feedback, relevant-task links, urgent-change labels and separate delivery/acknowledgement/task status.
 - Published match-day schedule and venue alerts, including current venue address and courts. Draft schedule edits do not alert participants.
 - Official assignment notifications for portal-connected assignments and organiser coverage alerts on cancellation/decline.

@@ -67,8 +67,7 @@ class ReportFederationScoresheet(models.AbstractModel):
             if "edition_id" in tournament._fields and tournament.edition_id
             else (
                 tournament.competition_id.display_name
-                if "competition_id" in tournament._fields
-                and tournament.competition_id
+                if "competition_id" in tournament._fields and tournament.competition_id
                 else ""
             )
         )
@@ -122,9 +121,8 @@ class ReportFederationScoresheet(models.AbstractModel):
         """QR code that opens the match in the backend, for result entry."""
         base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url", "")
         target = f"{base_url}/odoo/federation.match/{match.id}"
-        return (
-            "/report/barcode/?barcode_type=QR&value=%s&width=180&height=180"
-            % quote(target, safe="")
+        return "/report/barcode/?barcode_type=QR&value=%s&width=180&height=180" % quote(
+            target, safe=""
         )
 
     @api.model
@@ -184,7 +182,7 @@ class ReportFederationScoresheet(models.AbstractModel):
         ]
         return {
             "letter": letter,
-            "name": team.display_name or "",
+            "name": team.name or "",
             "coach": sheet.coach_name or "",
             "assistant_coach": sheet.manager_name or "",
             "captain": captain.player_id.name if captain else "",

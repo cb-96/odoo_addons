@@ -177,6 +177,52 @@ class TestNotifications(TransactionCase):
         self.assertIn("suspended.player@example.com", log.recipient_email)
         self.assertIn("test@example.com", log.recipient_email)
 
+    def test_suspension_email_escapes_typed_values(self):
+        """Names and notes typed by clubs or staff never become markup."""
+        Suspension = self.env.get("federation.suspension")
+        DisciplineCase = self.env.get("federation.disciplinary.case")
+        if Suspension is None or DisciplineCase is None:
+            self.skipTest("Discipline module is not installed in this test run.")
+        player = self.env["federation.player"].create(
+            {
+                "first_name": "<img src=x onerror=alert(1)>",
+                "last_name": "Escaped",
+                "club_id": self.club.id,
+                "email": "escaped.player@example.com",
+            }
+        )
+        case = DisciplineCase.create(
+            {
+                "name": "<b>Case</b>",
+                "subject_player_id": player.id,
+                "summary": "Escaping coverage.",
+            }
+        )
+        suspension = Suspension.create(
+            {
+                "name": "Escaping Suspension",
+                "case_id": case.id,
+                "player_id": player.id,
+                "date_start": "2026-07-01",
+                "date_end": "2026-07-07",
+                "notes": '<a href="https://evil.example">click</a>',
+            }
+        )
+        suspension.action_activate()
+        log = self.env["federation.notification.log"].search(
+            [
+                ("target_model", "=", "federation.suspension"),
+                ("target_res_id", "=", suspension.id),
+            ],
+            limit=1,
+        )
+        body = str(log.mail_id.body_html)
+        self.assertNotIn("<img", body)
+        self.assertNotIn("<b>Case</b>", body)
+        self.assertNotIn('href="https://evil.example"', body)
+        self.assertIn("&lt;img", body)
+        self.assertIn("<strong>", body)
+
     def test_season_registration_confirm_creates_notification_log(self):
         """Test that season registration confirm creates notification log."""
         portal_group = self.env.ref(

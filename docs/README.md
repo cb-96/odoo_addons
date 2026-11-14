@@ -25,11 +25,13 @@ and update that file instead of creating a new one.
 | Understand competition records and handoffs | [Competition model](architecture/competition-model.md) |
 | Show readiness to users | [Readiness vocabulary](architecture/readiness-vocabulary.md) |
 | Read an architecture decision | [Decision records](architecture/decisions/README.md) |
+| See how other sports and federations could be supported later | [Multi-sport direction](architecture/multi-sport-direction.md) |
 | Look up an HTTP route | [Route inventory](reference/routes.md) |
 | Integrate with the platform | [Integration contracts](reference/integration-contracts.md) |
 | Check how long data is kept | [Data retention](reference/data-retention.md) |
 | Set up a development environment and contribute | [Contributing](../CONTRIBUTING.md) |
 | Write or run tests | [Testing guide](development/testing.md) |
+| Translate the platform or add a language | [Translations](development/translations.md) |
 | Understand the CI checks | [CI and quality gates](development/ci.md) |
 | Deploy a new server | [Deployment guide](operations/deployment.md) |
 | Upgrade production or roll back | [Release runbook](operations/release-runbook.md) |
@@ -146,3 +148,7 @@ python3 ci/check_release_train.py
 python3 ci/check_competition_ui_workflow.py
 python3 ci/check_workflow_state_contracts.py
 ```
+
+## Local CI automation
+
+- [Local full CI and bounded repair](operations/local-ci-repair.md)

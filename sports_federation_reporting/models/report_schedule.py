@@ -17,6 +17,8 @@ from odoo.addons.sports_federation_base.models.failure_feedback import (
 
 from ..services import report_schedule_builders
 
+from odoo.addons.sports_federation_base.batch_jobs import for_each_chunk
+
 _logger = logging.getLogger(__name__)
 
 
@@ -314,6 +316,10 @@ class FederationReportSchedule(models.Model):
                 ("last_run_on", "<", cutoff),
             ]
         )
+        return for_each_chunk(schedules, self._clear_generated_file_chunk)
+
+    @api.model
+    def _clear_generated_file_chunk(self, schedules):
         schedules.write(
             {
                 "generated_file": False,

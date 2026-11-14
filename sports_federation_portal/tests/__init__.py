@@ -1,6 +1,9 @@
 from . import test_club_representative
+from . import test_portal_translations
+from . import test_player_availability_portal
 from . import test_http_smoke
 from . import test_officiating_portal_access
+from . import test_task_projection_freshness
 from . import test_player_portal_access
 from . import test_portal_access_denied
 from . import test_portal_ownership_guard
@@ -24,3 +27,7 @@ from . import test_role_journeys
 from . import test_gameday_overview
 from . import test_task_deadlines
 from . import test_journey_event
+from . import test_player_parental_overview
+from . import test_portal_create_fields
+from . import test_club_season_players
+from . import test_portal_orm_isolation

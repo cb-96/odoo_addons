@@ -32,7 +32,7 @@ class FederationManagerOperationTasks(http.Controller):
             ("audience", "=", "manager"),
             ("state", "=" if kw.get("status") == "recent" else "!=", "done"),
         ]
-        allowed_types = dict(Task._fields["task_type"].selection)
+        allowed_types = dict(Task._fields["task_type"]._description_selection(Task.env))
         task_type = kw.get("task_type")
         if task_type in allowed_types:
             domain.append(("task_type", "=", task_type))

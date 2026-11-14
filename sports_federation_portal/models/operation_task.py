@@ -27,6 +27,7 @@ class FederationOperationTask(models.Model):
         required=True,
         index=True,
     )
+
     @api.model
     def _task_type_selection(self):
         from .. import task_policy
@@ -232,7 +233,9 @@ class FederationOperationTask(models.Model):
         regenerated when a portal page is loaded, so the backend list would
         show stale work without this refresh.
         """
-        if not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
             raise ValidationError(_("Federation manager access is required."))
         self.sudo().sync_for_user(user=self.env.user)
         return self.env["ir.actions.act_window"]._for_xml_id(
@@ -249,11 +252,11 @@ class FederationOperationTask(models.Model):
         )
         if not source:
             raise ValidationError(_("The source record no longer exists."))
-        if (
-            self.task_type == "parental_consent"
-            and source._name == "federation.team.roster.line"
-        ):
-            return source.player_id.action_view_parental_approvals()
+        if self.task_type == "parental_consent":
+            if source._name == "federation.player":
+                return source.action_view_parental_approvals()
+            if source._name == "federation.team.roster.line":
+                return source.player_id.action_view_parental_approvals()
         return {
             "type": "ir.actions.act_window",
             "name": source.display_name,

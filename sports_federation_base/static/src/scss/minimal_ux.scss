@@ -2,9 +2,9 @@
 :root {
     --sf-space: 1rem;
     --sf-radius: .5rem;
-    --sf-border: var(--border-color, #d8dadd);
-    --sf-surface: var(--body-bg, #fff);
-    --sf-focus: var(--o-brand-primary, #0078d4);
+    --sf-border: var(--bs-border-color);
+    --sf-surface: var(--bs-body-bg);
+    --sf-focus: var(--bs-primary);
 }
 .sf-task-card, .sf-card { border-radius: var(--sf-radius); border-color: var(--sf-border); }
 .sf-task-card .card-body { padding: var(--sf-space); }

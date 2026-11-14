@@ -7,6 +7,10 @@ fixed so certificate, availability and escalation checks do not depend on today.
 from unittest.mock import patch
 from odoo import fields
 
+from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+    with_published_planning_token,
+)
+
 
 class CoverageFixture:
     @classmethod
@@ -265,7 +269,8 @@ class CoverageFixture:
                 "end_datetime": "2026-06-15 18:30:00",
             }
         )
-        cls.match.write({"published_slot_id": slot.id})
+        # Fixture shortcut: attach the published match to its slot directly.
+        with_published_planning_token(cls.match).write({"published_slot_id": slot.id})
         cls.slot = slot
         cls.matchday = matchday
         cls.publication = publication

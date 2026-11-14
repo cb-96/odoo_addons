@@ -251,17 +251,21 @@ class FederationMatchPortal(FederationRosterPortalBase):
             return self._redirect_with_query(
                 f"/my/match-sheets/{sheet_id}",
                 error=str(exc),
-                error_hint="Choose a roster, then select the players for this game day within the allowed number.",
+                error_hint=request.env._(
+                    "Choose a roster, then select the players for this game day within the allowed number."
+                ),
             )
 
         if roster_changed:
             return self._redirect_with_query(
                 f"/my/match-sheets/{sheet_id}",
-                success="Roster changed. Now choose the players for this game day.",
+                success=request.env._(
+                    "Roster changed. Now choose the players for this game day."
+                ),
             )
         if not kw.get("submit_sheet"):
             return self._redirect_with_query(
-                f"/my/match-sheets/{sheet_id}", success="Line-up saved."
+                f"/my/match-sheets/{sheet_id}", success=request.env._("Line-up saved.")
             )
         try:
             with request.env.cr.savepoint():
@@ -271,13 +275,17 @@ class FederationMatchPortal(FederationRosterPortalBase):
         except ValidationError as exc:
             return self._redirect_with_query(
                 f"/my/match-sheets/{sheet_id}",
-                success="Line-up saved.",
+                success=request.env._("Line-up saved."),
                 error=str(exc),
-                error_hint="The line-up is saved but could not be submitted yet. Resolve the points above and submit again.",
+                error_hint=request.env._(
+                    "The line-up is saved but could not be submitted yet. Resolve the points above and submit again."
+                ),
             )
         return self._redirect_with_query(
             f"/my/match-sheets/{sheet_id}",
-            success="Line-up saved and submitted for all matches on this game day.",
+            success=request.env._(
+                "Line-up saved and submitted for all matches on this game day."
+            ),
         )
 
     @http.route(
@@ -314,7 +322,9 @@ class FederationMatchPortal(FederationRosterPortalBase):
             return self._redirect_with_query(
                 f"/my/match-sheets/{sheet_id}",
                 error=str(exc),
-                error_hint="Check the squad contains the required number of eligible players and preparation details are complete.",
+                error_hint=request.env._(
+                    "Check the squad contains the required number of eligible players and preparation details are complete."
+                ),
             )
 
         success_message = (
@@ -375,12 +385,14 @@ class FederationMatchPortal(FederationRosterPortalBase):
             return self._redirect_with_query(
                 f"/my/match-sheets/{sheet_id}",
                 error=str(exc),
-                error_hint="Check the squad composition meets match requirements and no player is listed twice.",
+                error_hint=request.env._(
+                    "Check the squad composition meets match requirements and no player is listed twice."
+                ),
             )
 
         return self._redirect_with_query(
             f"/my/match-sheets/{sheet_id}",
-            success="Squad saved.",
+            success=request.env._("Squad saved."),
         )
 
     @http.route(

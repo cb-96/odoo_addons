@@ -812,7 +812,7 @@ class FederationCompetitionEditionSeasonBoard(models.Model):
         return {
             "type": "ir.actions.client",
             "tag": "federation_season_board",
-            "name": _("Match board: %s", self.display_name),
+            "name": _("Competition match board: %s", self.display_name),
             "params": {"edition_id": self.id},
             "target": "current",
         }
