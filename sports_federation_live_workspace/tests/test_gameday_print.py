@@ -24,6 +24,8 @@ class TestGamedayPrint(CoverageFixture, TransactionCase):
                 "court_id": court.id,
                 "start_datetime": "2026-06-15 16:00:00",
                 "end_datetime": "2026-06-15 16:40:00",
+                # Keep the exact time instead of continuing the day's timeline.
+                "continue_court_timeline": False,
             }
         )
         with_published_planning_token(cls.match.sudo()).write(
@@ -57,15 +59,22 @@ class TestGamedayPrint(CoverageFixture, TransactionCase):
         self.assertEqual(list(duties), [self.club.display_name])
         self.assertEqual(duties[self.club.display_name][0]["time"], "18:00")
 
+    def _printed_report(self, action):
+        """The report an action prints, whatever keys the action carries."""
+        self.assertEqual(action["type"], "ir.actions.report")
+        reference = action.get("report_name") or action.get("id")
+        return self.env["ir.actions.report"]._get_report(reference)
+
     def test_print_actions(self):
         schedule = self.day.action_print_gameday_schedule()
         self.assertEqual(
-            schedule["report_name"],
+            self._printed_report(schedule).report_name,
             "sports_federation_live_workspace.report_gameday_schedule",
         )
         sheets = self.day.action_print_gameday_scoresheets()
         self.assertEqual(
-            sheets["report_name"], "sports_federation_rosters.report_match_scoresheet"
+            self._printed_report(sheets).report_name,
+            "sports_federation_rosters.report_match_scoresheet",
         )
         self.assertEqual(sheets["context"]["active_ids"], self.match.ids)
 

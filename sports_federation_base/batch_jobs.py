@@ -24,15 +24,38 @@ import logging
 
 from psycopg2.errors import DeadlockDetected, SerializationFailure
 
+from odoo.tools import config
+
 _logger = logging.getLogger(__name__)
 
 RETRYABLE_ERRORS = (DeadlockDetected, SerializationFailure)
 DEFAULT_BATCH_SIZE = 200
 
 
+def in_test_mode(env):
+    """Whether the code runs inside the Odoo test runner.
+
+    ``Registry.in_test_mode()`` only exists in older Odoo versions. Odoo 19
+    dropped it, so ask the registry first when it still offers the check and
+    otherwise use the signals the 19 test runner provides: a registry in test
+    mode keeps its shared test cursor, and the server is started with
+    ``--test-enable``.
+    """
+    registry = env.registry
+    legacy_check = getattr(registry, "in_test_mode", None)
+    if callable(legacy_check):
+        return bool(legacy_check())
+    if getattr(registry, "test_cr", None) is not None:
+        return True
+    try:
+        return bool(config["test_enable"])
+    except (KeyError, TypeError):
+        return False
+
+
 def commits_between_batches(env):
     """Whether a batch may be committed before the job ends."""
-    return bool(env.context.get("cron_id")) and not env.registry.in_test_mode()
+    return bool(env.context.get("cron_id")) and not in_test_mode(env)
 
 
 def commit_batch(env):

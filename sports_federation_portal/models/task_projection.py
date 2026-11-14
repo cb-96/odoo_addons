@@ -4,6 +4,8 @@ from time import monotonic
 from odoo import _, api, fields, models
 from odoo.osv import expression
 
+from odoo.addons.sports_federation_base.batch_jobs import in_test_mode
+
 from .. import task_policy
 
 
@@ -642,7 +644,7 @@ class _ProjectionFreshness:
             getattr(request, "_sf_task_synced_users", set()).difference_update(user.ids)
 
     def max_age(self):
-        default = "0" if self.env.registry.in_test_mode() else "30"
+        default = "0" if in_test_mode(self.env) else "30"
         value = (
             self.env["ir.config_parameter"]
             .sudo()

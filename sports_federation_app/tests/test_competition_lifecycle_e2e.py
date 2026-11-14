@@ -529,11 +529,20 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         return result
 
     def _finish_gameday(self, matchday):
-        return (
-            self.env["federation.matchday.commands"]
-            .with_user(self.matchday_manager)
-            .close_matchday(matchday.id)
-        )
+        """Leave the game day closed.
+
+        The match-day automation closes a day by itself as soon as every
+        published match has an official result, so only close what is still
+        open.
+        """
+        matchday.invalidate_recordset(["state"])
+        if matchday.state == "open":
+            self.env["federation.matchday.commands"].with_user(
+                self.matchday_manager
+            ).close_matchday(matchday.id)
+            matchday.invalidate_recordset(["state"])
+        self.assertEqual(matchday.state, "closed")
+        return True
 
     def test_league_runs_from_creation_to_closed_competition(self):
         edition = self._create_competition("full-league", day_count=2)

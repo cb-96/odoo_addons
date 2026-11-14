@@ -182,7 +182,7 @@ class ReportFederationScoresheet(models.AbstractModel):
         ]
         return {
             "letter": letter,
-            "name": team.display_name or "",
+            "name": team.name or "",
             "coach": sheet.coach_name or "",
             "assistant_coach": sheet.manager_name or "",
             "captain": captain.player_id.name if captain else "",

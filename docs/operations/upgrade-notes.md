@@ -36,7 +36,6 @@ passed unless they ran.
 
 ## Entries
 
-<<<<<<< ours
 ### Portal ORM isolation, tenure expiry and version correction
 
 Affected modules: `sports_federation_portal` 19.0.7.16.0 → 19.0.7.17.0,
@@ -120,7 +119,6 @@ target the 157 failures of run 20261113_200640.
 
 **Rollback**: code-only rollback; remove the implied Contact Creation group from
 Federation Manager by hand if it is no longer wanted.
-=======
 ### Medium-priority hardening: escaped email, portal write allowlist, shared task projection, batched jobs
 
 Affected modules: `sports_federation_notifications`, `sports_federation_portal`,
@@ -152,7 +150,6 @@ suites were NOT run; new tests: `test_task_projection_freshness.py`,
 `test_suspension_email_escapes_typed_values`.
 
 **Rollback**: code-only rollback.
->>>>>>> theirs
 
 ### Registry load order and schedule-owned match planning
 

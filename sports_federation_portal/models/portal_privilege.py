@@ -15,6 +15,8 @@ class FederationPortalPrivilege(models.AbstractModel):
             "action_submit",
             "unlink",
         },
+        # Deselecting a player in the game-day line-up removes the line.
+        "federation.match.sheet.line": {"unlink"},
         "federation.season.registration": {"action_submit", "action_cancel"},
         "federation.team.roster": {
             "action_activate",
@@ -214,6 +216,7 @@ class FederationPortalPrivilege(models.AbstractModel):
         self, model_env, values, user=None, allowed_fields=None, scope_domain=None
     ):
         """Create through a deny-by-default model and field capability."""
+        user = user or self.env.user
         policy = self.PORTAL_CREATE_FIELDS.get(model_env._name)
         if not policy:
             raise AccessError(_("Portal creation is not allowed for this model."))
@@ -242,6 +245,7 @@ class FederationPortalPrivilege(models.AbstractModel):
     @api.model
     def portal_write(self, records, values, scope_domain=None, user=None):
         """Write through the shared portal privilege boundary."""
+        user = user or self.env.user
         policy = self.PORTAL_WRITE_FIELDS.get(records._name)
         if not policy:
             raise AccessError(_("Portal changes are not allowed for this model."))
@@ -284,6 +288,7 @@ class FederationPortalPrivilege(models.AbstractModel):
         **kwargs,
     ):
         """Call a record method through the shared portal privilege boundary."""
+        user = user or self.env.user
         if not scope_domain:
             raise AccessError(
                 _(
@@ -364,6 +369,7 @@ class FederationPortalPrivilege(models.AbstractModel):
         need to craft their own message text.  Use this as the canonical
         ownership assertion at every portal privilege boundary.
         """
+        user = user or self.env.user
         return self.portal_assert_in_domain(
             records,
             scope_domain,

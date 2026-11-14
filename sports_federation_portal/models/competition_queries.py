@@ -29,6 +29,7 @@ class FederationPortalcurrentScope(models.AbstractModel):
 
     @api.model
     def assert_team(self, team, user=None):
+        user = user or self.env.user
         if not team or not self.env["federation.team"].sudo().search_count(
             [("id", "=", team.id)] + self.team_domain(user=user)
         ):
@@ -75,6 +76,7 @@ class FederationPortalCompetitionQueries(models.AbstractModel):
 
     @api.model
     def assert_visible_edition(self, edition_id, user=None):
+        user = user or self.env.user
         edition = self.visible_editions(user=user).filtered(
             lambda item: item.id == int(edition_id)
         )
@@ -112,6 +114,7 @@ class FederationPortalCompetitionQueries(models.AbstractModel):
 
     @api.model
     def competition_card(self, edition, user=None):
+        user = user or self.env.user
         teams = self._visible_teams_for_edition(edition, user=user)
         days = (
             self.env["federation.matchday"]
@@ -182,6 +185,7 @@ class FederationPortalCompetitionQueries(models.AbstractModel):
 
     @api.model
     def detail(self, edition_id, user=None):
+        user = user or self.env.user
         edition = self.assert_visible_edition(edition_id, user=user)
         card = self.competition_card(edition, user=user)
         teams = card["teams"]
@@ -282,6 +286,7 @@ class FederationPortalMatchdayQueries(models.AbstractModel):
 
     @api.model
     def detail(self, matchday_id, user=None, manager=False):
+        user = user or self.env.user
         day = self.env["federation.matchday"].sudo().browse(int(matchday_id)).exists()
         if (
             not day

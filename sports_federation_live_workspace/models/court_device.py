@@ -794,13 +794,15 @@ class CourtDeviceService(models.AbstractModel):
         match = self.env["federation.match"].sudo().browse(int(match_id)).exists()
         if not match or match.schedule_publication_id.matchday_id != device.matchday_id:
             raise AccessError(_("This match is not on this phone's game day."))
+        # Rights first: someone who may not score the match learns nothing
+        # about its state.
+        source, _club = match._court_scoring_source(device.user_id)
+        if not source:
+            raise AccessError(_("You are no longer a scorer for this match."))
         if not match._court_is_current():
             raise ValidationError(
                 _("The match was moved, postponed or cancelled. Export and reconcile.")
             )
-        source, _club = match._court_scoring_source(device.user_id)
-        if not source:
-            raise AccessError(_("You are no longer a scorer for this match."))
         session = device.matchday_id.active_session_id
         if (
             not session

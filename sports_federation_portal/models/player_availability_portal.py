@@ -127,6 +127,7 @@ class FederationPlayerAvailabilityPortal(models.Model):
 
     @api.model
     def _portal_get(self, request_id, user=None):
+        user = user or self.env.user
         request = self.sudo().browse(request_id).exists()
         if not request or request.team_id not in self._portal_teams(user=user):
             raise AccessError(_("You do not have access to this availability request."))
@@ -134,6 +135,7 @@ class FederationPlayerAvailabilityPortal(models.Model):
         return request
 
     def _portal_answer(self, line_id, response, user=None):
+        user = user or self.env.user
         self.ensure_one()
         line = self.line_ids.filtered(lambda item: item.id == line_id)
         if not line:
@@ -142,6 +144,7 @@ class FederationPlayerAvailabilityPortal(models.Model):
         return line
 
     def _portal_remind(self, user=None):
+        user = user or self.env.user
         self.ensure_one()
         if not self._is_open():
             raise ValidationError(_("This game day has already been played."))

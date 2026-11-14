@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from dateutil.relativedelta import relativedelta
 
 from odoo import fields
@@ -70,9 +72,15 @@ class TestPlayerParentalOverview(TransactionCase):
             }
         )
         if on_senior_roster:
-            self.env["federation.team.roster.line"].create(
-                {"roster_id": self.roster.id, "player_id": player.id}
-            )
+            # The overview must flag a minor who is already on a senior
+            # roster without a valid approval (for instance after the
+            # approval lapsed). Roster lines now refuse such players, so the
+            # line is created without the eligibility check on purpose.
+            Line = self.env["federation.team.roster.line"]
+            with patch.object(
+                type(Line), "_validate_player_eligibility", lambda self: None
+            ):
+                Line.create({"roster_id": self.roster.id, "player_id": player.id})
         return player
 
     def _approval(self, player, valid_until=None, verify=False, **values):

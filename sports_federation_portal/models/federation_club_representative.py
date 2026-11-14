@@ -238,6 +238,8 @@ class FederationClubRepresentative(models.Model):
         )
         if stale:
             self.env.add_to_compute(self._fields["effective_user_id"], stale)
+            # Compute now, for today's date, before anything else flushes.
+            stale.mapped("effective_user_id")
         self.env.flush_all()
         return True
 

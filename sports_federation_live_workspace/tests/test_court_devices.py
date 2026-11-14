@@ -3,6 +3,8 @@
 Run on the supported application installation.
 """
 
+from datetime import datetime
+from unittest.mock import patch
 from uuid import uuid4
 
 from freezegun import freeze_time
@@ -133,7 +135,11 @@ class TestCourtDevices(DeviceFixture, TransactionCase):
     @freeze_time(GAME_DAY)
     def test_token_expires_after_the_game_day(self):
         _service, device, token = self.prepare()
-        with freeze_time("2026-06-18 12:00:00"):
+        # The fixture pins ``fields.Datetime.now`` to the game day, which
+        # freezegun does not override; move that clock as well.
+        with freeze_time("2026-06-18 12:00:00"), patch(
+            "odoo.fields.Datetime.now", return_value=datetime(2026, 6, 18, 12, 0)
+        ):
             with self.assertRaises(AccessError):
                 self.service._authenticate(token)
         self.assertEqual(device.state, "expired")

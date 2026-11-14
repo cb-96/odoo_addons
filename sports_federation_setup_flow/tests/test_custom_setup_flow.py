@@ -67,6 +67,20 @@ class TestCustomFormatSetupFlow(TransactionCase):
                 "participant_set_id": cls.pset.id,
             }
         )
+        # The window above is finalized directly, so give the division the
+        # participants finalizing would create. A finalized division only
+        # accepts teams through the amendment command, which the stage engine
+        # must not bypass.
+        governed(cls.env["federation.tournament.participant"]).create(
+            [
+                {
+                    "tournament_id": cls.division.id,
+                    "team_id": team.id,
+                    "state": "confirmed",
+                }
+                for team in cls.teams
+            ]
+        )
         venue = cls.env["federation.venue"].create({"name": "Custom Venue"})
         court = cls.env["federation.playing.area"].create(
             [{"name": "Custom Court %s" % i, "venue_id": venue.id} for i in (1, 2)]

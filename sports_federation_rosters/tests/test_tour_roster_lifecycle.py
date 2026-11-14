@@ -58,6 +58,9 @@ class TestTourRosterLifecycle(TransactionCase):
             {
                 "name": "Roster Tour Cup",
                 "date_start": "2026-03-01",
+                # Match-sheet players must hold a registration for the
+                # tournament's season, which the fixture gives them.
+                "season_id": cls.season.id,
                 "rule_set_id": rule_set.id,
             }
         )
