@@ -76,7 +76,7 @@ class FederationParentalApprovalPortal(FederationPortalBase):
             return self._render_access_denied()
         approval = self._get_owned_approval(player, approval_id)
         if not approval or not approval.approval_document:
-            return request.not_found()
+            raise request.not_found()
         filename = (
             (approval.approval_document_filename or "parental-approval.pdf")
             .replace("\r", "")

@@ -325,17 +325,39 @@ class FederationClubRepresentative(models.Model):
                         f"'{rec.role_type_id.name}' at club '{rec.club_id.name}'."
                     )
 
+    PORTAL_SCOPE_FIELDS = frozenset(
+        {"user_id", "club_id", "team_id", "active", "date_start", "date_end"}
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
         records._check_representative_user_access_mode()
+        self._clear_portal_rule_cache()
         return records
 
     def write(self, vals):
         result = super().write(vals)
         if {"user_id", "active", "date_start", "date_end"}.intersection(vals):
             self._check_representative_user_access_mode()
+        if self.PORTAL_SCOPE_FIELDS.intersection(vals):
+            self._clear_portal_rule_cache()
         return result
+
+    def unlink(self):
+        result = super().unlink()
+        self._clear_portal_rule_cache()
+        return result
+
+    @api.model
+    def _clear_portal_rule_cache(self):
+        """Drop cached record-rule domains after a tenure changes.
+
+        The portal record rules embed the stored scope of the user, and Odoo
+        caches the evaluated domain per user. A changed tenure must not keep
+        granting (or refusing) access until the cache is cleared by chance.
+        """
+        self.env.registry.clear_cache()
 
     def _check_representative_user_access_mode(self):
         """Keep representatives portal-only unless they hold a federation function."""

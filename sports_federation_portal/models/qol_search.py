@@ -1,5 +1,5 @@
 from odoo import api, models
-from odoo.osv import expression
+from odoo.fields import Domain
 
 
 class FederationQolSearch(models.AbstractModel):
@@ -65,9 +65,9 @@ class FederationQolSearch(models.AbstractModel):
                 candidates.append([(path, "in", club_ids)])
         if not candidates:
             return [("id", "=", 0)]
-        domain = expression.OR(candidates)
+        domain = list(Domain.OR(candidates))
         if "active" in model._fields:
-            domain = expression.AND([domain, [("active", "=", True)]])
+            domain = list(Domain.AND([domain, [("active", "=", True)]]))
         return domain
 
     @api.model
@@ -80,8 +80,8 @@ class FederationQolSearch(models.AbstractModel):
             model = self.env.get(model_name)
             if model is None or field_name not in model._fields:
                 continue
-            domain = expression.AND(
-                [[(field_name, "ilike", term)], self._scope_domain(model)]
+            domain = list(
+                Domain.AND([[(field_name, "ilike", term)], self._scope_domain(model)])
             )
             records = model.search(domain, limit=limit_per_model)
             results.extend(

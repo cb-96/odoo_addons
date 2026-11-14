@@ -45,7 +45,7 @@ SCORER_SOURCES = [
 ]
 CODE_LIFETIME = timedelta(minutes=10)
 # A token is valid for its game day only, with a margin for late syncs.
-TOKEN_MARGIN = timedelta(0)
+TOKEN_MARGIN = timedelta(days=1)
 PIN_RE = re.compile(r"^\d{4,6}$")
 PIN_ITERATIONS = 200_000
 PIN_MAX_FAILURES = 5
@@ -659,7 +659,8 @@ class CourtDeviceService(models.AbstractModel):
         if not device or device.state != "active":
             raise AccessError(_("This phone is no longer prepared. Prepare it again."))
         if device.expires_at < now:
-            device.write({"state": "expired"})
+            # Raising rolls this request back, so the state change is left to
+            # ``_cron_expire``; the token is refused either way.
             raise AccessError(_("This phone's game day has ended. Prepare it again."))
         if not device.user_id.active:
             raise AccessError(_("The scorer's account is no longer active."))

@@ -44,11 +44,11 @@ def evidence_retention_days_from_value(value):
     return (days, False) if days > 0 else (0, False)
 
 
-def _require_reason(reason):
+def _require_reason(env, reason):
     reason = (reason or "").strip()
     if len(reason) < MIN_REASON_LENGTH:
         raise ValidationError(
-            _("Record a reason of at least %s characters.") % MIN_REASON_LENGTH
+            env._("Record a reason of at least %s characters.") % MIN_REASON_LENGTH
         )
     return reason
 
@@ -61,7 +61,7 @@ class EvidenceRevisionGovernance(models.Model):
     # ------------------------------------------------------------------
     def _set_legal_hold(self, reason):
         manager(self.env)
-        reason = _require_reason(reason)
+        reason = _require_reason(self.env, reason)
         rows = self.sudo()
         lock(rows)
         command(rows).write(
@@ -77,7 +77,7 @@ class EvidenceRevisionGovernance(models.Model):
 
     def _release_legal_hold(self, reason):
         manager(self.env)
-        reason = _require_reason(reason)
+        reason = _require_reason(self.env, reason)
         rows = self.sudo()
         lock(rows)
         if rows.filtered(lambda row: not row.legal_hold):
@@ -99,7 +99,7 @@ class EvidenceRevisionGovernance(models.Model):
     def _erase(self, reason):
         """Delete these revisions on a documented request."""
         manager(self.env)
-        reason = _require_reason(reason)
+        reason = _require_reason(self.env, reason)
         rows = self.sudo()
         lock(rows)
         held = rows.filtered("legal_hold")

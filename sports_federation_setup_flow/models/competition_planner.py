@@ -318,9 +318,7 @@ class FederationCompetitionEditionPlanner(models.Model):
             raise ValidationError(_("Unknown competition operation: %s") % operation)
         model_name, view_mode, name = allowed[operation]
         model = self.env.get(model_name)
-        if model is None or not model.check_access(
-            "read", raise_exception=False
-        ):
+        if model is None or not model.has_access("read"):
             raise ValidationError(_("This operation is not available to your role."))
         if operation in ("matchdays", "schedules"):
             domain = [("edition_id", "=", self.id)]
@@ -380,7 +378,7 @@ class FederationCompetitionEditionPlanner(models.Model):
                 _("Administration tools are not enabled for your role.")
             )
         Task = self.env.get("federation.operation.task")
-        if Task is not None and Task.check_access("read", raise_exception=False):
+        if Task is not None and Task.has_access("read"):
             action = self.env["ir.actions.act_window"]._for_xml_id(
                 "sports_federation_portal.action_federation_operation_task"
             )

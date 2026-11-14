@@ -12,7 +12,7 @@ def manager(env):
     if env.context.get("member_lifecycle_token") is _COMMAND:
         return
     if not env.user.has_group("sports_federation_base.group_federation_manager"):
-        raise AccessError(_("Membership administration permission is required."))
+        raise AccessError(env._("Membership administration permission is required."))
 
 
 class Player(models.Model):

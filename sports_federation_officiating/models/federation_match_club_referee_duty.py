@@ -164,7 +164,7 @@ class FederationMatchClubRefereeDuty(models.Model):
         for duty in self:
             duplicate = self.search_count(
                 [
-                    ("id", "!=", duty.id),
+                    ("id", "not in", duty.ids),
                     ("match_id", "=", duty.match_id.id),
                     ("club_id", "=", duty.club_id.id),
                     ("role", "=", duty.role),

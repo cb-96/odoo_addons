@@ -2,6 +2,7 @@ from .notification_boundary import notification_effect
 from datetime import timedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
+from odoo.fields import Domain
 from .actionable_communications import KIND_SELECTION, _lock
 from ..communication_policy import identity, merge_roles
 
@@ -418,10 +419,10 @@ class ActionableCommunicationService(models.AbstractModel):
             ]
             scope = tasks._portal_get_domain(user=user)
             if manager and club:
-                from odoo.osv import expression
-
-                domain = expression.AND(
-                    [domain, expression.OR([scope, [("audience", "=", "manager")]])]
+                domain = list(
+                    Domain.AND(
+                        [domain, Domain.OR([scope, [("audience", "=", "manager")]])]
+                    )
                 )
             else:
                 domain += [("audience", "=", "manager")] if manager else scope

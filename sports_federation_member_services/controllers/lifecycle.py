@@ -17,7 +17,7 @@ class FamilyLifecyclePortal(MemberPortal):
         try:
             people = request.env["federation.family.summary"]._rows(person_id)
         except (AccessError, ValueError, TypeError):
-            return request.not_found()
+            raise request.not_found()
         seasons = (
             request.env["federation.season"].sudo().search([("state", "=", "open")])
         )
@@ -179,7 +179,7 @@ class FamilyLifecyclePortal(MemberPortal):
     def download(self, request_id, person_id=None, **kw):
         doc = request.env["federation.person.request"].browse(request_id)
         if not doc.sudo().exists():
-            return request.not_found()
+            raise request.not_found()
         lock(doc.sudo().person_id)
         try:
             if (
@@ -189,10 +189,10 @@ class FamilyLifecyclePortal(MemberPortal):
             ):
                 raise AccessError("Current document scope required.")
         except (AccessError, ValueError, TypeError):
-            return request.not_found()
+            raise request.not_found()
         row = doc.sudo()
         if not row.document:
-            return request.not_found()
+            raise request.not_found()
         return request.make_response(
             base64.b64decode(row.document),
             headers=[

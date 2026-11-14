@@ -144,6 +144,8 @@ class TestCourtDevices(DeviceFixture, TransactionCase):
         ):
             with self.assertRaises(AccessError):
                 self.service._authenticate(token)
+            # A refused request is rolled back; the cron records the expiry.
+            self.env["federation.court.device"]._cron_expire()
         self.assertEqual(device.state, "expired")
 
     @freeze_time(GAME_DAY)

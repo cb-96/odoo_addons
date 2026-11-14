@@ -110,13 +110,19 @@ class ResUsers(models.Model):
             ):
                 stale |= user
         if stale:
-            # Compute synchronously. Merely queueing stored fields leaves their
-            # old values in the cache, so reading them below can skip the queued
-            # recomputation and record rules keep using yesterday's scope.
-            stale._compute_portal_scope_ids()
+            for name in ("portal_club_scope_ids", "portal_team_scope_ids"):
+                self.env.add_to_compute(self._fields[name], stale)
+            # Compute now, for today's date, instead of leaving it to whatever
+            # flushes the transaction later.
+            stale.mapped("portal_club_scope_ids")
+            stale.mapped("portal_team_scope_ids")
             stale.flush_recordset(
                 ["portal_club_scope_ids", "portal_team_scope_ids"]
             )
+            # Record rules read these fields, and Odoo caches the domain it
+            # evaluates for each user. Without this the old scope keeps
+            # applying until the cache is cleared by something else.
+            self.env.registry.clear_cache()
         return stale
 
     def action_view_federation_representatives(self):

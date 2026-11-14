@@ -17,7 +17,9 @@ class Finance(models.Model):
         default="federation",
         required=True,
     )
-    invoice_currency_id = fields.Many2one(related="account_move_id.currency_id")
+    invoice_currency_id = fields.Many2one(
+        related="account_move_id.currency_id", string="Invoice Currency"
+    )
     invoice_balance = fields.Monetary(
         related="account_move_id.amount_residual", currency_field="invoice_currency_id"
     )

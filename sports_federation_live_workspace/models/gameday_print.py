@@ -52,19 +52,17 @@ class FederationMatchdayPrint(models.Model):
     def action_print_gameday_schedule(self):
         self.ensure_one()
         self._gameday_print_assert_published()
-        report = self.env["ir.actions.report"]._get_report(
-            "sports_federation_live_workspace.report_gameday_schedule"
-        )
-        return report.report_action(self)
+        return self.env.ref(
+            "sports_federation_live_workspace.action_report_gameday_schedule"
+        ).report_action(self, config=False)
 
     def action_print_gameday_scoresheets(self):
         """All score sheets of the game day in schedule order, in one PDF."""
         self.ensure_one()
         self._gameday_print_assert_published()
-        report = self.env["ir.actions.report"]._get_report(
-            "sports_federation_rosters.report_match_scoresheet"
-        )
-        return report.report_action(self._gameday_print_matches())
+        return self.env.ref(
+            "sports_federation_rosters.action_report_match_scoresheet"
+        ).report_action(self._gameday_print_matches(), config=False)
 
     def _gameday_print_values(self):
         """Grid (time x court), per-match officials and club duties."""

@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 from time import monotonic
 
 from odoo import _, api, fields, models
-from odoo.osv import expression
+from odoo.fields import Domain
 
 from odoo.addons.sports_federation_base.batch_jobs import in_test_mode
 
@@ -444,11 +444,13 @@ class FederationOperationTaskExtension(models.Model):
                     []
                     if is_manager
                     else [("club_id", "in", club_ids)]
-                    + expression.OR(
-                        [
-                            self._task_team_scope(user, "match_id.home_team_id"),
-                            self._task_team_scope(user, "match_id.away_team_id"),
-                        ]
+                    + list(
+                        Domain.OR(
+                            [
+                                self._task_team_scope(user, "match_id.home_team_id"),
+                                self._task_team_scope(user, "match_id.away_team_id"),
+                            ]
+                        )
                     )
                 )
                 + hidden("federation.match.club.referee.duty")
@@ -555,7 +557,7 @@ class FederationOperationTaskExtension(models.Model):
         lineup_scope = [("task_type", "in", ("gameday_lineup", "lineup_review"))]
         if not is_manager:
             lineup_scope += self._task_team_scope(user, "journey_team_id")
-        return specs, expression.OR([scope_domain, lineup_scope])
+        return specs, list(Domain.OR([scope_domain, lineup_scope]))
 
     @api.model
     def _task_projection_collectors(self):
@@ -571,7 +573,7 @@ class FederationOperationTaskExtension(models.Model):
             collected, scope = getattr(self, name)(user=user)
             specs.extend(collected)
             scopes.append(scope)
-        return specs, expression.OR(scopes) if scopes else [("id", "=", 0)]
+        return specs, list(Domain.OR(scopes)) if scopes else [("id", "=", 0)]
 
     @api.model
     def sync_for_user(self, user=None):

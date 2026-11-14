@@ -293,8 +293,8 @@ class TestStageGraphEngine(TransactionCase):
             "federation.participant.set.line",
         ):
             model = self.env[model_name].with_user(designer)
-            self.assertTrue(model.check_access("read", raise_exception=False))
-            self.assertFalse(model.check_access("write", raise_exception=False))
+            self.assertTrue(model.has_access("read"))
+            self.assertFalse(model.has_access("write"))
 
     def test_placement_bracket_matrix_has_valid_sources(self):
         club = self.env["federation.club"].create({"name": "Matrix Club"})
