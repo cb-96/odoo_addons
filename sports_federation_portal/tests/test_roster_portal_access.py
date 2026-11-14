@@ -648,7 +648,9 @@ class TestRosterPortalAccess(TransactionCase):
         """Roster player availability should not regress into an expensive portal lookup."""
         # The picker also reads the players with a valid season registration,
         # which every roster requires.
-        with self.assertQueryCount(14):
+        # The explicit portal privilege boundary adds two constant-cost scope
+        # queries; keep the budget fixed to catch per-player query regressions.
+        with self.assertQueryCount(16):
             available_players = self.env[
                 "federation.team.roster.line"
             ]._portal_get_available_players(self.roster_a, user=self.user_a)

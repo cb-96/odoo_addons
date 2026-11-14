@@ -45,7 +45,7 @@ SCORER_SOURCES = [
 ]
 CODE_LIFETIME = timedelta(minutes=10)
 # A token is valid for its game day only, with a margin for late syncs.
-TOKEN_MARGIN = timedelta(days=1)
+TOKEN_MARGIN = timedelta(0)
 PIN_RE = re.compile(r"^\d{4,6}$")
 PIN_ITERATIONS = 200_000
 PIN_MAX_FAILURES = 5
@@ -437,6 +437,18 @@ class MatchCourtScoring(models.Model):
     court_scorer_ids = fields.One2many(
         "federation.match.scorer", "match_id", readonly=True
     )
+
+    def action_approve_result_one_step(self):
+        """Prevent a court scorer from approving their own captured result."""
+        own_captures = self.sudo().mapped("court_capture_ids").filtered(
+            lambda capture: capture.submitted
+            and capture.scorer_user_id == self.env.user
+        )
+        if own_captures:
+            raise ValidationError(
+                _("The scorer who submitted a court result cannot approve it.")
+            )
+        return super().action_approve_result_one_step()
 
     def _court_scoring_source(self, user):
         """Return (source, club) when ``user`` may score this match, else (False, None)."""

@@ -110,13 +110,13 @@ class ResUsers(models.Model):
             ):
                 stale |= user
         if stale:
-            for name in ("portal_club_scope_ids", "portal_team_scope_ids"):
-                self.env.add_to_compute(self._fields[name], stale)
-            # Compute now, for today's date, instead of leaving it to whatever
-            # flushes the transaction later: the record rules read the stored
-            # value, so it must be right when this job returns.
-            stale.mapped("portal_club_scope_ids")
-            stale.mapped("portal_team_scope_ids")
+            # Compute synchronously. Merely queueing stored fields leaves their
+            # old values in the cache, so reading them below can skip the queued
+            # recomputation and record rules keep using yesterday's scope.
+            stale._compute_portal_scope_ids()
+            stale.flush_recordset(
+                ["portal_club_scope_ids", "portal_team_scope_ids"]
+            )
         return stale
 
     def action_view_federation_representatives(self):
