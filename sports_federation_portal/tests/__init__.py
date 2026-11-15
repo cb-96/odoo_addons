@@ -31,3 +31,4 @@ from . import test_player_parental_overview
 from . import test_portal_create_fields
 from . import test_club_season_players
 from . import test_portal_orm_isolation
+from . import test_season_players_review_task

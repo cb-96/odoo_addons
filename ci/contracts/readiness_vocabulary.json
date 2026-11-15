@@ -14,8 +14,6 @@
     "sports_federation_live_workspace/static/src/workspaces.xml",
     "sports_federation_live_workspace/views/mobile_matchday.xml",
     "sports_federation_matchday/views/matchday_views.xml",
-    "sports_federation_member_services/lifecycle_policy.py",
-    "sports_federation_member_services/models/family_summary.py",
     "sports_federation_portal/models/gameday_overview.py",
     "sports_federation_portal/models/portal_status_labels.py",
     "sports_federation_portal/views/preparation_journey_templates.xml",

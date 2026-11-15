@@ -11,10 +11,16 @@ history, budgets, public discovery and reporting remain in place.
 2. Club representatives open **Season players** from `/my/preparation`, choose
   their club and season, select players, and submit pending registrations. The
   detail page lists each season licence with its approval state and expiry date.
-3. Set the club billing contact before approving positive-fee registrations.
-   Federation managers review **Clubs & People > Season Player Registrations**.
-   They can collect all current club players as drafts or add players individually.
-4. Approve pending players. Each player's existing season licence is the canonical
+3. Submission puts the club season in *Submitted*, adds an **Approve season
+   players** task to the **Review Queue** and gives each federation manager an
+   activity on the record. Federation managers open **Clubs & People > Season
+   Player Registrations**, which lists submitted club seasons by default. Set
+   the club billing contact before approving positive-fee registrations.
+   Managers can also collect all current club players as drafts or add players
+   individually, then submit them.
+4. Approve pending players with **Approve pending players**. The button is only
+   shown to federation managers on a submitted list. Approval closes the Review
+   Queue task and the managers' activities. Each player's existing season licence is the canonical
    registration record; no parallel player identity or duplicate registration line
    is introduced. Approval activates that licence and creates one source-linked
    finance event for its annual fee.
@@ -49,8 +55,6 @@ explicitly selected licence must match the same player, club and season.
   They do not register players. Their separate fee is opt-in for new seasons via
   **Also Charge Annual Team Enrolment**. Existing seasons retain the previous team
   fee policy on upgrade; disable it explicitly when moving to player-only billing.
-- Membership services, if installed, remain separate. Review their fee policy to
-  avoid intentionally billing both membership and annual player participation.
 
 ## Top-ups and history
 

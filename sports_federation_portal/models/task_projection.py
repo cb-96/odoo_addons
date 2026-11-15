@@ -179,6 +179,11 @@ class FederationOperationTaskExtension(models.Model):
                 tournament_id=source.window_id.division_id.id,
                 action_url="/my/competition-entries",
             )
+        elif source._name == "federation.club.season.registration":
+            values.update(
+                responsible_club_id=source.club_id.id,
+                season_id=source.season_id.id,
+            )
         elif source._name == "federation.team.roster":
             values.update(
                 roster_id=source.id,
@@ -247,6 +252,44 @@ class FederationOperationTaskExtension(models.Model):
         ]
 
     @api.model
+    def _season_player_review_specs(self, user):
+        """Club season player lists submitted for federation approval.
+
+        Only open seasons are listed because approval requires one; the task
+        closes on the next projection once the list is approved or cancelled.
+        """
+        registrations = (
+            self.env["federation.club.season.registration"]
+            .sudo()
+            .search(
+                [
+                    ("state", "=", "submitted"),
+                    ("season_id.state", "=", "open"),
+                    ("company_id", "in", user.company_ids.ids),
+                ]
+            )
+        )
+        specs = []
+        for registration in registrations.filtered("pending_player_count"):
+            specs.append(
+                self._task_spec(
+                    registration,
+                    "season_players_review",
+                    "manager",
+                    _("Season players: %(club)s")
+                    % {"club": registration.club_id.display_name},
+                    _("%(count)s submitted player(s) for %(season)s wait for approval.")
+                    % {
+                        "count": registration.pending_player_count,
+                        "season": registration.season_id.display_name,
+                    },
+                    _("Approve submitted players"),
+                    priority="1",
+                )
+            )
+        return specs
+
+    @api.model
     def _collect_domain_task_specs(self, user=None):
         """Return domain specifications and cleanup scope without writing records."""
         user = user or self.env.user
@@ -287,6 +330,9 @@ class FederationOperationTaskExtension(models.Model):
                     deadline=entry.window_id.date_close or False,
                 )
             )
+
+        if is_manager:
+            specs.extend(self._season_player_review_specs(user))
 
         rosters = (
             self.env["federation.team.roster"]

@@ -24,7 +24,6 @@
     "sports_federation_live_workspace/tests/test_season_board.py": 1,
     "sports_federation_matchday/tests/test_matchday_operator_handoff.py": 1,
     "sports_federation_matchday/tests/test_matchday_readiness.py": 1,
-    "sports_federation_member_services/tests/test_scope.py": 3,
     "sports_federation_notifications/tests/test_notification_triggers.py": 1,
     "sports_federation_notifications/tests/test_notifications.py": 3,
     "sports_federation_officiating/tests/test_auto_club_duty_assignment.py": 1,

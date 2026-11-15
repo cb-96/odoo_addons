@@ -113,3 +113,58 @@ class TestFederationNavigation(TransactionCase):
             menu.group_ids,
             self.env.ref("sports_federation_base.group_federation_manager"),
         )
+
+    def test_season_player_approvals_are_under_clubs_and_people(self):
+        menu = self.env.ref("sports_federation_people.menu_club_season_registration")
+        self.assertEqual(
+            menu.parent_id, self.env.ref("sports_federation_base.menu_federation_setup")
+        )
+        players = self.env.ref("sports_federation_people.menu_federation_player")
+        self.assertGreater(menu.sequence, players.sequence)
+        action = self.env.ref(
+            "sports_federation_people.club_season_registration_action"
+        )
+        self.assertIn("search_default_to_approve", action.context)
+
+    def test_season_player_approval_is_a_manager_decision(self):
+        arch = self.env.ref(
+            "sports_federation_people.club_season_registration_form"
+        ).arch
+        manager = "sports_federation_base.group_federation_manager"
+        for method in (
+            "action_collect_club_players",
+            "action_submit",
+            "action_confirm",
+            "action_cancel",
+        ):
+            with self.subTest(method=method):
+                self.assertRegex(
+                    arch, r'<button name="%s"[^>]*groups="%s"' % (method, manager)
+                )
+        self.assertRegex(
+            arch,
+            r'<button name="action_confirm"[^>]*invisible="state != \'submitted\'"',
+        )
+
+    def test_every_federation_menu_opens_a_registered_model(self):
+        for menu in self._federation_menus().filtered("action"):
+            with self.subTest(menu=menu.complete_name):
+                action = menu.action
+                if action._name == "ir.actions.act_window":
+                    self.assertIn(action.res_model, self.env)
+
+    def test_retired_addons_are_not_installed(self):
+        retired = self.env["ir.module.module"].search(
+            [
+                (
+                    "name",
+                    "in",
+                    (
+                        "sports_federation_member_services",
+                        "sports_federation_competition_engine",
+                    ),
+                ),
+                ("state", "in", ("installed", "to upgrade", "to install")),
+            ]
+        )
+        self.assertFalse(retired, "retired addons must be cleaned up on upgrade")

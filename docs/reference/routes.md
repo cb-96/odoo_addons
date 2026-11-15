@@ -139,9 +139,6 @@ Owner: `sports_federation_portal` unless noted. Auth: user (portal).
 | POST | `/my/notifications/<receipt_id>/acknowledge` | Acknowledge a notification (records recipient and time only) |
 | GET | `/my/notifications/<receipt_id>/open`, `/my/notifications/schedule/<day_id>` | Open the related task or current schedule |
 | GET, POST | `/my/notifications/preferences` | Delivery preferences |
-| GET | `/my/family` | Family workspace (owner: optional `sports_federation_member_services`) |
-| POST | `/my/family/memberships/<membership_id>/renew`, `/change`, `/licence`; `/my/family/guardian-request` | Membership and guardian requests |
-| GET, POST | `/my/family/requests/<request_id>/download`, `/upload` | Requested evidence |
 
 ## Match-day operations board
 

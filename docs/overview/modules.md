@@ -80,7 +80,6 @@ for the dependency direction and the rules for adding or merging addons.
 
 | Module | Responsibility | Primary owner | Installed by `sports_federation_app` |
 | --- | --- | --- | --- |
-| [`sports_federation_member_services`](../../sports_federation_member_services/README.md) | Verified personal relationships and scoped membership requests | Federation Platform Team | no |
 | [`sports_federation_accounting`](../../sports_federation_accounting/README.md) | Native invoice linkage without a parallel accounting ledger | Federation Finance and Compliance | no |
 
 ## Dependency layers
@@ -104,7 +103,7 @@ the manifest `depends` lists, which remain the final authority;
 | 10 | `officiating`, `rosters` |
 | 11 | `discipline`, `portal`, `setup_flow` |
 | 12 | `compliance`, `finance_bridge`, `public_site` |
-| 13 | `accounting`, `member_services`, `notifications` |
+| 13 | `accounting`, `notifications` |
 | 14 | `demo`, `reporting` |
 | 15 | `duty_coverage` |
 | 16 | `live_workspace` |

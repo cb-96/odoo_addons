@@ -231,7 +231,6 @@ ALL_MODULES=(
   sports_federation_venues
   sports_federation_result_control
   sports_federation_portal
-  sports_federation_member_services
   sports_federation_rosters
   sports_federation_registration
   sports_federation_format

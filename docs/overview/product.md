@@ -20,7 +20,6 @@ governance work around them.
 | Results officer | Back office and `/my/result-reviews` | Verify and approve results, handle corrections |
 | Club representative | Club portal (`/my`, `/my/preparation`) | Register teams, maintain rosters and line-ups, nominate officials, upload documents |
 | Official (referee, table official) | Portal assignments and mobile match day | Accept assignments, request check-in |
-| Member or guardian | `/my/family` (optional member services) | Renew memberships, upload requested evidence |
 | Public visitor and partner systems | Public website, public feeds, managed integration API | Follow competitions, consume published data |
 
 ## Product surfaces
@@ -48,9 +47,8 @@ competition lifecycle, publication, match-day operations, rosters,
 officiating, standings, portal and public site, together with the platform
 operations that support them.
 
-`sports_federation_member_services` (member and family services) and
-`sports_federation_accounting` (native invoice linkage) are optional and are
-not installed by the application entry point. `sports_federation_demo` is for
+`sports_federation_accounting` (native invoice linkage) is optional and is not
+installed by the application entry point. `sports_federation_demo` is for
 development and demonstrations only.
 
 An optional capability stays separate only when it is legally required,

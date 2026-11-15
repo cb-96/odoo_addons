@@ -1,7 +1,7 @@
 # Upgrade notes
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-13
+Last reviewed: 2026-11-14
 Review cadence: Every release
 
 Upgrade-sensitive changes, newest first. Each entry records the affected
@@ -35,6 +35,97 @@ Do not describe work that is not in the code, and do not mark runtime checks as
 passed unless they ran.
 
 ## Entries
+
+### Cleanup of retired addons left in the database
+
+Affected modules: `sports_federation_navigation` 19.0.1.4.0 → 19.0.1.5.0
+
+**Data changes**: migration `19.0.1.5.0/end-migrate.py` runs after all addons
+are loaded. For `sports_federation_member_services` and
+`sports_federation_competition_engine`, when they are recorded in the database
+but their code is gone, it removes every record whose external identifier
+belongs only to that addon: menus, actions, crons, views (including views
+inherited into other forms), record rules, access rights and data records. It
+drops the columns the addon added to remaining models, drops the tables of
+models only it declared (with their chatter, attachments, operational tasks
+and jobs) and marks the addon *uninstalled*. Records that another addon also
+declares are kept. It then removes any menu whose action is missing or opens a
+model that is not registered. A second run does nothing.
+
+All membership, member request, guardian claim, family relationship and
+member evidence data is deleted. The *Federation Manager implies Contact
+Creation* link that member services added to the base group stays; remove it
+by hand if it is not wanted.
+
+**Behaviour to verify**:
+
+- **Clubs & People** no longer shows **Membership**; Administration > System
+  (developer mode) no longer shows member audit menus.
+- Season, licence and club season player forms open without membership fields.
+- **Apps** lists Member and Family Services as not installed (or not at all).
+- The server log contains one "Removed leftovers of retired addon" line.
+
+**Dry-run evidence**: static checks only. The migration was NOT run against a
+database; `test_retired_addon_cleanup.py` and two navigation tests cover it in
+the Odoo suite.
+
+**Rollback**: restore the backup taken before the upgrade. The removed records
+and tables cannot be recreated by a code rollback.
+
+### Season player approval in the Review Queue; member services removed
+
+Affected modules: `sports_federation_people` 19.0.1.4.0 → 19.0.1.5.0,
+`sports_federation_portal` 19.0.7.17.0 → 19.0.7.18.0,
+`sports_federation_notifications` 19.0.1.5.2 → 19.0.1.6.0,
+`sports_federation_navigation` 19.0.1.3.1 → 19.0.1.4.0;
+`sports_federation_member_services` removed from the repository
+
+**Data changes**:
+
+- New search view on club season player registrations; the action opens on
+  the *To approve* (submitted) filter. The menu moves to sequence 35 under
+  **Clubs & People**, after Players, and is part of the navigation map.
+- Header buttons on the club season player form are limited to Federation
+  Managers. **Approve pending players** is only shown on submitted lists. The
+  server-side commands and their access rights are unchanged.
+- New operational task type `season_players_review` (manager audience),
+  projected for submitted club season lists with pending players in an open
+  season of the user's companies. No migration: the task type selection is
+  computed and tasks are rebuilt by the projection.
+- Submitting a club season list creates one to-do activity per Federation
+  Manager; approval or cancellation marks them done.
+- `sports_federation_member_services` (memberships, member requests, guardian
+  claims, family relationships, identity review, member evidence, `/my/family`)
+  is deleted. Nothing in the other addons depended on it. The optional
+  per-season *Require Federation Membership for Players* prerequisite goes with
+  it; season licences remain the only player registration.
+
+**Database where member services was installed**: uninstalling it from Apps
+before deploying is still the cleanest path. If the code was deployed first,
+upgrading `sports_federation_navigation` to 19.0.1.5.0 removes the leftovers
+(see the next entry).
+
+**Behaviour to verify**:
+
+- A club submits season players from the portal. A Federation Manager sees an
+  *Approve season players* task in **Competitions > Review Queue**, an activity
+  on the record, and the list under **Clubs & People > Season Player
+  Registrations** with the default filter.
+- Approving closes the activity and, on the next Review Queue refresh, the
+  task. A top-up submission reopens the same task.
+- A read-only federation user sees no action buttons on the form; a draft or
+  approved list shows no approve button.
+- The **Membership** menu, `/my/family` and the member audit menus are gone.
+
+**Dry-run evidence**: static checks only (contract and CI checks touched by the
+removal, Python compile, XML parse). The Odoo suites were NOT run; new tests are
+`test_season_players_review_task.py` (portal),
+`test_season_players_review_activity.py` (notifications) and two navigation
+tests.
+
+**Rollback**: code-only rollback for people, portal, notifications and
+navigation. Member services can be reinstalled from the previous revision,
+but its uninstalled data only returns from the backup.
 
 ### Portal ORM isolation, tenure expiry and version correction
 

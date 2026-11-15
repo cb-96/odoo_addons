@@ -21,7 +21,6 @@ independent transactions, restored data and novice users.
 | [Mobile match day](mobile-match-day.md) | Court capture, interruption recovery, official and manager mobile pages |
 | [Visual scheduling](visual-scheduling.md) | Visual planner, candidate comparison and progression impact |
 | [Workspace UX](workspace-ux.md) | Role home, context continuity, empty and error states, event time zones |
-| [Member lifecycle](member-lifecycle.md) | Optional member and family services |
 | [Platform hardening](platform-hardening.md) | Court cache, document revisions, job retry, finance boundaries |
 
 ## Rules for evidence

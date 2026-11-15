@@ -9,7 +9,6 @@ APP = "sports_federation_app"
 EXCLUDED = {
     APP,
     "sports_federation_demo",
-    "sports_federation_member_services",
     "sports_federation_accounting",
 }
 

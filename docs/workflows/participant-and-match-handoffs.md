@@ -3,7 +3,7 @@
 ## Baseline and apply
 
 These are incremental patches after the reviewed annual-player registration,
-edge-case tests, and membership/division boundary patches from this conversation.
+edge-case tests, and division boundary patches from this conversation.
 They target the reconstructed supplied source snapshot, not a newly fetched live repo.
 Apply participant_handoff.patch and match_journey.patch; each changes its own addon.
 Upgrade sports_federation_registration and sports_federation_schedule_approval together

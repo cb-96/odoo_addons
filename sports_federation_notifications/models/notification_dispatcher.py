@@ -21,6 +21,10 @@ from markupsafe import Markup, escape
 
 from odoo import models
 
+# Summary prefix of the manager activities for a submitted club player list.
+# The activities are closed by matching this prefix once the list is handled.
+SEASON_PLAYERS_REVIEW_SUMMARY = "Approve season players:"
+
 
 class FederationNotificationDispatcher(models.AbstractModel):
     """Dispatcher for domain-event driven notifications.
@@ -144,6 +148,32 @@ class FederationNotificationDispatcher(models.AbstractModel):
             email_to=email_to,
             log_name=f"Season registration confirmed: {registration.name}",
         )
+
+    @notification_effect()
+    def send_season_players_submitted(self, registration):
+        """Ask federation managers to approve a submitted club player list."""
+        return self._create_group_activities(
+            registration,
+            "sports_federation_base.group_federation_manager",
+            f"{SEASON_PLAYERS_REVIEW_SUMMARY} {registration.name}",
+            note=escape(
+                f"{registration.pending_player_count} player(s) submitted by "
+                f"{registration.club_id.display_name} for "
+                f"{registration.season_id.display_name}."
+            ),
+        )
+
+    @notification_effect()
+    def close_season_players_review(self, registration, feedback):
+        """Mark the open approval activities of a handled player list as done."""
+        activities = registration.sudo().activity_ids.filtered(
+            lambda activity: (activity.summary or "").startswith(
+                SEASON_PLAYERS_REVIEW_SUMMARY
+            )
+        )
+        if activities:
+            activities.action_feedback(feedback=feedback)
+        return activities
 
     @notification_effect()
     def send_season_registration_rejected(self, registration):
