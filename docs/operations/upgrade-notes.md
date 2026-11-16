@@ -38,7 +38,8 @@ passed unless they ran.
 
 ### Cleanup of retired addons left in the database
 
-Affected modules: `sports_federation_navigation` 19.0.1.4.0 → 19.0.1.5.0
+Affected modules: `sports_federation_navigation` 19.0.1.4.0 → 19.0.1.5.0;
+`sports_federation_rosters` (view comment only, no version change)
 
 **Data changes**: migration `19.0.1.5.0/end-migrate.py` runs after all addons
 are loaded. For `sports_federation_member_services` and
@@ -65,9 +66,15 @@ by hand if it is not wanted.
 - **Apps** lists Member and Family Services as not installed (or not at all).
 - The server log contains one "Removed leftovers of retired addon" line.
 
-**Dry-run evidence**: static checks only. The migration was NOT run against a
-database; `test_retired_addon_cleanup.py` and two navigation tests cover it in
-the Odoo suite.
+`ci/contracts/reliability_contract.json` now registers the reviewed row and
+advisory locks that the release lane reported as unregistered runtime SQL, and
+the hidden `rostered_player_ids` roster view field documents its rationale.
+No runtime behaviour changes.
+
+**Dry-run evidence**: static checks only. Run the migration on a restored copy
+of production first; `test_retired_addon_cleanup.py`,
+`test_retired_addon_columns.py` and two navigation tests cover it in the Odoo
+suite.
 
 **Rollback**: restore the backup taken before the upgrade. The removed records
 and tables cannot be recreated by a code rollback.
