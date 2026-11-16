@@ -3,9 +3,7 @@ from pathlib import Path
 
 from odoo.tests.common import TransactionCase, tagged
 
-_SCRIPT = (
-    Path(__file__).resolve().parents[1] / "migrations/19.0.1.5.0/end-migrate.py"
-)
+_SCRIPT = Path(__file__).resolve().parents[1] / "migrations/19.0.1.5.1/end-migrate.py"
 _spec = importlib.util.spec_from_file_location("retired_addon_columns", _SCRIPT)
 cleanup = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cleanup)

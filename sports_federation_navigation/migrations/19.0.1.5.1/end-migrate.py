@@ -14,6 +14,10 @@ Afterwards any menu whose window action points at a model that is no longer
 registered is removed as well, whatever addon it came from.
 
 Idempotent: a second run finds nothing to do.
+
+Shipped first as 19.0.1.5.0. On databases where that upgrade failed, Odoo had
+already recorded 19.0.1.5.0 as installed, so the corrected script never ran;
+19.0.1.5.1 runs it again there and is a no-op everywhere else.
 """
 
 import logging
@@ -54,12 +58,24 @@ SCHEMA_MODELS = (
 
 
 def _code_present(name):
+    """True only when an installable manifest of the addon is on the path."""
     try:
-        from odoo.modules.module import get_module_path
+        from odoo.modules.module import Manifest
 
-        return bool(get_module_path(name, display_warning=False))
-    except Exception:  # API differences between Odoo versions
+        manifest = Manifest.for_addon(name, display_warning=False)
+    except (ImportError, AttributeError, TypeError):
+        try:
+            from odoo.modules.module import get_manifest
+
+            manifest = get_manifest(name)
+        except ImportError:
+            return False
+    if not manifest:
         return False
+    try:
+        return bool(manifest.get("installable", True))
+    except AttributeError:
+        return bool(getattr(manifest, "installable", True))
 
 
 def _owned(cr, module, model):
@@ -139,8 +155,10 @@ def _drop_fields(env, module):
             continue  # still defined by an installed addon
         dropped += 1
         table = env[model]._table
-        if store and ttype not in ("one2many", "many2many") and _table_exists(
-            cr, table
+        if (
+            store
+            and ttype not in ("one2many", "many2many")
+            and _table_exists(cr, table)
         ):
             # CASCADE removes indexes and foreign keys on this column only.
             cr.execute(
@@ -200,9 +218,7 @@ def _drop_models(env, module):
     )
     for relation_id, relation in cr.fetchall():
         cr.execute(
-            sql.SQL("DROP TABLE IF EXISTS {} CASCADE").format(
-                sql.Identifier(relation)
-            )
+            sql.SQL("DROP TABLE IF EXISTS {} CASCADE").format(sql.Identifier(relation))
         )
         cr.execute("DELETE FROM ir_model_relation WHERE id = %s", (relation_id,))
     for model_id, name in rows:
@@ -287,6 +303,9 @@ def remove_dangling_menus(env):
 
 
 def migrate(cr, version):
+    _logger.info(
+        "Checking for leftovers of retired addons: %s", ", ".join(RETIRED_ADDONS)
+    )
     env = api.Environment(cr, SUPERUSER_ID, {})
     for module in RETIRED_ADDONS:
         purge_retired_addon(env, module)

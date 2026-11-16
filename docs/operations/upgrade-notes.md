@@ -38,10 +38,10 @@ passed unless they ran.
 
 ### Cleanup of retired addons left in the database
 
-Affected modules: `sports_federation_navigation` 19.0.1.4.0 → 19.0.1.5.0;
+Affected modules: `sports_federation_navigation` 19.0.1.4.0 → 19.0.1.5.1;
 `sports_federation_rosters` (view comment only, no version change)
 
-**Data changes**: migration `19.0.1.5.0/end-migrate.py` runs after all addons
+**Data changes**: migration `19.0.1.5.1/end-migrate.py` runs after all addons
 are loaded. For `sports_federation_member_services` and
 `sports_federation_competition_engine`, when they are recorded in the database
 but their code is gone, it removes every record whose external identifier
@@ -58,8 +58,16 @@ member evidence data is deleted. The *Federation Manager implies Contact
 Creation* link that member services added to the base group stays; remove it
 by hand if it is not wanted.
 
+The script first shipped as 19.0.1.5.0. Where that upgrade failed on
+`DROP COLUMN id`, Odoo had already recorded 19.0.1.5.0, so the next upgrade
+skipped the corrected script and the Membership menus stayed. 19.0.1.5.1 runs it
+again; on databases where 19.0.1.5.0 succeeded it finds nothing to do.
+
 **Behaviour to verify**:
 
+- The log shows "Checking for leftovers of retired addons" during the
+  navigation upgrade, and no "Some modules have inconsistent states" error for
+  `sports_federation_member_services` afterwards.
 - **Clubs & People** no longer shows **Membership**; Administration > System
   (developer mode) no longer shows member audit menus.
 - Season, licence and club season player forms open without membership fields.
@@ -109,7 +117,7 @@ Affected modules: `sports_federation_people` 19.0.1.4.0 → 19.0.1.5.0,
 
 **Database where member services was installed**: uninstalling it from Apps
 before deploying is still the cleanest path. If the code was deployed first,
-upgrading `sports_federation_navigation` to 19.0.1.5.0 removes the leftovers
+upgrading `sports_federation_navigation` to 19.0.1.5.1 removes the leftovers
 (see the next entry).
 
 **Behaviour to verify**:

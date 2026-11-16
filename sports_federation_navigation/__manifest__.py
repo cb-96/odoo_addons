@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Navigation",
-    "version": "19.0.1.5.0",
+    "version": "19.0.1.5.1",
     "category": "Sports",
     "summary": "Ordinary and advanced navigation assembly",
     "description": """
