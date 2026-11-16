@@ -1,0 +1,108 @@
+[Release baseline] Running RC lane: static
+Python syntax check passed without writing bytecode
+XML parse check passed
+Legacy addon code and dependencies are absent; migration-safety references are allowed.
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.033s
+
+OK
+[e2e] walkthrough: walkthrough step create_competition: failed
+[e2e] walkthrough: walkthrough step select_teams: failed
+[e2e] walkthrough: walkthrough step choose_format: failed
+[e2e] walkthrough: walkthrough step define_gamedays: failed
+[e2e] walkthrough: walkthrough step plan_and_publish: failed
+[e2e] walkthrough: walkthrough step club_gameday_roster: failed
+[e2e] walkthrough: walkthrough step cross_out_players: failed
+[e2e] walkthrough: walkthrough step official_assignment: failed
+[e2e] walkthrough: walkthrough step open_gameday: failed
+[e2e] walkthrough: walkthrough step court_scoring: failed
+[e2e] walkthrough: walkthrough step result_review: failed
+[e2e] walkthrough: walkthrough step close_gamedays: failed
+[e2e] walkthrough: walkthrough step freeze_and_close: failed
+[e2e] walkthrough: walkthrough step public_completed: failed
+[e2e] walkthrough: walkthrough step denied_access: failed
+[e2e] human acceptance: human-acceptance.json: missing
+.[e2e] automated: summary.json: commit bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb is not the candidate aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+[e2e] automated: summary.json: the lifecycle lane was not recorded
+[e2e] human acceptance: human-acceptance.json: missing
+.[e2e] human acceptance: human-acceptance.json: missing
+.[e2e] walkthrough: walkthrough step create_competition: screenshot ../summary.json missing
+[e2e] human acceptance: human-acceptance.json: missing
+.[e2e] walkthrough: walkthrough step create_competition: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step select_teams: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step choose_format: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step define_gamedays: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step plan_and_publish: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step club_gameday_roster: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step cross_out_players: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step official_assignment: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step open_gameday: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step court_scoring: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step result_review: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step close_gamedays: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step freeze_and_close: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step public_completed: screenshot screenshots/shot.png checksum mismatch
+[e2e] walkthrough: walkthrough step denied_access: screenshot screenshots/shot.png checksum mismatch
+[e2e] human acceptance: human-acceptance.json: missing
+.[e2e] human acceptance: human-acceptance.json: missing
+.[e2e] walkthrough: defect D1: unresolved blocker
+[e2e] human acceptance: human-acceptance.json: missing
+.
+----------------------------------------------------------------------
+Ran 7 tests in 0.036s
+
+OK
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: not-qualified
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: not-qualified
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: technically-qualified
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: release-qualified
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: not-qualified
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: not-qualified
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: technically-qualified
+[e2e] Verdict for aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: not-qualified
+[sudo-guard] OK - 39 privileged calls are documented and guarded.
+Privileged inventory quality check passed.
+Privileged mutation boundary check passed.
+test_atomic_decorator_rolls_back_revision_when_validation_fails (ci.test_workflow_commands.TestScheduleSubmission.test_atomic_decorator_rolls_back_revision_when_validation_fails) ... ok
+test_behavior_detects_removed_warning_guard (ci.test_workflow_commands.TestScheduleSubmission.test_behavior_detects_removed_warning_guard) ... ok
+test_invalid_schedule_has_no_transition_or_event (ci.test_workflow_commands.TestScheduleSubmission.test_invalid_schedule_has_no_transition_or_event) ... ok
+test_override_evidence_precedes_transition (ci.test_workflow_commands.TestScheduleSubmission.test_override_evidence_precedes_transition) ... ok
+test_resolution_failure_prevents_side_effects (ci.test_workflow_commands.TestScheduleSubmission.test_resolution_failure_prevents_side_effects) ... ok
+test_submission_uses_transition_with_revision_and_audit (ci.test_workflow_commands.TestScheduleSubmission.test_submission_uses_transition_with_revision_and_audit) ... ok
+test_warning_requires_nonblank_reason (ci.test_workflow_commands.TestScheduleSubmission.test_warning_requires_nonblank_reason) ... ok
+test_custom_writer_is_used (ci.test_workflow_commands.TestWorkflowTransition.test_custom_writer_is_used) ... ok
+test_invalid_source_state_is_rejected (ci.test_workflow_commands.TestWorkflowTransition.test_invalid_source_state_is_rejected) ... ok
+test_reason_is_required_before_write (ci.test_workflow_commands.TestWorkflowTransition.test_reason_is_required_before_write) ... ok
+test_separation_of_duties_is_enforced (ci.test_workflow_commands.TestWorkflowTransition.test_separation_of_duties_is_enforced) ... ok
+test_stale_revision_is_rejected_before_write (ci.test_workflow_commands.TestWorkflowTransition.test_stale_revision_is_rejected_before_write) ... ok
+test_transition_writes_and_audits_actor (ci.test_workflow_commands.TestWorkflowTransition.test_transition_writes_and_audits_actor) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.066s
+
+OK
+Notification queue structure passed; behavioral and ORM tests are separate.
+Destructive token contract passed.
+Reliability contract passed.
+Audit ACL integrity check passed.
+Privileged command contract passed.
+Workflow transition foundation check passed.
+Match-day transition contract passed.
+Result transition contract passed.
+Portal ownership contract passed.
+Officiating and legacy-match contract passed.
+Registration ownership contract passed.
+ACL CSV integrity passed for 319 access records.
+Source collector contract failed:
+- source_collector.py is missing

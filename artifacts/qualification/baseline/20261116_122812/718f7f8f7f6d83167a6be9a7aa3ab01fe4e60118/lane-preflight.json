@@ -1,0 +1,35 @@
+{
+  "branch": "feat/offline-gameday",
+  "command": "scripts/ci/run_rc_validation.sh preflight",
+  "commit": "718f7f8f7f6d83167a6be9a7aa3ab01fe4e60118",
+  "database": "sf_rc_validation",
+  "duration_seconds": 0.0,
+  "exit_code": 1,
+  "failure_classification": "unclassified",
+  "finished_at": "2026-11-16T12:02:17Z",
+  "lane": "preflight",
+  "log": {
+    "path": "/tmp/sports-federation-release-baseline/718f7f8f7f6d83167a6be9a7aa3ab01fe4e60118/logs/preflight.log",
+    "sha256": "185d4c38ec0b229de7c5789ce78495c0a9c2b3de3bd3f477859a8314271749b7",
+    "size_bytes": 160
+  },
+  "recorded_at": "2026-11-16T12:02:17.902009+00:00",
+  "runner": {
+    "github_job": null,
+    "github_run_attempt": null,
+    "github_run_id": null,
+    "host": "odoo-dev",
+    "platform": "Linux-6.14.11-4-pve-x86_64-with"
+  },
+  "schema_version": 2,
+  "skip_reason": null,
+  "started_at": "2026-11-16T12:02:17Z",
+  "status": "failed",
+  "tools": {
+    "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
+    "docker_compose": "Docker Compose version v2.40.3",
+    "git": "git version 2.52.0",
+    "postgres_client": null,
+    "python": "3.12.13"
+  }
+}
