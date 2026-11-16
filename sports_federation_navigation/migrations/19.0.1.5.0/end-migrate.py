@@ -103,8 +103,19 @@ def _table_exists(cr, table):
     return cr.fetchone()[0]
 
 
+# Columns every Odoo table has; never dropped one by one.
+MAGIC_COLUMNS = frozenset(
+    ("id", "create_uid", "create_date", "write_uid", "write_date", "display_name")
+)
+
+
 def _drop_fields(env, module):
-    """Drop columns the retired addon added to models that remain."""
+    """Drop the columns the retired addon added to models that remain.
+
+    Fields of models that are no longer registered are left alone: their whole
+    table is dropped by ``_drop_models``, and dropping their columns one by
+    one fails on columns other tables reference (``id``).
+    """
     cr = env.cr
     cr.execute(
         """
@@ -120,18 +131,20 @@ def _drop_fields(env, module):
         """,
         (module,),
     )
-    rows = cr.fetchall()
     dropped = 0
-    for field_id, model, name, store, ttype in rows:
-        if model in env and name in env[model]._fields:
+    for field_id, model, name, store, ttype in cr.fetchall():
+        if model not in env:
+            continue  # the table goes with its model
+        if name in env[model]._fields or name in MAGIC_COLUMNS:
             continue  # still defined by an installed addon
         dropped += 1
-        table = model.replace(".", "_")
+        table = env[model]._table
         if store and ttype not in ("one2many", "many2many") and _table_exists(
             cr, table
         ):
+            # CASCADE removes indexes and foreign keys on this column only.
             cr.execute(
-                sql.SQL("ALTER TABLE {} DROP COLUMN IF EXISTS {}").format(
+                sql.SQL("ALTER TABLE {} DROP COLUMN IF EXISTS {} CASCADE").format(
                     sql.Identifier(table), sql.Identifier(name)
                 )
             )
@@ -199,7 +212,8 @@ def _drop_models(env, module):
             )
         )
         cr.execute("DELETE FROM ir_model_constraint WHERE model = %s", (model_id,))
-        # Fields, selections, access rights and rules cascade from ir_model.
+        cr.execute("DELETE FROM ir_model_fields WHERE model_id = %s", (model_id,))
+        # Selections, access rights and rules cascade from ir_model.
         cr.execute("DELETE FROM ir_model WHERE id = %s", (model_id,))
     return names
 
