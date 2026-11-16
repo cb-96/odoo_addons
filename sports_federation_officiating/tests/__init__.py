@@ -8,3 +8,5 @@ from . import test_reimbursement
 from . import test_competition_officiating_contract
 
 from . import test_auto_club_duty_assignment
+
+from . import test_club_duty_planning

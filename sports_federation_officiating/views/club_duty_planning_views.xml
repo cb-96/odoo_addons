@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="competition_schedule_club_duties" model="ir.ui.view">
+    <field name="name">competition.schedule.club.duties</field>
+    <field name="model">federation.competition.schedule.wizard</field>
+    <field name="inherit_id" ref="sports_federation_scheduling.competition_schedule_wizard_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='matchday_ids']" position="after">
+        <field name="auto_club_duties" groups="sports_federation_base.group_federation_manager"/>
+        <div class="text-muted" groups="sports_federation_base.group_federation_manager">Generate draft schedules, then review club responsibilities before publication. Clubs are not notified during planning.</div>
+      </xpath>
+    </field>
+  </record>
+  <record id="schedule_club_duty_plan" model="ir.ui.view">
+    <field name="name">schedule.club.duty.plan</field>
+    <field name="model">federation.schedule</field>
+    <field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_review_club_duties" type="object" string="Review club duties" invisible="state != 'draft'" groups="sports_federation_base.group_federation_manager"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="Club-duty planning" groups="sports_federation_base.group_federation_manager">
+          <field name="club_duty_review_required" readonly="1"/>
+          <div class="alert alert-warning" role="alert" invisible="not club_duty_review_required">Club duties need review. Refresh the allocation after changing times or teams, then apply it before publishing.</div>
+        </group>
+      </xpath>
+    </field>
+  </record>
+  <record id="schedule_club_duty_review_form" model="ir.ui.view">
+    <field name="name">schedule.club.duty.review.form</field>
+    <field name="model">federation.schedule.club.duty.review</field>
+    <field name="arch" type="xml">
+      <form string="Review gameday club duties">
+        <group>
+          <field name="schedule_ids" widget="many2many_tags" readonly="1"/>
+          <field name="officials_per_match"/>
+          <div class="text-muted">Zero uses each division's rule-set requirement. A positive number overrides the count for this plan.</div>
+          <field name="avoid_playing"/>
+          <field name="allow_fallback"/>
+          <field name="preserve_existing"/>
+          <field name="issue_count" readonly="1"/>
+        </group>
+        <div class="alert alert-info" role="alert">Responsibilities remain a draft plan until publication. Nomination and individual referee acceptance remain separate. Refresh the preview after changing any option.</div>
+        <field name="preview_html" nolabel="1" readonly="1"/>
+        <footer>
+          <button name="action_preview" type="object" string="Refresh preview" class="btn-secondary"/>
+          <button name="action_apply" type="object" string="Apply club-duty plan" class="btn-primary" invisible="issue_count != 0"/>
+          <button string="Close" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+  <record id="club_duty_schedule_review_form" model="ir.ui.view">
+    <field name="name">club.duty.schedule.review.form</field>
+    <field name="model">federation.match.club.referee.duty</field>
+    <field name="inherit_id" ref="view_federation_match_club_referee_duty_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='is_deadline_overdue']" position="after">
+        <field name="planning_review_required" readonly="1"/>
+        <div class="alert alert-warning" role="alert" invisible="not planning_review_required">The match time or participants changed since club-duty planning. Review coverage and use Resolve / replace if needed. Existing nominations are not automatically replaced.</div>
+      </xpath>
+    </field>
+  </record>
+  <record id="club_duty_schedule_review_list" model="ir.ui.view">
+    <field name="name">club.duty.schedule.review.list</field>
+    <field name="model">federation.match.club.referee.duty</field>
+    <field name="inherit_id" ref="view_federation_match_club_referee_duty_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='role']" position="after">
+        <field name="planning_review_required" optional="show"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>
