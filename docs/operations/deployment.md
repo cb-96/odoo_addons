@@ -151,8 +151,8 @@ addons; installing `sports_federation_app` is additive and does not move data.
 
 Odoo resolves the install order from the manifest dependencies. The
 [module catalogue](../overview/modules.md#dependency-layers) shows the
-resulting layers. Optional addons (`sports_federation_member_services`,
-`sports_federation_accounting`) must be installed explicitly.
+resulting layers. The optional `sports_federation_accounting` addon must be
+installed explicitly.
 
 ---
 

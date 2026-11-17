@@ -1,4 +1,5 @@
 """Execute production queue methods with isolated doubles; no SMTP or Odoo."""
+
 from contextlib import nullcontext
 from datetime import datetime, timedelta
 import logging
@@ -21,14 +22,19 @@ def feedback(error):
 
 def method(filename, name):
     scope = {
-        "_": lambda text: text, "ValidationError": ValueError,
+        "_": lambda text: text,
+        "ValidationError": ValueError,
         "DeadlockDetected": type("DeadlockDetected", (Exception,), {}),
         "SerializationFailure": type("SerializationFailure", (Exception,), {}),
         "fields": SimpleNamespace(Datetime=SimpleNamespace(now=lambda: NOW)),
-        "timedelta": timedelta, "MAX_AUTOMATIC_ATTEMPTS": 3,
-        "build_failure_feedback": feedback, "_logger": logging.getLogger("outbox_test"),
+        "timedelta": timedelta,
+        "MAX_AUTOMATIC_ATTEMPTS": 3,
+        "build_failure_feedback": feedback,
+        "_logger": logging.getLogger("outbox_test"),
     }
-    return load_method("sports_federation_notifications/models/" + filename, name, scope)
+    return load_method(
+        "sports_federation_notifications/models/" + filename, name, scope
+    )
 
 
 class Mail:
@@ -89,23 +95,33 @@ class TestNotificationOutbox(unittest.TestCase):
         log = Log(Mail("exception"))
         log.state = "failed"
         log.next_attempt_on = NOW - timedelta(minutes=1)
-        log._retry_queued_email = lambda: method("notification_outbox.py", "_retry_queued_email")(log)
+        log._retry_queued_email = lambda: method(
+            "notification_outbox.py", "_retry_queued_email"
+        )(log)
+
         class Env:
             cr = SimpleNamespace(savepoint=lambda: nullcontext())
+
         queries = []
         model = SimpleNamespace(env=Env())
         model.sudo = lambda: model
-        model.search = lambda domain, **kwargs: queries.append((domain, kwargs)) or [log]
+        model.search = lambda domain, **kwargs: queries.append((domain, kwargs)) or [
+            log
+        ]
         method("notification_outbox.py", "_cron_reconcile_outbox")(model)
         self.assertEqual(log.mail_id.state, "outgoing")
         self.assertEqual(queries[0][1]["limit"], 200)
-        self.assertIn(("target_model", "!=", "federation.communication.delivery"), queries[0][0])
+        self.assertIn(
+            ("target_model", "!=", "federation.communication.delivery"), queries[0][0]
+        )
 
     def test_cron_skips_busy_delivery(self):
         log = Log(Mail("exception"))
         log._lock_outbox = lambda: False
+
         class Env:
             cr = SimpleNamespace(savepoint=lambda: nullcontext())
+
         model = SimpleNamespace(env=Env())
         model.sudo = lambda: model
         model.search = lambda *args, **kwargs: [log]
@@ -117,44 +133,63 @@ class TestNotificationOutbox(unittest.TestCase):
         calls = []
         dispatcher = SimpleNamespace(
             _unique_emails=lambda emails: list(dict.fromkeys(emails)),
-            queue_direct_email=lambda *args, **kwargs: calls.append((args, kwargs)) or "queued",
+            queue_direct_email=lambda *args, **kwargs: calls.append((args, kwargs))
+            or "queued",
         )
         result = method("notification_dispatcher.py", "_send_direct_email_or_log")(
-            dispatcher, "record", "subject", "body", "log", ["a@test", "a@test"])
+            dispatcher, "record", "subject", "body", "log", ["a@test", "a@test"]
+        )
         self.assertEqual(result, "queued")
         self.assertEqual(calls[0][0][-1], "a@test")
 
     def test_result_routing_reads_both_teams_with_elevated_source(self):
-        home = SimpleNamespace(email="home@test", club_id=SimpleNamespace(email="home-club@test"))
-        away = SimpleNamespace(email="away@test", club_id=SimpleNamespace(email="away-club@test"))
+        home = SimpleNamespace(
+            email="home@test", club_id=SimpleNamespace(email="home-club@test")
+        )
+        away = SimpleNamespace(
+            email="away@test", club_id=SimpleNamespace(email="away-club@test")
+        )
         elevated = SimpleNamespace(home_team_id=home, away_team_id=away)
+
         class Match:
             name = "Result"
+
             def sudo(self):
                 return elevated
+
             @property
             def home_team_id(self):
                 raise PermissionError("caller cannot read private team contact")
+
             @property
             def away_team_id(self):
                 raise PermissionError("caller cannot read private team contact")
+
         match = Match()
         calls = []
-        dispatcher = SimpleNamespace(_send_email_or_log=lambda *args: calls.append(args) or "queued")
-        result = method("notification_dispatcher.py", "send_result_approved")(dispatcher, match)
+        dispatcher = SimpleNamespace(
+            _send_email_or_log=lambda *args: calls.append(args) or "queued"
+        )
+        result = method("notification_dispatcher.py", "send_result_approved")(
+            dispatcher, match
+        )
         self.assertEqual(result, "queued")
         self.assertIs(calls[0][0], match)
-        self.assertEqual(calls[0][-1], ["home@test", "home-club@test", "away@test", "away-club@test"])
+        self.assertEqual(
+            calls[0][-1], ["home@test", "home-club@test", "away@test", "away-club@test"]
+        )
 
     def test_email_routing_deduplicates_and_queues(self):
         calls = []
         unique = method("notification_dispatcher.py", "_unique_emails")
         dispatcher = SimpleNamespace(
             _unique_emails=lambda emails: unique(None, emails),
-            send_email_template=lambda *args, **kwargs: calls.append((args, kwargs)) or "queued",
+            send_email_template=lambda *args, **kwargs: calls.append((args, kwargs))
+            or "queued",
         )
         result = method("notification_dispatcher.py", "_send_email_or_log")(
-            dispatcher, "record", "template", "name", [" a@test ", "a@test", "", None])
+            dispatcher, "record", "template", "name", [" a@test ", "a@test", "", None]
+        )
         self.assertEqual(result, "queued")
         self.assertEqual(calls[0][1]["email_to"], ["a@test"])
 
@@ -163,10 +198,13 @@ class TestNotificationOutbox(unittest.TestCase):
         dispatcher = SimpleNamespace(
             _unique_emails=lambda emails: [],
             _log_missing_recipients=lambda *args: calls.append(args) or "failed",
-            send_email_template=lambda *args, **kwargs: self.fail("empty recipients queued"),
+            send_email_template=lambda *args, **kwargs: self.fail(
+                "empty recipients queued"
+            ),
         )
         result = method("notification_dispatcher.py", "_send_email_or_log")(
-            dispatcher, "record", "template", "name", [])
+            dispatcher, "record", "template", "name", []
+        )
         self.assertEqual(result, "failed")
         self.assertEqual(calls[0][2], "email")
 
@@ -245,20 +283,26 @@ class TestNotificationOutbox(unittest.TestCase):
     def test_template_helper_explicitly_queues_and_retains_mail(self):
         mail = Mail()
         calls = []
-        template = SimpleNamespace(sudo=lambda: template,
-            send_mail=lambda record_id, **kwargs: calls.append(kwargs) or mail.id)
+        template = SimpleNamespace(
+            sudo=lambda: template,
+            send_mail=lambda record_id, **kwargs: calls.append(kwargs) or mail.id,
+        )
         mail_model = SimpleNamespace(sudo=lambda: mail_model, browse=lambda ident: mail)
+
         class Env(dict):
             cr = SimpleNamespace(savepoint=lambda: nullcontext())
+
             def ref(self, *args, **kwargs):
                 return template
+
         env = Env({"mail.mail": mail_model})
         service = SimpleNamespace(env=env)
         log = Log()
         log.template_xmlid = "test.template"
         log._queue_failed = lambda error: self.fail(str(error))
         method("notification_service.py", "_queue_template")(
-            service, log, SimpleNamespace(id=9), email_to="recipient@example.test")
+            service, log, SimpleNamespace(id=9), email_to="recipient@example.test"
+        )
         self.assertFalse(calls[0]["force_send"])
         self.assertFalse(calls[0]["email_values"]["auto_delete"])
         self.assertEqual(log.state, "pending")
@@ -266,14 +310,17 @@ class TestNotificationOutbox(unittest.TestCase):
     def test_template_failure_is_returned_as_evidence(self):
         class Env:
             cr = SimpleNamespace(savepoint=lambda: nullcontext())
+
             def ref(self, *args, **kwargs):
                 raise RuntimeError("render failed")
+
         log = Log()
         log.template_xmlid = "test.template"
         failures = []
         log._queue_failed = lambda error: failures.append(str(error))
         result = method("notification_service.py", "_queue_template")(
-            SimpleNamespace(env=Env()), log, SimpleNamespace(id=9))
+            SimpleNamespace(env=Env()), log, SimpleNamespace(id=9)
+        )
         self.assertIs(result, log)
         self.assertEqual(failures, ["render failed"])
 

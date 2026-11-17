@@ -25,6 +25,10 @@ from odoo.addons.sports_federation_public_site.controllers.public_follow import 
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestPublicSiteNewEndpoints(TransactionCase):
 
@@ -730,11 +734,12 @@ class TestPublicApiRateLimits(TransactionCase):
                 "season_id": cls.season.id,
             }
         )
-        cls.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
             {
                 "roster_id": roster_a.id,
                 "player_id": player_a.id,
-            }
+            },
         )
         roster_a.action_activate()
 
@@ -754,11 +759,12 @@ class TestPublicApiRateLimits(TransactionCase):
                 "season_id": cls.season.id,
             }
         )
-        cls.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
             {
                 "roster_id": roster_b.id,
                 "player_id": player_b.id,
-            }
+            },
         )
         roster_b.action_activate()
 

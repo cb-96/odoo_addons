@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """One isolated behavioral gate; does not claim ORM or browser execution."""
+
 from pathlib import Path
 import sys
 import unittest
@@ -16,6 +17,7 @@ def main():
     sys.path.insert(0, str(ROOT))
     from ci.check_task_projection import violations as projection_structure
     from ci.check_notification_side_effect_contract import violations as queue_structure
+
     errors = projection_structure() + queue_structure()
     if errors:
         print("Structural violations:\n- " + "\n- ".join(errors), file=sys.stderr)
@@ -24,7 +26,9 @@ def main():
         unittest.defaultTestLoader.loadTestsFromName(name) for name in MODULES
     )
     result = unittest.TextTestRunner(verbosity=2).run(suite)
-    print("Executed isolated production-method contracts; ORM and browser suites were not run.")
+    print(
+        "Executed isolated production-method contracts; ORM and browser suites were not run."
+    )
     return 0 if result.wasSuccessful() else 1
 
 

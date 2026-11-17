@@ -9,6 +9,7 @@ CLUB = "club"
 MANAGER = "manager"
 TASK_TYPES = {
     "registration": ("Competition entry", {CLUB, MANAGER}),
+    "season_players_review": ("Approve season players", {MANAGER}),
     "roster_readiness": ("Complete roster", {CLUB}),
     "parental_consent": ("Provide parental consent", {CLUB}),
     "consent_verification": ("Verify parental consent", {MANAGER}),

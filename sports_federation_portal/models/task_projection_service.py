@@ -1,4 +1,5 @@
 """Single owner of operation-task projection and synchronization."""
+
 import logging
 
 from odoo import _, api, fields, models
@@ -53,8 +54,11 @@ class FederationTaskProjection(models.AbstractModel):
         for spec in specs:
             errors = task_policy.validate_spec(spec)
             if errors:
-                _logger.error("Invalid task projection source_key=%s errors=%s",
-                              spec.get("source_key", "?"), ", ".join(errors))
+                _logger.error(
+                    "Invalid task projection source_key=%s errors=%s",
+                    spec.get("source_key", "?"),
+                    ", ".join(errors),
+                )
                 raise ValidationError(
                     _("Invalid task projection %(key)s: %(errors)s")
                     % {"key": spec.get("source_key", "?"), "errors": ", ".join(errors)}

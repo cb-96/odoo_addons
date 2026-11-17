@@ -159,4 +159,8 @@ python3 ci/check_public_competition_contract.py || exit 1
 python3 ci/run_behavioral_contracts.py || exit 1
 python3 -m unittest ci.test_minimal_ux ci.test_complete_ux ci.test_behavioral_gate ci.test_release_runner ci.test_workflow_responsibilities ci.test_complete_release_evidence ci.test_notification_operations || exit 1
 
+echo "[lint] Checking test fixtures for expiring fixed dates"
+python3 -m unittest ci.test_check_test_date_horizon || exit 1
+python3 ci/check_test_date_horizon.py || exit 1
+
 exit 0

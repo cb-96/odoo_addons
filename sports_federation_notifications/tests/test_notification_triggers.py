@@ -1,5 +1,9 @@
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestNotificationTriggers(TransactionCase):
     @classmethod
@@ -178,11 +182,12 @@ class TestNotificationTriggers(TransactionCase):
                 "rule_set_id": rule_set.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
             {
                 "roster_id": roster.id,
                 "player_id": player.id,
-            }
+            },
         )
         roster.action_activate()
         return roster

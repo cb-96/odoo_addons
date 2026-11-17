@@ -19,6 +19,10 @@ built from that set. Across the competition it requires every playable fixture
 to be allocated; each allocated match day must have usable capacity, a complete
 working schedule, and a current live publication matching that schedule
 revision. The first unresolved blocker is shown as the current setup step.
+Only matches that can be placed count as unallocated: the planner uses the same
+schedulable-match rule as the match board. A match whose participants are not
+resolved yet, such as a bye or a "#1 Top vs TBD" placeholder waiting for stage
+progression, is left out until its participants are known.
 Users who can read an edition may see its readiness summary, but this does not
 grant access to registration-window or format-structure records. The planner
 limits its internal readiness lookups to that edition and keeps record access

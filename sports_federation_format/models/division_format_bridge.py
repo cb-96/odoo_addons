@@ -39,7 +39,7 @@ class FederationTournamentFormatBridge(models.Model):
     )
     format_stage_summary = fields.Html(
         compute="_compute_format_structure",
-        string="Stages",
+        string="Format stage summary",
         sanitize=True,
     )
     format_type_label = fields.Char(
@@ -90,7 +90,7 @@ class FederationTournamentFormatBridge(models.Model):
                 % (
                     escape(stage.name or ""),
                     escape(stage_labels.get(stage.stage_type, stage.stage_type or "")),
-                    escape(_("%(count)s matches", count=matches)),
+                    escape(structure.env._("%(count)s matches", count=matches)),
                 )
             )
         return "<ul class='mb-0'>%s</ul>" % "".join(rows) if rows else False

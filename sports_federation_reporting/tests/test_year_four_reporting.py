@@ -34,6 +34,9 @@ class TestYearFourReporting(TransactionCase):
                 "code": "PLAN2026",
                 "date_start": "2026-01-01",
                 "date_end": "2026-12-31",
+                # Team registration fees are opt-in per season; this report
+                # counts the automatic team registration charge.
+                "team_registration_fee_enabled": True,
                 "active": True,
                 "target_club_count": 2,
                 "target_team_count": 2,

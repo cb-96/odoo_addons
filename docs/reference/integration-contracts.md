@@ -78,8 +78,6 @@ notes, discipline records, unpublished schedules or unapproved results.
   - top-level keys in the v1 payload are stable;
   - additive nested fields are allowed in v1 when they do not alter existing
     semantics.
-- Club representatives find live examples under **My Account > Data API**
-  (`/my/data-api`).
 
 ## Team feed
 
@@ -342,6 +340,7 @@ notifications:
 | Event | Recipient or audience | Channel |
 |---|---|---|
 | Season registration confirmed or returned | Submitting representative or club contact | Email |
+| Club season player list submitted (closed on approval or cancellation) | Federation managers | Activity |
 | Division published | Participant club and team contacts | Email |
 | Participant confirmed | Team and club contacts | Email |
 | Result submitted | Result validators | Activity |

@@ -1,6 +1,7 @@
 """Tests for federation.match.club.referee.duty (Operations)."""
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from odoo import fields
 from odoo.exceptions import ValidationError
@@ -268,6 +269,42 @@ class TestClubRefereeDutyDeadline(TestClubRefereeDutyBase):
             }
         )
         self.assertTrue(duty.is_deadline_overdue)
+
+    def test_overdue_flag_turns_on_when_the_deadline_passes(self):
+        """A deadline passes by time: the refresh job turns the stored flag on."""
+        duty = self._make_duty(state="open")
+        self.assertFalse(duty.is_deadline_overdue)
+
+        after_deadline = duty.nomination_deadline + timedelta(minutes=1)
+        with patch("odoo.fields.Datetime.now", return_value=after_deadline):
+            count = self.env[
+                "federation.match.club.referee.duty"
+            ]._cron_refresh_deadline_overdue()
+        duty.invalidate_recordset(["is_deadline_overdue"])
+
+        self.assertEqual(count, 1)
+        self.assertTrue(duty.is_deadline_overdue)
+
+    def test_overdue_refresh_ignores_confirmed_and_not_yet_due_duties(self):
+        Duty = self.env["federation.match.club.referee.duty"]
+        confirmed = self._make_duty(state="open")
+        confirmed.action_nominate(self.player_a1.id)
+        confirmed.action_confirm()
+        pending = self._make_duty(state="open", role="head")
+        deadline = pending.nomination_deadline
+
+        with patch(
+            "odoo.fields.Datetime.now", return_value=deadline - timedelta(minutes=1)
+        ):
+            self.assertEqual(Duty._cron_refresh_deadline_overdue(), 0)
+
+        with patch(
+            "odoo.fields.Datetime.now", return_value=deadline + timedelta(days=30)
+        ):
+            Duty._cron_refresh_deadline_overdue()
+        (confirmed | pending).invalidate_recordset(["is_deadline_overdue"])
+        self.assertFalse(confirmed.is_deadline_overdue)
+        self.assertTrue(pending.is_deadline_overdue)
 
     def test_is_deadline_overdue_false_when_confirmed(self):
         """is_deadline_overdue is False when duty is confirmed (even for past match)."""

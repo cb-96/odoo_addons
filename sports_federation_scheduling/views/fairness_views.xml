@@ -9,7 +9,8 @@
       </xpath>
       <xpath expr="//notebook" position="inside">
         <page string="Advanced scheduling: fairness" name="scheduling_fairness" groups="sports_federation_base.group_federation_advanced_operator">
-          <group><group string="Constraints"><field name="preferred_rest_minutes"/><field name="max_consecutive_games"/></group>
+          <p class="text-muted">The weights tune how fairly the remaining matches are spread. The rules that must hold, such as one match per court at a time, are never traded for a better score. A higher weight makes that preference count more; 0 ignores it.</p>
+          <group><group string="Rest and sequence"><field name="preferred_rest_minutes" help="Preferred minutes between two matches of the same team. Shorter rest is reported as a warning, not an error."/><field name="max_consecutive_games" help="Maximum number of matches a team plays in a row."/></group>
           <group string="Weights"><field name="fairness_same_club_weight"/><field name="fairness_rest_weight"/><field name="fairness_consecutive_weight"/><field name="fairness_time_balance_weight"/><field name="fairness_court_balance_weight"/></group></group>
           <group string="Last automatic plan"><field name="fairness_last_score" readonly="1"/><field name="fairness_last_report" readonly="1"/></group>
         </page>
@@ -19,12 +20,17 @@
   <record id="schedule_auto_wizard_form" model="ir.ui.view">
     <field name="name">federation.schedule.auto.wizard.form</field><field name="model">federation.schedule.auto.wizard</field>
     <field name="arch" type="xml"><form string="Fair Auto-schedule"><sheet>
-      <div class="alert alert-info" role="status">The solver first obeys the rules that must hold, then spreads the remaining load as fairly as it can. Review the preview before applying it.</div>
-      <group><field name="schedule_id" readonly="1"/><field name="replace_automatic_assignments"/></group>
+      <div class="alert alert-info" role="status"><p class="mb-1"><strong>Place the remaining matches automatically.</strong></p><p class="mb-0">The scheduler first obeys the rules that must hold, then spreads the remaining matches as fairly as it can. Nothing changes until you preview the result and apply it.</p></div>
+      <group><field name="schedule_id" readonly="1"/><field name="replace_automatic_assignments" string="Re-plan automatic placements" help="Also move matches the scheduler placed earlier. Matches you placed by hand always stay where they are."/></group>
       <group string="Fairness formula" groups="sports_federation_base.group_federation_advanced_operator"><group><field name="same_club_weight"/><field name="rest_weight"/><field name="consecutive_weight"/></group><group><field name="time_balance_weight"/><field name="court_balance_weight"/><field name="preferred_rest_minutes"/><field name="max_consecutive_games"/></group></group>
-      <group string="Preview" invisible="not preview_ready"><field name="proposed_count"/><field name="unassigned_count"/><field name="fairness_score" groups="sports_federation_base.group_federation_advanced_operator"/><field name="preview_report" nolabel="1" groups="sports_federation_base.group_federation_advanced_operator"/></group>
+      <group string="Preview" invisible="not preview_ready"><field name="proposed_count" string="Matches placed"/><field name="unassigned_count" string="Still without a court and time"/><field name="fairness_score" groups="sports_federation_base.group_federation_advanced_operator"/><field name="preview_report" nolabel="1" groups="sports_federation_base.group_federation_advanced_operator"/></group>
+      <div class="alert alert-warning" role="alert" invisible="not preview_ready or not unassigned_count">
+        <p class="mb-1"><strong>Some matches could not be placed.</strong></p>
+        <p class="mb-0">The scheduler never breaks a rule that must hold to place a match. Add court time or courts to the game day, or place these matches by hand in the planner. The automatic search is a heuristic, so a valid manual placement can still exist. Applying keeps the placed matches and leaves the others unassigned.</p>
+      </div>
+      <div class="alert alert-success" role="status" invisible="not preview_ready or unassigned_count">Every match has a court and time. Apply to save the proposal, then review the schedule before submitting it.</div>
       <!-- Technical field retained for view modifiers and domains. -->
       <field name="preview_ready" invisible="1"/>
-    </sheet><footer><button name="action_preview" type="object" string="Preview" class="btn-secondary"/><button name="action_apply" type="object" string="Apply Auto-schedule" class="btn-primary" invisible="not preview_ready"/><button string="Cancel" special="cancel"/></footer></form></field>
+    </sheet><footer><button name="action_preview" type="object" string="Preview" class="btn-primary" invisible="preview_ready"/><button name="action_preview" type="object" string="Preview again" class="btn-secondary" invisible="not preview_ready"/><button name="action_apply" type="object" string="Apply Auto-schedule" class="btn-primary" invisible="not preview_ready"/><button string="Cancel" special="cancel"/></footer></form></field>
   </record>
 </odoo>

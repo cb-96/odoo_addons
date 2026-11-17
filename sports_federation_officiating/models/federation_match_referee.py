@@ -171,7 +171,7 @@ class FederationMatchReferee(models.Model):
                 ("referee_id", "=", self.referee_id.id),
                 ("match_id", "!=", self.match_id.id),
                 ("state", "!=", "cancelled"),
-                ("id", "!=", self.id),
+                ("id", "not in", self.ids),
             ]
         )
         return other_assignments.filtered(

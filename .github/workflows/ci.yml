@@ -104,6 +104,11 @@ jobs:
       - name: Verify access CSV integrity
         run: python ci/check_access_csv_integrity.py
 
+      - name: Check translations
+        run: |
+          python -m unittest ci/test_check_translations.py
+          python ci/check_translations.py
+
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
 
@@ -112,6 +117,17 @@ jobs:
 
       - name: Verify addon manifests, dependencies, imports and ACLs
         run: python ci/check_addon_integrity.py
+
+      - name: Verify model load order
+        run: |
+          python -m unittest ci/test_check_model_load_order.py
+          python ci/check_model_load_order.py
+
+      - name: Verify portal record rules and migration versions
+        run: |
+          python -m unittest ci/test_check_portal_record_rules.py
+          python ci/check_portal_record_rules.py
+          python ci/check_migration_versions.py
 
       - name: Verify single application entry point
         run: python ci/check_application_entrypoint.py

@@ -250,6 +250,17 @@ class FederationMatch(models.Model):
             else:
                 rec.scheduled_time = False
 
+    def _is_schedule_owned(self):
+        """Whether a published schedule owns this match's kickoff and location.
+
+        Published matches move only through the schedule or match-day commands,
+        so round-level date and venue changes leave them alone.
+        """
+        self.ensure_one()
+        return bool(
+            "schedule_publication_id" in self._fields and self.schedule_publication_id
+        )
+
     def _inverse_scheduled_time(self):
         """Handle inverse scheduled time."""
         if self.env.context.get("skip_scheduled_time_inverse"):

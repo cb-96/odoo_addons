@@ -6,6 +6,10 @@ from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_registration.models.participant_handoff import (
+    governed,
+)
+
 
 @tagged("sf_release_confidence")
 class TestCompetitionPlanner(TransactionCase):
@@ -117,7 +121,7 @@ class TestCompetitionPlanner(TransactionCase):
                 "state": "finalized",
             }
         )
-        self.env["federation.participant.set.line"].create(
+        governed(self.env["federation.participant.set.line"]).create(
             [
                 {
                     "participant_set_id": participant_set.id,

@@ -7,6 +7,7 @@ class FederationCompetitionEntry(models.Model):
 
     @api.model
     def _portal_open_window_for_division(self, division, window=None, user=None):
+        user = user or self.env.user
         privilege = self.env["federation.portal.privilege"]
         division = privilege.elevate(division, user=user)
         if window:

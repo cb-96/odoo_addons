@@ -1,5 +1,9 @@
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_registration.models.participant_handoff import (
+    governed,
+)
+
 
 class TestCompetitionScheduleScope(TransactionCase):
     @classmethod
@@ -46,7 +50,7 @@ class TestCompetitionScheduleScope(TransactionCase):
                 "state": "finalized",
             }
         )
-        cls.env["federation.participant.set.line"].create(
+        governed(cls.env["federation.participant.set.line"]).create(
             [
                 {
                     "participant_set_id": participant_set.id,

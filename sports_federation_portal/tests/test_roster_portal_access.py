@@ -1,6 +1,11 @@
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+    register_for_season,
+)
+
 
 class TestRosterPortalAccess(TransactionCase):
     @classmethod
@@ -204,17 +209,19 @@ class TestRosterPortalAccess(TransactionCase):
                 "season_registration_id": cls.registration_b.id,
             }
         )
-        cls.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
             {
                 "roster_id": cls.roster_a.id,
                 "player_id": cls.player_a.id,
-            }
+            },
         )
-        cls.env["federation.team.roster.line"].create(
+        create_registered_roster_lines(
+            cls.env["federation.team.roster.line"],
             {
                 "roster_id": cls.roster_b.id,
                 "player_id": cls.player_b.id,
-            }
+            },
         )
         cls.roster_a.action_activate()
         cls.roster_b.action_activate()
@@ -522,6 +529,8 @@ class TestRosterPortalAccess(TransactionCase):
                 "team_ids": [(4, self.team_a.id)],
             }
         )
+        # Only players with a season registration can be picked for a roster.
+        register_for_season(player_c, self.season, self.club_a)
         line = self.env["federation.team.roster.line"]._portal_create_line(
             self.roster_a,
             values={
@@ -606,6 +615,7 @@ class TestRosterPortalAccess(TransactionCase):
                 "club_id": self.club_a.id,
             }
         )
+        register_for_season(female_player | male_player, self.season, self.club_a)
 
         available_players = self.env[
             "federation.team.roster.line"
@@ -636,7 +646,11 @@ class TestRosterPortalAccess(TransactionCase):
 
     def test_portal_player_picker_stays_within_query_budget(self):
         """Roster player availability should not regress into an expensive portal lookup."""
-        with self.assertQueryCount(11):
+        # The picker also reads the players with a valid season registration,
+        # which every roster requires.
+        # The explicit portal privilege boundary adds two constant-cost scope
+        # queries; keep the budget fixed to catch per-player query regressions.
+        with self.assertQueryCount(16):
             available_players = self.env[
                 "federation.team.roster.line"
             ]._portal_get_available_players(self.roster_a, user=self.user_a)
@@ -655,6 +669,8 @@ class TestRosterPortalAccess(TransactionCase):
                 "club_id": self.club_a.id,
             }
         )
+        register_for_season(fresh_player, self.season, self.club_a)
+        register_for_season(fresh_player, self.season, self.club_a)
 
         # fresh_player should appear; player_a is already on roster_a (class fixture)
         available_before = self.env[
@@ -687,28 +703,12 @@ class TestRosterPortalAccess(TransactionCase):
                 "club_id": self.club_a.id,
             }
         )
-        valid_license = self.env["federation.player.license"].create(
-            {
-                "name": "PORTAL-LIC-A",
-                "player_id": licensed_player.id,
-                "season_id": self.season.id,
-                "club_id": self.club_a.id,
-                "issue_date": "2025-01-01",
-                "expiry_date": "2025-12-31",
-                "state": "active",
-            }
-        )
-        foreign_license = self.env["federation.player.license"].create(
-            {
-                "name": "PORTAL-LIC-B",
-                "player_id": self.player_b.id,
-                "season_id": self.season.id,
-                "club_id": self.club_b.id,
-                "issue_date": "2025-01-01",
-                "expiry_date": "2025-12-31",
-                "state": "active",
-            }
-        )
+        # A player has one licence per season, so register through the shared
+        # fixture, which reuses the licence a player already has.
+        valid_license = register_for_season(licensed_player, self.season, self.club_a)
+        foreign_license = register_for_season(self.player_b, self.season, self.club_b)
+        self.assertEqual(len(valid_license), 1)
+        self.assertEqual(len(foreign_license), 1)
 
         available_licenses = self.env[
             "federation.team.roster.line"

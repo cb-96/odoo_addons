@@ -4,6 +4,7 @@
 This runner does not infer release readiness from a subprocess exit alone.
 Readiness/qualification invoke the existing evidence validators explicitly.
 """
+
 import argparse
 import os
 from pathlib import Path
@@ -12,9 +13,23 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 RC_LANES = (
-    "preflight", "static", "prepare", "install", "prepare-upgrade", "upgrade",
-    "core", "portal", "public", "performance", "acceptance", "focus",
-    "lifecycle", "full", "upstream", "cleanup", "all",
+    "preflight",
+    "static",
+    "prepare",
+    "install",
+    "prepare-upgrade",
+    "upgrade",
+    "core",
+    "portal",
+    "public",
+    "performance",
+    "acceptance",
+    "focus",
+    "lifecycle",
+    "full",
+    "upstream",
+    "cleanup",
+    "all",
 )
 
 
@@ -28,7 +43,10 @@ def parser():
         command.add_argument("--migration-evidence-dir")
         command.add_argument("--rollback-owner")
         command.add_argument("--rollback-trigger")
-    complete = profiles.add_parser("verify-complete", help="Verify existing exact-commit confidence and usability evidence")
+    complete = profiles.add_parser(
+        "verify-complete",
+        help="Verify existing exact-commit confidence and usability evidence",
+    )
     complete.add_argument("--evidence-dir", required=True)
     rc = profiles.add_parser("rc", help="Run one existing RC lane")
     rc.add_argument("--lane", choices=RC_LANES, default="all")
@@ -58,7 +76,9 @@ def invoke(argv, env, root=ROOT):
 
 
 def revision(root=ROOT):
-    return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    return subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=root, text=True
+    ).strip()
 
 
 def run(args, env=None, execute=invoke, get_revision=revision, root=ROOT):
@@ -74,9 +94,19 @@ def run(args, env=None, execute=invoke, get_revision=revision, root=ROOT):
     if args.profile == "verify-complete":
         evidence = external(args.evidence_dir, root)
         sha = get_revision(root)
-        command(python, "ci/release_confidence.py", "verify", "--evidence-dir", evidence)
-        command(python, "ci/check_end_to_end_evidence.py", "--evidence-dir", evidence / "baseline",
-                "--level", "release", "--commit", sha)
+        command(
+            python, "ci/release_confidence.py", "verify", "--evidence-dir", evidence
+        )
+        command(
+            python,
+            "ci/check_end_to_end_evidence.py",
+            "--evidence-dir",
+            evidence / "baseline",
+            "--level",
+            "release",
+            "--commit",
+            sha,
+        )
         print("Complete runtime, restore and usability evidence verified for " + sha)
         return
     if args.profile == "rc":
@@ -101,21 +131,35 @@ def run(args, env=None, execute=invoke, get_revision=revision, root=ROOT):
     owner = args.rollback_owner or env.get("ROLLBACK_OWNER")
     trigger = args.rollback_trigger or env.get("ROLLBACK_TRIGGER")
     if args.profile == "qualification" and not all((backup, owner, trigger)):
-        raise ValueError("Qualification requires an approved backup, rollback owner and rollback trigger.")
+        raise ValueError(
+            "Qualification requires an approved backup, rollback owner and rollback trigger."
+        )
     if backup and not all((owner, trigger)):
-        raise ValueError("Migration requires rollback owner and rollback trigger; no partial rehearsal is accepted.")
+        raise ValueError(
+            "Migration requires rollback owner and rollback trigger; no partial rehearsal is accepted."
+        )
     if backup and not Path(backup).expanduser().is_dir():
         raise ValueError("Backup directory does not exist: %s" % backup)
     sha = get_revision(root)
     temp = Path(env.get("TMPDIR", "/tmp"))
-    evidence = external(args.evidence_dir or env.get("RELEASE_BASELINE_EVIDENCE_DIR")
-                        or temp / "sports-federation-release-baseline" / sha, root)
+    evidence = external(
+        args.evidence_dir
+        or env.get("RELEASE_BASELINE_EVIDENCE_DIR")
+        or temp / "sports-federation-release-baseline" / sha,
+        root,
+    )
     env["RELEASE_BASELINE_EVIDENCE_DIR"] = str(evidence)
-    migration = external(args.migration_evidence_dir or env.get("MIGRATION_EVIDENCE_DIR")
-                         or temp / "sports-federation-migration" / sha, root)
+    migration = external(
+        args.migration_evidence_dir
+        or env.get("MIGRATION_EVIDENCE_DIR")
+        or temp / "sports-federation-migration" / sha,
+        root,
+    )
     if backup:
         backup = str(Path(backup).expanduser().resolve())
-        env.update(RELEASE_BACKUP_DIR=backup, ROLLBACK_OWNER=owner, ROLLBACK_TRIGGER=trigger)
+        env.update(
+            RELEASE_BACKUP_DIR=backup, ROLLBACK_OWNER=owner, ROLLBACK_TRIGGER=trigger
+        )
 
     if args.profile == "candidate":
         command(python, "ci/check_rc_product_readiness.py")
@@ -125,25 +169,57 @@ def run(args, env=None, execute=invoke, get_revision=revision, root=ROOT):
         command(python, "ci/check_reliability_contract.py")
     script("run_release_baseline.sh")
     if args.profile in ("readiness", "qualification"):
-        command(python, "ci/check_release_evidence.py", "--evidence-dir", evidence,
-                "--commit", sha, "--require-passing")
-        logs = [evidence / "logs" / (lane + ".log") for lane in ("focus", "install", "full")]
+        command(
+            python,
+            "ci/check_release_evidence.py",
+            "--evidence-dir",
+            evidence,
+            "--commit",
+            sha,
+            "--require-passing",
+        )
+        logs = [
+            evidence / "logs" / (lane + ".log") for lane in ("focus", "install", "full")
+        ]
         logs = [path for path in logs if path.is_file()]
         if not logs:
             raise ValueError("No browser-capable release logs were produced.")
         command(python, "ci/check_browser_release_log.py", *logs)
     if backup:
-        script("run_migration_rehearsal.sh", "--backup-dir", backup,
-               "--evidence-dir", migration, "--rollback-owner", owner,
-               "--rollback-trigger", trigger, "--yes")
+        script(
+            "run_migration_rehearsal.sh",
+            "--backup-dir",
+            backup,
+            "--evidence-dir",
+            migration,
+            "--rollback-owner",
+            owner,
+            "--rollback-trigger",
+            trigger,
+            "--yes",
+        )
     if args.profile == "qualification":
-        command(python, "ci/check_release_signoff.py", "--baseline", evidence / "summary.json",
-                "--migration", migration / "manifest.json", "--commit", sha)
+        command(
+            python,
+            "ci/check_release_signoff.py",
+            "--baseline",
+            evidence / "summary.json",
+            "--migration",
+            migration / "manifest.json",
+            "--commit",
+            sha,
+        )
         print("Release qualification passed for " + sha)
     elif args.profile == "candidate" and not backup:
-        print("Candidate automation completed; migration and release qualification were NOT performed.")
+        print(
+            "Candidate automation completed; migration and release qualification were NOT performed."
+        )
     elif args.profile == "readiness":
-        print("Release readiness evidence validated for " + sha + "; qualification remains separate.")
+        print(
+            "Release readiness evidence validated for "
+            + sha
+            + "; qualification remains separate."
+        )
 
 
 def main(argv=None):
@@ -156,7 +232,10 @@ def main(argv=None):
         print("Release runner: " + str(error), file=sys.stderr)
         return 2
     except KeyboardInterrupt:
-        print("Release runner interrupted; use the backend's cleanup command for retained resources.", file=sys.stderr)
+        print(
+            "Release runner interrupted; use the backend's cleanup command for retained resources.",
+            file=sys.stderr,
+        )
         return 130
     return 0
 

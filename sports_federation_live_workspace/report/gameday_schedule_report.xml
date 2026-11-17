@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_gameday_schedule" model="report.paperformat">
+        <field name="name">Game-day schedule (A4 landscape)</field>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_gameday_schedule" model="ir.actions.report">
+        <field name="name">Game-day schedule</field>
+        <field name="model">federation.matchday</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sports_federation_live_workspace.report_gameday_schedule</field>
+        <field name="report_file">sports_federation_live_workspace.report_gameday_schedule</field>
+        <field name="print_report_name">'Schedule - %s' % (object.name or object.id)</field>
+        <field name="paperformat_id" ref="paperformat_gameday_schedule"/>
+        <field name="binding_model_id" ref="sports_federation_calendar.model_federation_matchday"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- One page to pin at the venue: courts across, times down, then the
+         club duties so every club can check what it has to staff. -->
+    <template id="report_gameday_schedule">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="day">
+                <t t-set="data" t-value="schedule[day.id]"/>
+                <t t-call="web.basic_layout">
+                    <div class="page" style="font-size: 10pt;">
+                        <h2 class="mb-1"><t t-esc="day.name"/></h2>
+                        <p class="mb-2">
+                            <t t-esc="data['date']" t-options="{'widget': 'date'}"/> · <t t-esc="data['venue']"/>
+                            <span class="text-muted"> · Times in <t t-esc="data['timezone']"/></span>
+                        </p>
+                        <p t-if="not data['rows']" class="text-muted">No published matches.</p>
+                        <table t-if="data['rows']" class="table table-sm table-bordered" style="table-layout: fixed;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 6em;">Time</th>
+                                    <th t-foreach="data['courts']" t-as="court"><t t-esc="court[1]"/></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="data['grid'].items()" t-as="line" style="page-break-inside: avoid;">
+                                    <th><t t-esc="line[0]"/></th>
+                                    <td t-foreach="data['courts']" t-as="court">
+                                        <t t-foreach="line[1].get(court[0], [])" t-as="row">
+                                            <div class="small text-muted"><t t-esc="row['division']"/><t t-if="row['moved']"> · moved</t></div>
+                                            <div><strong><t t-esc="row['home']"/></strong> – <strong><t t-esc="row['away']"/></strong></div>
+                                            <div t-foreach="row['officials']" t-as="official" class="small"><t t-esc="official"/></div>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <t t-if="data['club_duties']">
+                            <h4 class="mt-3" style="page-break-before: auto;">Club duties</h4>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr><th>Club</th><th>Time</th><th>Court</th><th>Role</th><th>Match</th><th>Person</th></tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['club_duties'].items()" t-as="club">
+                                        <tr t-foreach="club[1]" t-as="duty">
+                                            <td><t t-if="duty_first" t-esc="club[0]"/></td>
+                                            <td><t t-esc="duty['time']"/></td>
+                                            <td><t t-esc="duty['court']"/></td>
+                                            <td><t t-esc="duty['role']"/></td>
+                                            <td><t t-esc="duty['match']"/></td>
+                                            <td><t t-esc="duty['person'] or '—'"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <p class="small text-muted mt-2">Published schedule <t t-esc="data['publication'].display_name"/>. Check the live board for changes made after printing.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

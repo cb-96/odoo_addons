@@ -1,0 +1,23 @@
+<odoo>
+  <record id="match_workspace_form" model="ir.ui.view"><field name="name">fixture.match.workspace</field><field name="model">federation.fixture</field><field name="arch" type="xml"><form create="False" delete="False" edit="False">
+    <header><button name="action_open_operational_match" type="object" string="Lineups, play and results"/><button name="action_reschedule_from_workspace" type="object" string="Reschedule published match"/></header>
+    <sheet><h1><field name="name"/></h1><group><field name="edition_id"/><field name="division_id"/><field name="stage_id"/><field name="home_team_id"/><field name="away_team_id"/><field name="state"/><field name="operational_match_id"/><field name="journey_match_state"/><field name="journey_publication_id"/></group>
+    <p>The fixture owns the pairing. Schedule revisions own court and time. Publication is the reviewed snapshot. The operational match owns lineups, play and results. A prepared reschedule does not change the live schedule until approval and publication.</p>
+    <field name="journey_assignment_ids" readonly="True"><list create="False" delete="False"><field name="schedule_id"/><field name="slot_id"/><field name="method"/></list></field></sheet>
+  </form></field></record>
+  <record id="match_reschedule_form" model="ir.ui.view"><field name="name">match.reschedule.form</field><field name="model">federation.match.reschedule.wizard</field><field name="arch" type="xml"><form>
+    <group><field name="fixture_id"/><field name="schedule_id"/><field name="matchday_id"/><field name="expected_publication_id"/><field name="slot_id" domain="[('matchday_id', '=', matchday_id)]"/><field name="reason"/></group>
+    <p>This creates a replacement revision for review, not an immediate live move. Cross-day changes and started matches require the competition's governed operational workflow.</p>
+    <footer><button name="action_prepare_amendment" type="object" string="Prepare validated amendment" class="btn-primary"/><button special="cancel" string="Cancel"/></footer>
+  </form></field></record>
+  <record id="operational_match_workspace_link" model="ir.ui.view">
+    <field name="name">operational.match.workspace.link</field><field name="model">federation.match</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside"><button name="action_open_match_workspace" type="object" string="Match workspace"/></xpath>
+      <xpath expr="//field[@name='scheduled_date']" position="attributes"><attribute name="readonly">schedule_publication_id != False</attribute></xpath>
+      <xpath expr="//field[@name='scheduled_time']" position="attributes"><attribute name="readonly">schedule_publication_id != False</attribute></xpath>
+      <xpath expr="//sheet" position="inside"><field name="schedule_publication_id" readonly="True"/></xpath>
+    </field>
+  </record>
+</odoo>

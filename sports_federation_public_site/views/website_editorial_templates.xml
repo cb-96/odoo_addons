@@ -75,7 +75,7 @@
                         </div>
                     </t>
                 </div>
-                <div t-if="not seasons" class="alert alert-info">No seasons are published yet. Check back when the federation opens public season pages.</div>
+                <div t-if="not seasons" class="alert alert-info" role="status">No seasons are published yet. Check back when the federation opens public season pages.</div>
             </div>
         </t>
     </template>
@@ -188,7 +188,7 @@
                         </div>
                     </div>
                 </t>
-                <div t-if="not schedule_sections" class="alert alert-info">No public fixtures are posted for this team yet.</div>
+                <div t-if="not schedule_sections" class="alert alert-info" role="status">No public fixtures are posted for this team yet.</div>
             </div>
         </t>
     </template>
@@ -220,7 +220,7 @@
                         </div>
                     </div>
                 </t>
-                <div t-if="not result_sections" class="alert alert-info">No approved public results have been posted for this team yet.</div>
+                <div t-if="not result_sections" class="alert alert-info" role="status">No approved public results have been posted for this team yet.</div>
             </div>
         </t>
     </template>

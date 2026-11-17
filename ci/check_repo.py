@@ -42,6 +42,7 @@ CHECKS = {
         "ci/check_legacy_engine_removed.py",
         "ci/check_markdown_links.py",
         "ci/check_migration_review.py",
+        "ci/check_scss_contrast.py",
         "ci/check_test_discovery.py",
     ),
     "release": (

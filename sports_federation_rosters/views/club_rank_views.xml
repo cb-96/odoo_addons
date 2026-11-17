@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Team: rank within the club. -->
+    <record id="view_federation_team_form_club_rank" model="ir.ui.view">
+        <field name="name">federation.team.form.club.rank</field>
+        <field name="model">federation.team</field>
+        <field name="inherit_id" ref="sports_federation_base.view_federation_team_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="club_rank"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Roster: explain the ranking rule and show who plays up. -->
+    <record id="view_federation_team_roster_form_club_rank" model="ir.ui.view">
+        <field name="name">federation.team.roster.form.club.rank</field>
+        <field name="model">federation.team.roster</field>
+        <field name="inherit_id" ref="sports_federation_rosters.view_federation_team_roster_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='roster_lines']/field[@name='line_ids']" position="before">
+                <p class="text-muted small">
+                    Players of lower-ranked teams of the club can be added here to play up.
+                    After two matches for this team they move to this team permanently.
+                    Players of higher-ranked teams cannot be added, and neither can players
+                    already on another team of the club in the same division.
+                </p>
+            </xpath>
+            <xpath expr="//page[@name='roster_lines']/field[@name='line_ids']/list/field[@name='status']" position="after">
+                <field name="club_rank_note" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Game-day line-up wizard and match sheet: promotion warnings. -->
+    <record id="gameday_lineup_wizard_form_club_rank" model="ir.ui.view">
+        <field name="name">federation.gameday.lineup.wizard.form.club.rank</field>
+        <field name="model">federation.gameday.lineup.wizard</field>
+        <field name="inherit_id" ref="sports_federation_rosters.gameday_lineup_wizard_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='line_ids']" position="after">
+                <div class="alert alert-warning mt-3" role="alert" invisible="not club_rank_warning">
+                    <strong>Team promotion:</strong>
+                    <field name="club_rank_warning" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_federation_match_sheet_form_club_rank" model="ir.ui.view">
+        <field name="name">federation.match.sheet.form.club.rank</field>
+        <field name="model">federation.match.sheet</field>
+        <field name="inherit_id" ref="sports_federation_rosters.view_federation_match_sheet_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="before">
+                <div class="alert alert-warning mb-3" role="alert" invisible="not club_rank_warning">
+                    <strong>Team promotion:</strong>
+                    <field name="club_rank_warning" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Player: promotion history. -->
+    <record id="view_federation_player_form_club_rank" model="ir.ui.view">
+        <field name="name">federation.player.form.club.rank</field>
+        <field name="model">federation.player</field>
+        <field name="inherit_id" ref="sports_federation_people.view_federation_player_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Team promotions" name="club_rank_promotions" invisible="not club_rank_promotion_ids">
+                    <field name="club_rank_promotion_ids" readonly="1">
+                        <list create="0" delete="0" edit="0">
+                            <field name="date"/>
+                            <field name="from_team_id"/>
+                            <field name="to_team_id"/>
+                            <field name="season_id"/>
+                            <field name="competition_id" optional="hide"/>
+                            <field name="match_id"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

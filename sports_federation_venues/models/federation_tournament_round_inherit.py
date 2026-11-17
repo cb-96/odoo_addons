@@ -20,7 +20,9 @@ class FederationTournamentRound(models.Model):
     def _sync_match_venues_from_round(self):
         """Synchronize match venues from round."""
         for round_record in self.filtered(lambda rec: rec.venue_id):
-            for match in round_record.match_ids:
+            for match in round_record.match_ids.filtered(
+                lambda round_match: not round_match._is_schedule_owned()
+            ):
                 match_vals = {"venue_id": round_record.venue_id.id}
                 if (
                     match.playing_area_id

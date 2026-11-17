@@ -394,6 +394,7 @@ class TestFinanceBridge(TransactionCase):
                 "default_amount": 80.00,
             }
         )
+        self.season.team_registration_fee_enabled = True
         registration = self.env["federation.season.registration"].create(
             {
                 "season_id": self.season.id,

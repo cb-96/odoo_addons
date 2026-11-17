@@ -21,6 +21,7 @@
           <field name="line_ids" nolabel="1">
             <list editable="bottom">
               <field name="player_id" options="{'no_create': True}"/>
+              <field name="availability" widget="badge" optional="show" decoration-success="availability == 'yes'" decoration-warning="availability == 'maybe'" decoration-danger="availability == 'no'"/>
               <field name="roster_line_id" options="{'no_create': True}"/>
               <field name="is_captain"/>
               <field name="jersey_number"/>

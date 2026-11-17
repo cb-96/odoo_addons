@@ -1,0 +1,513 @@
+[Release baseline] Running RC lane: performance
+Performance qualification contract passed: 8 budgets, 5 test files.
+#1 [internal] load local bake definitions
+#1 reading from stdin 621B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile.odoo-ci
+#2 transferring dockerfile: 1.35kB done
+#2 DONE 0.3s
+
+#3 [internal] load metadata for docker.io/library/odoo:19
+#3 DONE 0.5s
+
+#4 [internal] load .dockerignore
+#4 transferring context:
+#4 transferring context: 2B done
+#4 DONE 0.5s
+
+#5 [internal] load build context
+#5 DONE 0.0s
+
+#6 [1/4] FROM docker.io/library/odoo:19@sha256:19b1d3cc053b31f418b3db1f57c709c0e589a9c29fdabdff966b60d05d757028
+#6 resolve docker.io/library/odoo:19@sha256:19b1d3cc053b31f418b3db1f57c709c0e589a9c29fdabdff966b60d05d757028
+#6 resolve docker.io/library/odoo:19@sha256:19b1d3cc053b31f418b3db1f57c709c0e589a9c29fdabdff966b60d05d757028 0.5s done
+#6 DONE 0.6s
+
+#5 [internal] load build context
+#5 transferring context: 45B done
+#5 DONE 0.4s
+
+#7 [2/4] RUN if [ "0" = "1" ]; then         apt-get update         && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates;     else         apt-get update         && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends             ca-certificates             wget         && wget -q -O /tmp/google-chrome-stable_current_amd64.deb             https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb         && DEBIAN_FRONTEND=noninteractive apt-get install -y             /tmp/google-chrome-stable_current_amd64.deb         && rm -f /tmp/google-chrome-stable_current_amd64.deb         && ln -sf /usr/bin/google-chrome-stable /usr/local/bin/chromium-browser         && google-chrome-stable --version;     fi     && rm -rf /var/lib/apt/lists/*
+#7 CACHED
+
+#8 [3/4] COPY requirements-odoo-ci.txt /tmp/sports-federation-odoo-ci-requirements.txt
+#8 CACHED
+
+#9 [4/4] RUN python3 -m pip install     --break-system-packages     --no-cache-dir     -r /tmp/sports-federation-odoo-ci-requirements.txt     && python3 -c "import websocket; assert websocket.__version__ == '1.8.0'"     && if [ "0" != "1" ]; then chromium-browser --version; fi
+#9 CACHED
+
+#10 exporting to image
+#10 exporting layers 0.0s done
+#10 exporting manifest sha256:a55a558f79b805fad59776eb2398ad552867d82bde165e49838c3aea0b7728bc
+#10 exporting manifest sha256:a55a558f79b805fad59776eb2398ad552867d82bde165e49838c3aea0b7728bc 0.1s done
+#10 exporting config sha256:65e990f2e830a139b204ba1362f1adb7e800872b03a751febf55f7a59ef2ecca 0.1s done
+#10 exporting attestation manifest sha256:b6f954017a37ba186fec23c4ac9c49b6ced8b919cdf879c27e38e2c571de25b1
+#10 exporting attestation manifest sha256:b6f954017a37ba186fec23c4ac9c49b6ced8b919cdf879c27e38e2c571de25b1 0.8s done
+#10 exporting manifest list sha256:1367e06c53eda9f08d063548f9a753cc27c93a441f423ae72e52592d3e3dbd0d
+#10 exporting manifest list sha256:1367e06c53eda9f08d063548f9a753cc27c93a441f423ae72e52592d3e3dbd0d 0.5s done
+#10 naming to docker.io/library/sports-federation-odoo-ci:19
+#10 naming to docker.io/library/sports-federation-odoo-ci:19 0.1s done
+#10 unpacking to docker.io/library/sports-federation-odoo-ci:19 0.1s done
+#10 DONE 2.1s
+
+#11 resolving provenance for metadata file
+#11 DONE 0.0s
+ sports-federation-odoo-ci:19  Built
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Running
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Waiting
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Healthy
+[RC:performance] Streaming Odoo output; full log: /home/cedric/odoo/addons/odoo-rc.log
+[RC:performance] Broad upstream-compatibility lanes may run for more than an hour.
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Running
+2026-11-16 12:15:45,330 33 INFO ? odoo: Odoo version 19.0-20260324 
+2026-11-16 12:15:45,330 33 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-11-16 12:15:45,330 33 INFO ? odoo: addons paths: _NamespacePath(['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/19.0', '/mnt/extra-addons', '/usr/lib/python3/dist-packages/addons']) 
+2026-11-16 12:15:45,330 33 INFO ? odoo: database: odoo@ci-db:5432 
+2026-11-16 12:15:45,720 33 INFO ? odoo.service.server: HTTP service (werkzeug) running on localhost:8069 
+2026-11-16 12:15:45,776 33 INFO sf_rc_validation odoo.tests.common: Importing test framework 
+2026-11-16 12:15:45,810 33 INFO sf_rc_validation odoo.modules.loading: loading 1 modules... 
+2026-11-16 12:15:45,815 33 INFO sf_rc_validation odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-11-16 12:15:45,846 33 INFO sf_rc_validation odoo.modules.loading: updating modules list 
+2026-11-16 12:15:45,848 33 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-11-16 12:15:46,886 33 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Sports Federation Base', 'Sports Federation People', 'Sports Federation Club Roles & Portal', 'Sports Federation Rules', 'Sports Federation Tournament', 'Sports Federation Officiating', 'Sports Federation Result Control', 'Sports Federation Notifications', 'Sports Federation Finance Bridge', 'Sports Federation Import Tools', 'Sports Federation Compliance', 'Sports Federation Public Site', 'Sports Federation Reporting', 'Sports Federation Governance', 'Sports Federation Demo Data', 'Competition Calendar', 'Competition Core', 'Sports Federation Discipline', 'Sports Federation Duty Coverage', 'Competition Format', 'Court Operations and Visual Planning', 'Match-Day Operations', 'Sports Federation Navigation', 'Competition Registration', 'Sports Federation Rosters', 'Schedule Approval', 'Competition Scheduling', 'Competition Setup Flow', 'Sports Federation Standings', 'Sports Federation Venues'] to user __system__ #1 via n/a 
+2026-11-16 12:15:46,886 33 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Sports Federation Base', 'Sports Federation People', 'Sports Federation Club Roles & Portal', 'Sports Federation Rules', 'Sports Federation Tournament', 'Sports Federation Officiating', 'Sports Federation Result Control', 'Sports Federation Notifications', 'Sports Federation Finance Bridge', 'Sports Federation Import Tools', 'Sports Federation Compliance', 'Sports Federation Public Site', 'Sports Federation Reporting', 'Sports Federation Governance', 'Sports Federation Demo Data', 'Competition Calendar', 'Competition Core', 'Sports Federation Discipline', 'Sports Federation Duty Coverage', 'Competition Format', 'Court Operations and Visual Planning', 'Match-Day Operations', 'Sports Federation Navigation', 'Competition Registration', 'Sports Federation Rosters', 'Schedule Approval', 'Competition Scheduling', 'Competition Setup Flow', 'Sports Federation Standings', 'Sports Federation Venues'] to user __system__ #1 via n/a 
+2026-11-16 12:15:47,779 33 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-11-16 12:15:47,910 33 INFO sf_rc_validation odoo.modules.loading: loading 72 modules... 
+2026-11-16 12:15:48,273 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_base (32/72) 
+2026-11-16 12:15:48,370 33 INFO sf_rc_validation odoo.registry: module sports_federation_base: creating or updating database tables 
+2026-11-16 12:15:48,472 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/security/res_groups.xml 
+2026-11-16 12:15:48,535 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/security/ir.model.access.csv 
+2026-11-16 12:15:48,557 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/data/ir_sequence.xml 
+2026-11-16 12:15:48,561 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/res_config_settings_views.xml 
+2026-11-16 12:15:48,625 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_season_registration_views.xml 
+2026-11-16 12:15:48,651 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_season_views.xml 
+2026-11-16 12:15:48,694 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_team_views.xml 
+2026-11-16 12:15:48,734 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_club_views.xml 
+2026-11-16 12:15:48,778 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/menu_items.xml 
+2026-11-16 12:15:48,832 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/data/retention_policy_data.xml 
+2026-11-16 12:15:48,836 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/retention_evidence_views.xml 
+2026-11-16 12:15:48,891 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/operation_job_views.xml 
+2026-11-16 12:15:48,934 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/data/operation_job_cron.xml 
+2026-11-16 12:15:48,981 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_base loaded in 0.71s, 644 queries (+644 other) 
+2026-11-16 12:15:49,113 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_people (37/72) 
+2026-11-16 12:15:49,210 33 INFO sf_rc_validation odoo.registry: module sports_federation_people: creating or updating database tables 
+2026-11-16 12:15:49,280 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/security/ir.model.access.csv 
+2026-11-16 12:15:49,291 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/security/club_season_registration_rules.xml 
+2026-11-16 12:15:49,297 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/data/ir_sequence.xml 
+2026-11-16 12:15:49,300 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/federation_parental_approval_views.xml 
+2026-11-16 12:15:49,326 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/federation_player_views.xml 
+2026-11-16 12:15:49,350 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/federation_player_license_views.xml 
+2026-11-16 12:15:49,372 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/menu_items.xml 
+2026-11-16 12:15:49,377 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/club_season_registration_views.xml 
+2026-11-16 12:15:49,432 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_people loaded in 0.32s, 272 queries (+272 other) 
+2026-11-16 12:15:49,432 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_rules (38/72) 
+2026-11-16 12:15:49,458 33 INFO sf_rc_validation odoo.registry: module sports_federation_rules: creating or updating database tables 
+2026-11-16 12:15:49,512 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/security/ir.model.access.csv 
+2026-11-16 12:15:49,525 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_rule_set_views.xml 
+2026-11-16 12:15:49,561 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_points_rule_views.xml 
+2026-11-16 12:15:49,573 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_tie_break_rule_views.xml 
+2026-11-16 12:15:49,586 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_eligibility_rule_views.xml 
+2026-11-16 12:15:49,599 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_qualification_rule_views.xml 
+2026-11-16 12:15:49,611 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/menu_items.xml 
+2026-11-16 12:15:49,628 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_rules loaded in 0.20s, 245 queries (+245 other) 
+2026-11-16 12:15:49,651 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_tournament (42/72) 
+2026-11-16 12:15:49,736 33 INFO sf_rc_validation odoo.registry: module sports_federation_tournament: creating or updating database tables 
+2026-11-16 12:15:49,830 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/security/ir.model.access.csv 
+2026-11-16 12:15:49,848 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_participant_views.xml 
+2026-11-16 12:15:49,878 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_match_views.xml 
+2026-11-16 12:15:49,904 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_round_views.xml 
+2026-11-16 12:15:49,927 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_group_views.xml 
+2026-11-16 12:15:49,947 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_stage_views.xml 
+2026-11-16 12:15:49,968 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_views.xml 
+2026-11-16 12:15:49,994 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_competition_edition_views.xml 
+2026-11-16 12:15:50,019 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_competition_views.xml 
+2026-11-16 12:15:50,042 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_season_registration_views_inherit.xml 
+2026-11-16 12:15:50,077 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_season_views_inherit.xml 
+2026-11-16 12:15:50,095 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/menu_items.xml 
+2026-11-16 12:15:50,109 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/division_boundary.xml 
+2026-11-16 12:15:50,161 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_tournament loaded in 0.51s, 545 queries (+545 other) 
+2026-11-16 12:15:50,161 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_competition_core (43/72) 
+2026-11-16 12:15:50,191 33 INFO sf_rc_validation odoo.registry: module sports_federation_competition_core: creating or updating database tables 
+<string>:27: (ERROR/3) Unexpected indentation.
+<string>:25: (WARNING/2) Inline literal start-string without end-string.
+<string>:25: (WARNING/2) Inline interpreted text or phrase reference start-string without end-string.
+<string>:29: (WARNING/2) Block quote ends without a blank line; unexpected unindent.
+<string>:29: (WARNING/2) Inline literal start-string without end-string.
+<string>:29: (WARNING/2) Inline interpreted text or phrase reference start-string without end-string.
+2026-11-16 12:15:50,253 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/security/security.xml 
+2026-11-16 12:15:50,259 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/security/ir.model.access.csv 
+2026-11-16 12:15:50,267 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/views/competition_edition_views.xml 
+2026-11-16 12:15:50,298 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/views/menu.xml 
+2026-11-16 12:15:50,306 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/views/competition_archive_views.xml 
+2026-11-16 12:15:50,381 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_competition_core loaded in 0.22s, 216 queries (+216 other) 
+2026-11-16 12:15:50,381 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_governance (44/72) 
+2026-11-16 12:15:50,392 33 INFO sf_rc_validation odoo.registry: module sports_federation_governance: creating or updating database tables 
+2026-11-16 12:15:50,433 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/security/governance_security.xml 
+2026-11-16 12:15:50,450 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/security/ir.model.access.csv 
+2026-11-16 12:15:50,463 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/override_request_views.xml 
+2026-11-16 12:15:50,502 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/override_decision_views.xml 
+2026-11-16 12:15:50,513 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/override_outcome_views.xml 
+2026-11-16 12:15:50,537 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/audit_note_views.xml 
+2026-11-16 12:15:50,548 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/menu_views.xml 
+2026-11-16 12:15:50,567 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_governance loaded in 0.19s, 216 queries (+216 other) 
+2026-11-16 12:15:50,567 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_import_tools (45/72) 
+2026-11-16 12:15:50,597 33 INFO sf_rc_validation odoo.registry: module sports_federation_import_tools: creating or updating database tables 
+2026-11-16 12:15:50,683 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/security/ir.model.access.csv 
+2026-11-16 12:15:50,706 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/import_template_data.xml 
+2026-11-16 12:15:50,712 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/integration_contract_data.xml 
+2026-11-16 12:15:50,724 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/integration_retention_cron.xml 
+2026-11-16 12:15:50,726 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/integration_token_rotation_cron.xml 
+2026-11-16 12:15:50,728 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/import_governance_views.xml 
+2026-11-16 12:15:50,766 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/integration_partner_views.xml 
+2026-11-16 12:15:50,830 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/import_wizard_views.xml 
+2026-11-16 12:15:50,877 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/menu_views.xml 
+2026-11-16 12:15:50,951 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_import_tools loaded in 0.38s, 558 queries (+558 other) 
+2026-11-16 12:15:50,951 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_result_control (46/72) 
+2026-11-16 12:15:51,020 33 INFO sf_rc_validation odoo.registry: module sports_federation_result_control: creating or updating database tables 
+2026-11-16 12:15:51,061 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_result_control/security/result_control_security.xml 
+2026-11-16 12:15:51,078 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_result_control/security/ir.model.access.csv 
+2026-11-16 12:15:51,089 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_result_control/views/match_views_inherit.xml 
+2026-11-16 12:15:51,172 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_result_control loaded in 0.22s, 160 queries (+160 other) 
+2026-11-16 12:15:51,172 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_standings (47/72) 
+2026-11-16 12:15:51,195 33 INFO sf_rc_validation odoo.registry: module sports_federation_standings: creating or updating database tables 
+2026-11-16 12:15:51,247 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/security/ir.model.access.csv 
+2026-11-16 12:15:51,257 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/data/standing_recompute_cron.xml 
+2026-11-16 12:15:51,280 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/views/standing_views.xml 
+2026-11-16 12:15:51,341 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/views/tournament_views_inherit.xml 
+2026-11-16 12:15:51,360 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/views/menu_views.xml 
+2026-11-16 12:15:51,656 33 INFO sf_rc_validation odoo.addons.sports_federation_standings.tests.test_standings_performance: Starting TestStandingsPerformance.test_build_standing_table_correct_totals ... 
+2026-11-16 12:15:51,683 33 INFO sf_rc_validation odoo.addons.sports_federation_standings.tests.test_standings_performance: Starting TestStandingsPerformance.test_build_standing_table_query_count ... 
+2026-11-16 12:15:51,787 33 INFO sf_rc_validation odoo.addons.sports_federation_standings.tests.test_standings_performance: Query count less than expected for user __system__: 7 < 10 in test_build_standing_table_query_count at /mnt/extra-addons/sports_federation_standings/tests/test_standings_performance.py:104 
+2026-11-16 12:15:51,879 33 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:15:51,879 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_standings loaded in 0.71s (incl. 0.47s test), 250 queries (+102 test, +250 other) 
+2026-11-16 12:15:51,880 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_venues (48/72) 
+2026-11-16 12:15:51,898 33 INFO sf_rc_validation odoo.registry: module sports_federation_venues: creating or updating database tables 
+2026-11-16 12:15:51,963 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/security/ir.model.access.csv 
+2026-11-16 12:15:51,975 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/venue_views.xml 
+2026-11-16 12:15:52,081 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/round_views_inherit.xml 
+2026-11-16 12:15:52,109 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/tournament_views_inherit.xml 
+2026-11-16 12:15:52,147 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/match_views_inherit.xml 
+2026-11-16 12:15:52,196 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/menu_views.xml 
+2026-11-16 12:15:52,218 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_venues loaded in 0.34s, 388 queries (+388 other) 
+2026-11-16 12:15:52,249 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_registration (50/72) 
+2026-11-16 12:15:52,416 33 INFO sf_rc_validation odoo.registry: module sports_federation_registration: creating or updating database tables 
+2026-11-16 12:15:52,503 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/security/security.xml 
+2026-11-16 12:15:52,509 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/security/ir.model.access.csv 
+2026-11-16 12:15:52,524 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/wizards/create_competition_wizard_views.xml 
+2026-11-16 12:15:52,552 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/wizards/team_selection_wizard_views.xml 
+2026-11-16 12:15:52,561 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/views/registration_views.xml 
+2026-11-16 12:15:52,586 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/views/menu.xml 
+2026-11-16 12:15:52,592 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/views/participant_handoff.xml 
+2026-11-16 12:15:52,642 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_registration loaded in 0.39s, 269 queries (+269 other) 
+2026-11-16 12:15:52,668 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_format (53/72) 
+2026-11-16 12:15:52,701 33 INFO sf_rc_validation odoo.registry: module sports_federation_format: creating or updating database tables 
+2026-11-16 12:15:52,811 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/security/security.xml 
+2026-11-16 12:15:52,816 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/security/ir.model.access.csv 
+2026-11-16 12:15:52,833 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/format_views.xml 
+2026-11-16 12:15:52,865 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/format_template_views.xml 
+2026-11-16 12:15:52,881 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/stage_graph_views.xml 
+2026-11-16 12:15:52,910 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/fixture_match_views.xml 
+2026-11-16 12:15:52,937 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/division_format_views.xml 
+2026-11-16 12:15:52,959 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/menu.xml 
+2026-11-16 12:15:53,003 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_format loaded in 0.34s, 366 queries (+366 other) 
+2026-11-16 12:15:53,003 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_calendar (54/72) 
+2026-11-16 12:15:53,044 33 INFO sf_rc_validation odoo.registry: module sports_federation_calendar: creating or updating database tables 
+2026-11-16 12:15:53,139 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/security/security.xml 
+2026-11-16 12:15:53,145 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/security/ir.model.access.csv 
+2026-11-16 12:15:53,155 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/calendar_views.xml 
+2026-11-16 12:15:53,195 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/event_timezone_review.xml 
+2026-11-16 12:15:53,203 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/slot_defaults_views.xml 
+2026-11-16 12:15:53,216 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/wizards/slot_generation_wizard_views.xml 
+2026-11-16 12:15:53,227 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/menu.xml 
+2026-11-16 12:15:53,261 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_calendar loaded in 0.26s, 213 queries (+213 other) 
+2026-11-16 12:15:53,261 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_scheduling (55/72) 
+2026-11-16 12:15:53,295 33 INFO sf_rc_validation odoo.registry: module sports_federation_scheduling: creating or updating database tables 
+2026-11-16 12:15:53,396 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/security/security.xml 
+2026-11-16 12:15:53,400 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/security/ir.model.access.csv 
+2026-11-16 12:15:53,415 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/scheduling_views.xml 
+2026-11-16 12:15:53,448 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/submit_schedule_wizard_views.xml 
+2026-11-16 12:15:53,458 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/amend_schedule_wizard_views.xml 
+2026-11-16 12:15:53,468 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/fairness_views.xml 
+2026-11-16 12:15:53,493 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/simple_scheduling_views.xml 
+2026-11-16 12:15:53,510 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/competition_schedule_wizard_views.xml 
+2026-11-16 12:15:53,525 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/matchday_division_views.xml 
+2026-11-16 12:15:53,559 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/stage_game_day_views.xml 
+2026-11-16 12:15:53,607 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/menu.xml 
+2026-11-16 12:15:53,645 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_scheduling loaded in 0.38s, 390 queries (+390 other) 
+2026-11-16 12:15:53,645 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_schedule_approval (56/72) 
+2026-11-16 12:15:53,677 33 INFO sf_rc_validation odoo.registry: module sports_federation_schedule_approval: creating or updating database tables 
+2026-11-16 12:15:53,781 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/security/security.xml 
+2026-11-16 12:15:53,786 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/security/ir.model.access.csv 
+2026-11-16 12:15:53,801 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/views/approval_views.xml 
+2026-11-16 12:15:53,878 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/wizards/publish_schedule_wizard_views.xml 
+2026-11-16 12:15:53,887 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/views/menu.xml 
+2026-11-16 12:15:53,901 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/views/match_journey.xml 
+2026-11-16 12:15:53,970 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_schedule_approval loaded in 0.33s, 332 queries (+332 other) 
+2026-11-16 12:15:53,970 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_matchday (57/72) 
+2026-11-16 12:15:53,999 33 INFO sf_rc_validation odoo.registry: module sports_federation_matchday: creating or updating database tables 
+2026-11-16 12:15:54,100 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/security/security.xml 
+2026-11-16 12:15:54,105 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/security/ir.model.access.csv 
+2026-11-16 12:15:54,122 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/views/matchday_views.xml 
+2026-11-16 12:15:54,190 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/wizards/matchday_operation_wizard_views.xml 
+2026-11-16 12:15:54,223 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/wizards/matchday_restart_wizard_views.xml 
+2026-11-16 12:15:54,233 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/wizards/matchday_delete_wizard_views.xml 
+2026-11-16 12:15:54,243 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/views/menu.xml 
+2026-11-16 12:15:54,275 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_matchday loaded in 0.31s, 346 queries (+346 other) 
+2026-11-16 12:15:54,275 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_officiating (58/72) 
+2026-11-16 12:15:54,361 33 INFO sf_rc_validation odoo.registry: module sports_federation_officiating: creating or updating database tables 
+2026-11-16 12:15:54,450 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/security/ir.model.access.csv 
+2026-11-16 12:15:54,466 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/data/duty_deadline_cron.xml 
+2026-11-16 12:15:54,468 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_referee_views.xml 
+2026-11-16 12:15:54,502 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_referee_availability_views.xml 
+2026-11-16 12:15:54,523 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_referee_certification_views.xml 
+2026-11-16 12:15:54,546 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_match_referee_views.xml 
+2026-11-16 12:15:54,572 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_match_club_referee_duty_views.xml 
+2026-11-16 12:15:54,597 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_matchday_assign_wizard_views.xml 
+2026-11-16 12:15:54,608 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_match_views_inherit.xml 
+2026-11-16 12:15:54,655 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_rule_set_views_inherit.xml 
+2026-11-16 12:15:54,678 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_reimbursement_request_views.xml 
+2026-11-16 12:15:54,708 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/menu_items.xml 
+2026-11-16 12:15:54,765 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_officiating loaded in 0.49s, 513 queries (+513 other) 
+2026-11-16 12:15:54,765 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_rosters (59/72) 
+2026-11-16 12:15:54,811 33 INFO sf_rc_validation odoo.registry: module sports_federation_rosters: creating or updating database tables 
+2026-11-16 12:15:54,978 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/security/ir.model.access.csv 
+2026-11-16 12:15:55,000 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/team_roster_views.xml 
+2026-11-16 12:15:55,045 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/match_sheet_views.xml 
+2026-11-16 12:15:55,076 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/gameday_lineup_wizard_views.xml 
+2026-11-16 12:15:55,124 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/player_availability_views.xml 
+2026-11-16 12:15:55,140 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/gameday_participation_views.xml 
+2026-11-16 12:15:55,189 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/season_registration_views_inherit.xml 
+2026-11-16 12:15:55,206 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/tournament_participant_views_inherit.xml 
+2026-11-16 12:15:55,224 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/team_views_inherit.xml 
+2026-11-16 12:15:55,251 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/player_views_inherit.xml 
+2026-11-16 12:15:55,287 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/match_views_inherit.xml 
+2026-11-16 12:15:55,343 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/menu_views.xml 
+2026-11-16 12:15:55,349 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/club_rank_views.xml 
+2026-11-16 12:15:55,412 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/season_player_registration_views.xml 
+2026-11-16 12:15:55,428 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/report/scoresheet_report.xml 
+2026-11-16 12:15:55,508 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_rosters loaded in 0.74s, 687 queries (+687 other) 
+2026-11-16 12:15:55,508 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_discipline (60/72) 
+2026-11-16 12:15:55,531 33 INFO sf_rc_validation odoo.registry: module sports_federation_discipline: creating or updating database tables 
+2026-11-16 12:15:55,601 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/security/discipline_security.xml 
+2026-11-16 12:15:55,628 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/security/ir.model.access.csv 
+2026-11-16 12:15:55,640 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/security/company_rules.xml 
+2026-11-16 12:15:55,649 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/data/ir_sequence.xml 
+2026-11-16 12:15:55,654 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/data/suspension_cron.xml 
+2026-11-16 12:15:55,674 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/incident_views.xml 
+2026-11-16 12:15:55,703 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/disciplinary_case_views.xml 
+2026-11-16 12:15:55,728 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/sanction_views.xml 
+2026-11-16 12:15:55,751 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/suspension_views.xml 
+2026-11-16 12:15:55,774 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/player_views_inherit.xml 
+2026-11-16 12:15:55,801 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/match_views_inherit.xml 
+2026-11-16 12:15:55,839 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/menu_views.xml 
+2026-11-16 12:15:55,894 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_discipline loaded in 0.39s, 418 queries (+418 other) 
+2026-11-16 12:15:55,894 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_portal (61/72) 
+2026-11-16 12:15:55,958 33 INFO sf_rc_validation odoo.registry: module sports_federation_portal: creating or updating database tables 
+2026-11-16 12:15:56,162 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/security/res_groups.xml 
+2026-11-16 12:15:56,191 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/security/ir.model.access.csv 
+2026-11-16 12:15:56,225 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/security/ir_rule.xml 
+2026-11-16 12:15:56,311 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/federation_club_role_type.xml 
+2026-11-16 12:15:56,323 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/operation_task_cron.xml 
+2026-11-16 12:15:56,325 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/journey_event_cron.xml 
+2026-11-16 12:15:56,327 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/representative_cron.xml 
+2026-11-16 12:15:56,329 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_role_type_views.xml 
+2026-11-16 12:15:56,357 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_representative_views.xml 
+2026-11-16 12:15:56,405 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_views.xml 
+2026-11-16 12:15:56,423 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_referee_views.xml 
+2026-11-16 12:15:56,464 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/res_partner_views.xml 
+2026-11-16 12:15:56,492 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/res_users_views.xml 
+2026-11-16 12:15:56,519 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_season_registration_views.xml 
+2026-11-16 12:15:56,562 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_match_sheet_views.xml 
+2026-11-16 12:15:56,587 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_representative_portal_views.xml 
+2026-11-16 12:15:56,610 33 INFO sf_rc_validation odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [33, 34] 
+2026-11-16 12:15:56,616 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/qol_views.xml 
+2026-11-16 12:15:56,632 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/qol_search_templates.xml 
+2026-11-16 12:15:56,640 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_templates.xml 
+2026-11-16 12:15:56,744 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_parental_approval_templates.xml 
+2026-11-16 12:15:56,763 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/competition_templates.xml 
+2026-11-16 12:15:56,816 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_officiating_templates.xml 
+2026-11-16 12:15:56,832 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_roster_templates.xml 
+2026-11-16 12:15:56,909 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_result_templates.xml 
+2026-11-16 12:15:56,927 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_referee_duty_templates.xml 
+2026-11-16 12:15:56,943 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/player_availability_templates.xml 
+2026-11-16 12:15:57,005 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/preparation_journey_templates.xml 
+2026-11-16 12:15:57,034 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/club_season_players_templates.xml 
+2026-11-16 12:15:57,058 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/operation_task_views.xml 
+2026-11-16 12:15:57,087 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/menu_items.xml 
+2026-11-16 12:15:57,097 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/journey_event_views.xml 
+2026-11-16 12:15:57,125 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/role_journey_templates.xml 
+2026-11-16 12:15:57,217 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/club_rank_portal_templates.xml 
+2026-11-16 12:15:57,325 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_portal loaded in 1.43s, 1662 queries (+1662 other) 
+2026-11-16 12:15:57,325 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_setup_flow (62/72) 
+2026-11-16 12:15:57,389 33 INFO sf_rc_validation odoo.registry: module sports_federation_setup_flow: creating or updating database tables 
+2026-11-16 12:15:57,561 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/security/ir.model.access.csv 
+2026-11-16 12:15:57,579 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/data/matchday_automation_cron.xml 
+2026-11-16 12:15:57,598 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/competition_setup_views.xml 
+2026-11-16 12:15:57,632 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/gameday_setup_wizard_views.xml 
+2026-11-16 12:15:57,644 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/format_setup_wizard_views.xml 
+2026-11-16 12:15:57,656 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/division_setup_wizard_views.xml 
+2026-11-16 12:15:57,668 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/setup_consolidation_views.xml 
+2026-11-16 12:15:57,705 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/setup_journey_views.xml 
+2026-11-16 12:15:57,727 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/usability_views.xml 
+2026-11-16 12:15:57,778 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/practice_competition_views.xml 
+2026-11-16 12:15:57,833 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/publish_confirm_wizard_views.xml 
+2026-11-16 12:15:57,842 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/stage_builder_views.xml 
+2026-11-16 12:15:57,906 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_setup_flow loaded in 0.58s, 614 queries (+614 other) 
+2026-11-16 12:15:57,906 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_compliance (63/72) 
+2026-11-16 12:15:57,930 33 INFO sf_rc_validation odoo.registry: module sports_federation_compliance: creating or updating database tables 
+2026-11-16 12:15:57,989 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/security/ir.model.access.csv 
+2026-11-16 12:15:58,000 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/document_requirement_views.xml 
+2026-11-16 12:15:58,036 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/document_submission_views.xml 
+2026-11-16 12:15:58,066 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/compliance_check_views.xml 
+2026-11-16 12:15:58,091 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/compliance_archive_views.xml 
+2026-11-16 12:15:58,121 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/portal_compliance_templates.xml 
+2026-11-16 12:15:58,152 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/menu_views.xml 
+2026-11-16 12:15:58,187 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_compliance loaded in 0.28s, 323 queries (+323 other) 
+2026-11-16 12:15:58,187 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_finance_bridge (64/72) 
+2026-11-16 12:15:58,214 33 INFO sf_rc_validation odoo.registry: module sports_federation_finance_bridge: creating or updating database tables 
+2026-11-16 12:15:58,319 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/security/ir.model.access.csv 
+2026-11-16 12:15:58,333 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/security/company_rules.xml 
+2026-11-16 12:15:58,343 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/data/fee_type_data.xml 
+2026-11-16 12:15:58,347 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/fee_type_views.xml 
+2026-11-16 12:15:58,396 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/fee_schedule_views.xml 
+2026-11-16 12:15:58,421 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/finance_event_views.xml 
+2026-11-16 12:15:58,456 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/federation_match_finance_views.xml 
+2026-11-16 12:15:58,500 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/season_budget_views.xml 
+2026-11-16 12:15:58,529 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/player_season_registration_views.xml 
+2026-11-16 12:15:58,563 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/menu_views.xml 
+2026-11-16 12:15:58,615 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_finance_bridge loaded in 0.43s, 466 queries (+466 other) 
+2026-11-16 12:15:58,615 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_public_site (65/72) 
+2026-11-16 12:15:58,669 33 INFO sf_rc_validation odoo.registry: module sports_federation_public_site: creating or updating database tables 
+2026-11-16 12:15:58,860 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/security/ir.model.access.csv 
+2026-11-16 12:15:58,866 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_templates.xml 
+2026-11-16 12:15:58,923 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_competition_templates.xml 
+2026-11-16 12:15:59,007 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/competition_edition_views_inherit.xml 
+2026-11-16 12:15:59,041 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_hub_templates.xml 
+2026-11-16 12:15:59,095 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_editorial_templates.xml 
+2026-11-16 12:15:59,152 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_clubs_players_templates.xml 
+2026-11-16 12:15:59,182 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_menu.xml 
+2026-11-16 12:15:59,189 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/season_views_inherit.xml 
+2026-11-16 12:15:59,207 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/tournament_views_inherit.xml 
+2026-11-16 12:15:59,232 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/team_views_inherit.xml 
+2026-11-16 12:15:59,269 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/standing_views_inherit.xml 
+2026-11-16 12:15:59,289 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/editorial_views.xml 
+2026-11-16 12:15:59,543 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_archive_includes_cancelled_published ... 
+2026-11-16 12:15:59,556 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_archive_only_returns_closed_published ... 
+2026-11-16 12:15:59,558 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_editorial_archive_and_reset_to_draft_enforce_allowed_states ... 
+2026-11-16 12:15:59,566 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_editorial_items_only_go_live_inside_publication_window ... 
+2026-11-16 12:15:59,571 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_editorial_publish_accepts_only_draft_or_scheduled ... 
+2026-11-16 12:15:59,578 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_editorial_schedule_requires_draft_with_publish_start ... 
+2026-11-16 12:15:59,584 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_json_api_date_null_when_not_set ... 
+2026-11-16 12:15:59,595 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_json_api_fields ... 
+2026-11-16 12:15:59,597 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_json_api_returns_published_only ... 
+2026-11-16 12:15:59,598 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_live_and_recent_public_tournament_helpers ... 
+2026-11-16 12:15:59,601 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_main_tournament_hub_domain_excludes_unpublished_records ... 
+2026-11-16 12:15:59,602 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_public_archived_tournaments_only_return_published_archive ... 
+2026-11-16 12:15:59,603 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_public_bracket_sections_group_knockout_matches ... 
+2026-11-16 12:15:59,606 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_public_discovery_helpers_stay_within_query_budget ... 
+2026-11-16 12:15:59,612 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_public_featured_tournaments_only_return_active_published ... 
+2026-11-16 12:15:59,613 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_public_schedule_sections_stay_within_query_budget ... 
+2026-11-16 12:15:59,636 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Query count less than expected for user __system__: 2 < 4 in test_public_schedule_sections_stay_within_query_budget at /mnt/extra-addons/sports_federation_public_site/tests/test_public_api.py:460 
+2026-11-16 12:15:59,636 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_public_season_slug_resolution_can_apply_publication_domain ... 
+2026-11-16 12:15:59,639 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_public_slug_resolution_can_apply_publication_domain ... 
+2026-11-16 12:15:59,642 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_published_season_slug_and_helper_paths ... 
+2026-11-16 12:15:59,644 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_schedule_sections_use_fixture_query_not_approved_results ... 
+2026-11-16 12:15:59,646 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_team_follow_helpers_expose_schedule_results_and_feed ... 
+2026-11-16 12:15:59,659 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_team_public_slug_and_profile_helpers ... 
+2026-11-16 12:15:59,664 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_team_public_slug_resolution_can_apply_publication_domain ... 
+2026-11-16 12:15:59,670 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_teams_excludes_withdrawn_participants ... 
+2026-11-16 12:15:59,700 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_teams_not_shown_for_unpublished_tournament ... 
+2026-11-16 12:15:59,703 33 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_public_api: Starting TestPublicSiteNewEndpoints.test_teams_shows_participant_state ... 
+2026-11-16 12:15:59,838 33 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:15:59,838 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_public_site loaded in 1.22s (incl. 0.46s test), 774 queries (+405 test, +774 other) 
+2026-11-16 12:15:59,838 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_notifications (66/72) 
+2026-11-16 12:15:59,897 33 INFO sf_rc_validation odoo.registry: module sports_federation_notifications: creating or updating database tables 
+2026-11-16 12:16:00,028 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/security/ir.model.access.csv 
+2026-11-16 12:16:00,040 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/security/communication_rules.xml 
+2026-11-16 12:16:00,064 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/mail_templates.xml 
+2026-11-16 12:16:00,117 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/ir_cron.xml 
+2026-11-16 12:16:00,161 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/notification_log_views.xml 
+2026-11-16 12:16:00,187 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/menu_views.xml 
+2026-11-16 12:16:00,194 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/communication_views.xml 
+2026-11-16 12:16:00,260 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/communication_cron.xml 
+2026-11-16 12:16:00,286 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/communication_lifecycle_views.xml 
+2026-11-16 12:16:00,319 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/lifecycle_cron.xml 
+2026-11-16 12:16:00,343 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/communication_retention_data.xml 
+2026-11-16 12:16:00,349 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/notification_mail_retention.xml 
+2026-11-16 12:16:00,417 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_notifications loaded in 0.58s, 591 queries (+591 other) 
+2026-11-16 12:16:00,417 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_demo (67/72) 
+2026-11-16 12:16:00,475 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_demo loaded in 0.06s, 11 queries (+11 other) 
+2026-11-16 12:16:00,476 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_reporting (68/72) 
+2026-11-16 12:16:00,520 33 INFO sf_rc_validation odoo.registry: module sports_federation_reporting: creating or updating database tables 
+2026-11-16 12:16:00,656 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/security/ir.model.access.csv 
+2026-11-16 12:16:00,682 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/security/finance_company_rules.xml 
+2026-11-16 12:16:00,693 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/data/report_schedule_cron.xml 
+2026-11-16 12:16:00,696 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/data/report_snapshot_cron.xml 
+2026-11-16 12:16:00,697 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_participation_views.xml 
+2026-11-16 12:16:00,719 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_officiating_views.xml 
+2026-11-16 12:16:00,736 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_compliance_views.xml 
+2026-11-16 12:16:00,753 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_finance_views.xml 
+2026-11-16 12:16:00,770 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_operational_views.xml 
+2026-11-16 12:16:00,926 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/operational_dashboard_views.xml 
+2026-11-16 12:16:00,944 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_operator_checklist_views.xml 
+2026-11-16 12:16:00,968 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_planning_views.xml 
+2026-11-16 12:16:01,021 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_audit_event_views.xml 
+2026-11-16 12:16:01,056 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_snapshot_views.xml 
+2026-11-16 12:16:01,083 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_schedule_views.xml 
+2026-11-16 12:16:01,110 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_club_compliance_summary_views.xml 
+2026-11-16 12:16:01,128 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_officiating_coverage_views.xml 
+2026-11-16 12:16:01,146 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/menu_views.xml 
+2026-11-16 12:16:01,265 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_report_snapshot: Starting TestReportSnapshot.test_capture_snapshot_produces_expected_rows ... 
+2026-11-16 12:16:01,291 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_report_snapshot: Starting TestReportSnapshot.test_compliance_pending_total_uses_single_aggregate_query ... 
+2026-11-16 12:16:01,435 33 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:16:01,676 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_year_four_reporting: Starting TestYearFourReporting.test_club_performance_report_surfaces_finance_and_compliance_status ... 
+2026-11-16 12:16:01,706 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_year_four_reporting: Starting TestYearFourReporting.test_season_portfolio_report_rolls_up_targets_and_budget ... 
+2026-11-16 12:16:01,711 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_year_four_reporting: Starting TestYearFourReporting.test_year_four_report_builders_stay_within_query_budget ... 
+2026-11-16 12:16:01,734 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_year_four_reporting: Query count less than expected for user __system__: 3 < 4 in test_year_four_report_builders_stay_within_query_budget at /mnt/extra-addons/sports_federation_reporting/tests/test_year_four_reporting.py:285 
+2026-11-16 12:16:01,734 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_year_four_reporting: Starting TestYearFourReporting.test_year_four_report_plan_watchpoints_capture_heavy_operators ... 
+2026-11-16 12:16:01,741 33 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_year_four_reporting: Starting TestYearFourReporting.test_year_four_report_schedules_generate_and_open ... 
+2026-11-16 12:16:01,934 33 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 2 checked, 2 removed 
+2026-11-16 12:16:01,935 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_reporting loaded in 1.46s (incl. 0.67s test), 990 queries (+332 test, +990 other) 
+2026-11-16 12:16:01,935 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_duty_coverage (69/72) 
+2026-11-16 12:16:02,014 33 INFO sf_rc_validation odoo.registry: module sports_federation_duty_coverage: creating or updating database tables 
+2026-11-16 12:16:02,136 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/security/ir.model.access.csv 
+2026-11-16 12:16:02,141 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/data/coverage_cron.xml 
+2026-11-16 12:16:02,144 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/views/coverage_views.xml 
+2026-11-16 12:16:02,277 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/views/portal_templates.xml 
+2026-11-16 12:16:02,333 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_duty_coverage loaded in 0.40s, 336 queries (+336 other) 
+2026-11-16 12:16:02,333 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_live_workspace (70/72) 
+2026-11-16 12:16:02,375 33 INFO sf_rc_validation odoo.registry: module sports_federation_live_workspace: creating or updating database tables 
+2026-11-16 12:16:02,540 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/security/ir.model.access.csv 
+2026-11-16 12:16:02,557 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/security/rules.xml 
+2026-11-16 12:16:02,589 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/workspaces.xml 
+2026-11-16 12:16:02,687 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/mobile_matchday.xml 
+2026-11-16 12:16:02,730 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/season_board_views.xml 
+2026-11-16 12:16:02,750 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/court_device_views.xml 
+2026-11-16 12:16:02,866 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/court_device_portal.xml 
+2026-11-16 12:16:02,884 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/gameday_print_views.xml 
+2026-11-16 12:16:02,919 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/report/gameday_schedule_report.xml 
+2026-11-16 12:16:02,996 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_live_workspace loaded in 0.66s, 730 queries (+730 other) 
+2026-11-16 12:16:02,996 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_navigation (71/72) 
+2026-11-16 12:16:03,040 33 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_navigation/views/navigation.xml 
+2026-11-16 12:16:03,430 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_navigation loaded in 0.43s, 849 queries (+849 other) 
+2026-11-16 12:16:03,430 33 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_app (72/72) 
+2026-11-16 12:16:03,508 33 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_app loaded in 0.08s, 11 queries (+11 other) 
+2026-11-16 12:16:03,508 33 INFO sf_rc_validation odoo.modules.loading: 72 modules loaded in 15.60s, 14385 queries (+15224 extra) 
+2026-11-16 12:16:03,881 33 INFO sf_rc_validation odoo.registry: verifying fields for every extended model 
+2026-11-16 12:16:04,605 33 INFO sf_rc_validation odoo.modules.loading: Modules loaded. 
+2026-11-16 12:16:04,619 33 INFO sf_rc_validation odoo.registry: Registry changed, signaling through the database 
+2026-11-16 12:16:04,620 33 INFO sf_rc_validation odoo.registry: Registry loaded in 18.898s 
+2026-11-16 12:16:04,620 33 INFO sf_rc_validation odoo.service.server: Starting post tests 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.service.server: 0 post-tests in 0.02s, 0 queries 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.tests.stats: sports_federation_public_site: 28 tests 0.46s 405 queries 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.tests.stats: sports_federation_reporting: 11 tests 0.67s 332 queries 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.tests.stats: sports_federation_standings: 4 tests 0.47s 102 queries 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.tests.result: 0 failed, 0 error(s) of 35 tests when loading database 'sf_rc_validation' 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.service.server: Initiating shutdown 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-11-16 12:16:04,850 33 INFO sf_rc_validation odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 2 connections  
+Odoo registry integrity check passed.
+[RC:performance] Odoo completed successfully.
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.service.server: 0 post-tests in 0.02s, 0 queries 
+2026-11-16 12:16:04,640 33 INFO sf_rc_validation odoo.tests.result: 0 failed, 0 error(s) of 35 tests when loading database 'sf_rc_validation' 

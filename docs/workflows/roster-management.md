@@ -1,7 +1,7 @@
 # Workflow: Roster Management
 
 Owner: Federation Competition Operations
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 
 End-to-end lifecycle for managing team rosters — from pre-season draft through
@@ -142,6 +142,10 @@ Match sheet states: `draft` → `submitted` → `approved` → `locked`.
 5. The explicit `federation.matchday` from the live schedule publication defines
    the scope when available. Older tournament fixtures fall back to tournament
    plus scheduled calendar date.
+
+Eligibility of a roster is judged on today's date, kept inside the roster's
+validity window (`valid_from`/`valid_to`, else the season dates): a future roster
+on its first day, a roster of an ended season on its last day.
 
 ### 7. Match-Day Lock
 

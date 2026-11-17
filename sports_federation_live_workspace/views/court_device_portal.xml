@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Portal: matches to score, phone preparation, own devices, PIN, club scorers. -->
+    <template id="court_duties_page" name="My court duties">
+        <t t-call="portal.portal_layout">
+            <main class="container py-3 sf-mobile-matchday">
+                <h1>My court duties</h1>
+                <p>Prepare your phone while you are online. On the game day the court app works without a network
+                    and sends your scores when there is a connection. Results always wait for the tournament manager.</p>
+                <p t-if="success" role="status" class="alert alert-success" t-esc="success"/>
+                <p t-if="error" role="alert" class="alert alert-danger" t-esc="error"/>
+
+                <section>
+                    <h2 class="h4">Matches you score</h2>
+                    <p t-if="not days">You have no matches to score. Referees with a confirmed assignment and club scorers see their matches here.</p>
+                    <article t-foreach="days" t-as="day" class="card mb-3">
+                        <div class="card-body">
+                            <h3 class="h5"><t t-esc="day['matchday'].display_name"/></h3>
+                            <p class="text-muted mb-2"><span t-field="day['matchday'].date"/> · <t t-esc="day['matchday'].venue_id.display_name"/></p>
+                            <ul class="list-unstyled">
+                                <li t-foreach="day['matches']" t-as="row" class="mb-1">
+                                    <span t-field="row['match'].date_scheduled" t-options="{'widget': 'datetime', 'format': 'HH:mm'}"/>
+                                    · <t t-esc="row['match'].home_team_id.display_name"/> – <t t-esc="row['match'].away_team_id.display_name"/>
+                                    <span class="badge text-bg-secondary ms-1">
+                                        <t t-if="row['source'] == 'head_referee'">Head referee</t>
+                                        <t t-elif="row['source'] == 'assistant_referee'">Assistant referee</t>
+                                        <t t-elif="row['source'] == 'club_scorer'">Club scorer</t>
+                                        <t t-else="">Court operator</t>
+                                    </span>
+                                </li>
+                            </ul>
+                            <form action="/my/court-duties/prepare" method="post" class="d-flex flex-wrap gap-2 align-items-end">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="matchday_id" t-att-value="day['matchday'].id"/>
+                                <label class="form-label mb-0">Name of this phone
+                                    <input type="text" name="label" class="form-control" maxlength="60" value="My phone"/>
+                                </label>
+                                <button type="submit" class="btn btn-primary">Prepare this phone</button>
+                            </form>
+                            <p class="small text-muted mt-2 mb-0">Open this page on the phone you will use. Preparing again replaces the previous preparation on that phone.</p>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="mt-4">
+                    <h2 class="h4">My prepared phones</h2>
+                    <p t-if="not devices">No phones are prepared.</p>
+                    <ul t-if="devices" class="list-group mb-3">
+                        <li t-foreach="devices" t-as="device" class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <span>
+                                <strong t-esc="device.label"/> · <t t-esc="device.matchday_id.display_name"/>
+                                <br/><small class="text-muted">
+                                    <t t-if="device.state == 'pending'">Waiting for the phone</t>
+                                    <t t-else="">Last contact: <span t-field="device.last_seen_at"/></t>
+                                </small>
+                            </span>
+                            <form t-attf-action="/my/court-duties/devices/#{device.id}/revoke" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" class="btn btn-outline-danger">Remove</button>
+                            </form>
+                        </li>
+                    </ul>
+                    <a href="/court/app" class="btn btn-outline-secondary">Open the court app</a>
+                </section>
+
+                <section t-if="referee" class="mt-4">
+                    <h2 class="h4">Confirmation PIN (head referee)</h2>
+                    <p>When someone else scores your match, you confirm the result on their phone with this PIN.
+                        <t t-if="referee.court_pin_set_on">Set on <span t-field="referee.court_pin_set_on"/>.</t>
+                        <t t-else="">You have not set a PIN yet.</t></p>
+                    <form action="/my/court-duties/pin" method="post" class="d-flex flex-wrap gap-2 align-items-end">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <label class="form-label mb-0">New PIN (4-6 digits)
+                            <input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4,6}" autocomplete="new-password" class="form-control" required="required"/>
+                        </label>
+                        <label class="form-label mb-0">Repeat PIN
+                            <input type="password" name="pin_repeat" inputmode="numeric" pattern="[0-9]{4,6}" autocomplete="new-password" class="form-control" required="required"/>
+                        </label>
+                        <button type="submit" class="btn btn-outline-primary">Save PIN</button>
+                    </form>
+                </section>
+
+                <section t-if="club_matches" class="mt-4">
+                    <h2 class="h4">Club scorers (optional)</h2>
+                    <p>The referees always score. You can add a club member with a portal account as extra scorer for a match.</p>
+                    <article t-foreach="club_matches" t-as="row" class="card mb-2">
+                        <div class="card-body">
+                            <strong><t t-esc="row['match'].home_team_id.display_name"/> – <t t-esc="row['match'].away_team_id.display_name"/></strong>
+                            <span class="text-muted"> · <span t-field="row['match'].date_scheduled"/></span>
+                            <ul class="list-unstyled my-2">
+                                <li t-foreach="row['scorers']" t-as="scorer" class="d-flex gap-2 align-items-center">
+                                    <span t-esc="scorer.user_id.display_name"/>
+                                    <form t-attf-action="/my/court-duties/scorers/#{scorer.id}/withdraw" method="post">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Withdraw</button>
+                                    </form>
+                                </li>
+                            </ul>
+                            <form t-if="row['candidates']" action="/my/court-duties/scorers" method="post" class="d-flex flex-wrap gap-2">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="match_id" t-att-value="row['match'].id"/>
+                                <select name="user_id" class="form-select w-auto" aria-label="Club scorer">
+                                    <option t-foreach="row['candidates']" t-as="candidate" t-att-value="candidate.id" t-esc="candidate.display_name"/>
+                                </select>
+                                <button type="submit" class="btn btn-outline-primary">Add scorer</button>
+                            </form>
+                            <p t-else="" class="small text-muted mb-0">No club representative with a portal account can be added.</p>
+                        </div>
+                    </article>
+                </section>
+            </main>
+        </t>
+    </template>
+
+    <template id="mobile_home_court_duties" inherit_id="sports_federation_live_workspace.mobile_home">
+        <xpath expr="//nav" position="inside">
+            <a href="/my/court-duties" class="btn btn-primary">My court duties</a>
+        </xpath>
+    </template>
+</odoo>

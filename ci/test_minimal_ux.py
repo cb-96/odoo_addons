@@ -100,12 +100,18 @@ class MinimalLayoutTests(unittest.TestCase):
             )
         )
 
-    def test_single_role_context_is_conditional(self):
-        tree = self.tree("sports_federation_portal/views/role_journey_templates.xml")
-        self.assertIn(
-            "len(journey_roles) > 1",
-            tree.xpath('//select[@id="journey-role"]/parent::div')[0].get("t-if"),
+    def test_role_sections_replace_the_role_switcher(self):
+        """The overview shows one section per role; there is no role picker."""
+        journeys = self.tree(
+            "sports_federation_portal/views/role_journey_templates.xml"
         )
+        self.assertFalse(journeys.xpath('//select[@id="journey-role"]'))
+        overview = self.tree("sports_federation_portal/views/portal_templates.xml")
+        sections = overview.xpath(
+            "//div[@t-if and section[@t-att-data-overview-section]]"
+        )
+        self.assertEqual(len(sections), 1)
+        self.assertIn("overview.get('sections')", sections[0].get("t-if"))
 
     def test_one_promoted_planner_action(self):
         tree = self.tree(

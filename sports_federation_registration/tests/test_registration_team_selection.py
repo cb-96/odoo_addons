@@ -1,6 +1,10 @@
 from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase
 
+from odoo.addons.sports_federation_registration.models.participant_handoff import (
+    governed,
+)
+
 
 class TestRegistrationTeamSelection(TransactionCase):
     """Tests for the registration desk team selection rules."""
@@ -151,6 +155,12 @@ class TestRegistrationTeamSelection(TransactionCase):
 
     # ── participant records follow the finalised team list ───────────────
 
+    def _amend(self, teams):
+        """Change a finalized team list the governed way: amend with a reason."""
+        return self.window.amend_finalized_teams(
+            teams.ids, "Team list changed", self.window.participant_set_id.id
+        )
+
     def _participants(self):
         return self.env["federation.tournament.participant"].search(
             [("tournament_id", "=", self.division.id)]
@@ -183,7 +193,7 @@ class TestRegistrationTeamSelection(TransactionCase):
         third = self._make_team("Replace Team C")
         self.window.materialize_direct_team_selection(first | second)
 
-        self.window.materialize_direct_team_selection(second | third)
+        self._amend(second | third)
 
         state_by_team = {
             participant.team_id: participant.state
@@ -198,9 +208,9 @@ class TestRegistrationTeamSelection(TransactionCase):
         second = self._make_team("Return Team B")
         third = self._make_team("Return Team C")
         self.window.materialize_direct_team_selection(first | second)
-        self.window.materialize_direct_team_selection(second | third)
+        self._amend(second | third)
 
-        self.window.materialize_direct_team_selection(first | second)
+        self._amend(first | second)
 
         state_by_team = {
             participant.team_id: participant.state
@@ -213,7 +223,13 @@ class TestRegistrationTeamSelection(TransactionCase):
         first = self._make_team("Eligible Sync Team")
         second = self._make_team("Later Ineligible Team")
         participant_set = self.window.materialize_direct_team_selection(first | second)
-        self._participants().unlink()
+        # Simulate a database from before participants were tracked: detach the
+        # managed history (governed), then remove the rows.
+        participants = governed(self._participants())
+        participants.write(
+            {"source_entry_id": False, "source_participant_set_id": False}
+        )
+        participants.unlink()
         second.write({"gender": "female"})
 
         self.window._sync_tournament_participants(participant_set, skip_ineligible=True)

@@ -1,4 +1,5 @@
 {
+    "author": "Sports Federation",
     "name": "Sports Federation Duty Coverage",
     "version": "19.0.1.0.1",
     "category": "Sports",
@@ -8,6 +9,7 @@
     ),
     "license": "LGPL-3",
     "depends": [
+        "sports_federation_base",
         "sports_federation_portal",
         "sports_federation_reporting",
         "sports_federation_setup_flow",

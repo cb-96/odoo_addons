@@ -9,3 +9,4 @@ from . import test_communication_retention
 from . import test_notification_outbox
 
 from . import test_notification_operations
+from . import test_season_players_review_activity

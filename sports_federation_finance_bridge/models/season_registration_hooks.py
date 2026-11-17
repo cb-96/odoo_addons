@@ -28,6 +28,8 @@ class FederationSeasonRegistrationFinanceHooks(models.Model):
         finance_event_model = self.env["federation.finance.event"].sudo()
         fee_schedule_model = self.env["federation.fee.schedule"].sudo()
         for registration in self:
+            if not registration.season_id.team_registration_fee_enabled:
+                continue
             registration_sudo = registration.sudo()
             fee_type = registration_sudo._get_registration_fee_type()
             partner = False

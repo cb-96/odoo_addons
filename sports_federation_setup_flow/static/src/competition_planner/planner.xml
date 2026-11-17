@@ -9,7 +9,7 @@
         <h2 t-if="!state.error">Competition planner</h2><p t-if="!state.error">Open a season competition to start or resume its setup.</p>
       </div>
       <main t-else="" class="container-fluid py-4" aria-labelledby="planner-title">
-        <a href="/my/work?role=planner" class="btn btn-outline-secondary mb-3">Back to my work</a><header class="o_competition_planner_header">
+        <a href="/my" class="btn btn-outline-secondary mb-3">Back to portal overview</a><header class="o_competition_planner_header">
           <div><div class="text-muted small">Competition Planner</div>
             <h1 id="planner-title" class="h2 mb-1" t-esc="state.data.edition.name"/>
             <p class="text-muted mb-0"><span t-esc="state.data.edition.season"/></p>

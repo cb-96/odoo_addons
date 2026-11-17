@@ -156,3 +156,158 @@ def validate_command(command):
     if not isinstance(command["signature"], str) or len(command["signature"]) != 64:
         raise ValueError("A schedule and result signature is required.")
     return command
+
+
+# ── Offline device commands ──────────────────────────────────────────────
+# Capture commands (save/undo/submit) move the capture revision. Side commands
+# record crossed-out players and the match log; they are idempotent by key
+# and do not move the revision, so a phone never has to count them.
+CAPTURE_OPERATIONS = {"save", "undo", "submit"}
+SIDE_OPERATIONS = {"participation", "log"}
+LOG_EVENT_TYPES = {
+    "card_blue",
+    "card_yellow",
+    "card_red",
+    "team_card_yellow",
+    "team_card_red",
+    "staff_card_yellow",
+    "staff_card_red",
+    "timeout",
+    "challenge",
+}
+PLAYER_EVENT_TYPES = {"card_blue", "card_yellow", "card_red"}
+MAX_LOG_EVENTS = 300
+MAX_SHEETS = 4
+MAX_SHEET_PLAYERS = 40
+
+
+def _bounded_int(value, low, high):
+    return type(value) is int and low <= value <= high
+
+
+def validate_device_command(value):
+    """Split a phone command into the court command and its extras.
+
+    Returns ``(command, extra)``. ``extra`` holds the head-referee
+    confirmation of a submit; it is never part of the receipt digest, so a
+    PIN is not stored with the receipt.
+    """
+    if not isinstance(value, dict):
+        raise ValueError("Malformed court command.")
+    operation = value.get("operation")
+    if operation in CAPTURE_OPERATIONS:
+        if set(value) - {
+            "key",
+            "revision",
+            "operation",
+            "payload",
+            "signature",
+            "confirmation",
+        }:
+            raise ValueError("Malformed court command.")
+        command = {k: v for k, v in value.items() if k != "confirmation"}
+        validate_command(command)
+        extra = {}
+        if "confirmation" in value:
+            if operation != "submit":
+                raise ValueError("Only a submission can carry a confirmation.")
+            extra["confirmation"] = validate_confirmation(value["confirmation"])
+        return command, extra
+    if operation in SIDE_OPERATIONS:
+        if set(value) != {"key", "operation", "payload"}:
+            raise ValueError("Malformed court command.")
+        if not isinstance(value["key"], str) or not 8 <= len(value["key"]) <= 80:
+            raise ValueError("A bounded idempotency key is required.")
+        if not isinstance(value["payload"], dict):
+            raise ValueError("Malformed court command.")
+        return dict(value), {}
+    raise ValueError("Unknown court command.")
+
+
+def validate_confirmation(value):
+    if not isinstance(value, dict) or value.get("method") not in {"self", "pin"}:
+        raise ValueError("Unknown result confirmation.")
+    if value["method"] == "self":
+        if set(value) != {"method"}:
+            raise ValueError("Unknown result confirmation.")
+        return {"method": "self"}
+    pin = value.get("pin")
+    if set(value) != {"method", "pin"} or not isinstance(pin, str):
+        raise ValueError("Enter the head referee's PIN.")
+    if not pin.isdigit() or not 4 <= len(pin) <= 6:
+        raise ValueError("A PIN has 4 to 6 digits.")
+    return {"method": "pin", "pin": pin}
+
+
+def validate_participation(payload):
+    """Complete crossed-out list per match sheet: ``{"sheets": {"12": [3, 4]}}``."""
+    sheets = payload.get("sheets") if isinstance(payload, dict) else None
+    if set(payload or {}) != {"sheets"} or not isinstance(sheets, dict):
+        raise ValueError("Send the crossed-out players per line-up.")
+    if not 1 <= len(sheets) <= MAX_SHEETS:
+        raise ValueError("Too many line-ups in one command.")
+    result = {}
+    for sheet_id, player_ids in sheets.items():
+        try:
+            sheet = int(sheet_id)
+        except (TypeError, ValueError) as error:
+            raise ValueError("Invalid line-up.") from error
+        if sheet <= 0 or not isinstance(player_ids, list):
+            raise ValueError("Invalid line-up.")
+        if len(player_ids) > MAX_SHEET_PLAYERS or len(set(player_ids)) != len(
+            player_ids
+        ):
+            raise ValueError("Invalid crossed-out players.")
+        if not all(_bounded_int(item, 1, 2**31 - 1) for item in player_ids):
+            raise ValueError("Invalid crossed-out players.")
+        result[sheet] = sorted(player_ids)
+    return result
+
+
+def validate_match_log(payload):
+    """Complete list of cards, time-outs and challenges for the match."""
+    events = payload.get("events") if isinstance(payload, dict) else None
+    if set(payload or {}) != {"events"} or not isinstance(events, list):
+        raise ValueError("Send the match log as a list of events.")
+    if len(events) > MAX_LOG_EVENTS:
+        raise ValueError("The match log is too long.")
+    result = []
+    for event in events:
+        if not isinstance(event, dict) or set(event) - {
+            "type",
+            "side",
+            "player_id",
+            "half",
+            "set",
+            "note",
+        }:
+            raise ValueError("Invalid match log event.")
+        kind = event.get("type")
+        if kind not in LOG_EVENT_TYPES or event.get("side") not in {"home", "away"}:
+            raise ValueError("Invalid match log event.")
+        player = event.get("player_id")
+        if kind in PLAYER_EVENT_TYPES:
+            if not _bounded_int(player, 1, 2**31 - 1):
+                raise ValueError("A player card needs the player.")
+        elif player is not None:
+            raise ValueError("Only player cards name a player.")
+        half = event.get("half")
+        if half is not None and half not in (1, 2):
+            raise ValueError("Half must be 1 or 2.")
+        set_no = event.get("set")
+        if set_no is not None and not _bounded_int(set_no, 1, 100):
+            raise ValueError("Invalid set number.")
+        note = event.get("note", "")
+        if not isinstance(note, str) or len(note) > 200:
+            raise ValueError("Notes are limited to 200 characters.")
+        result.append(
+            {
+                "type": kind,
+                "side": event["side"],
+                "player_id": player,
+                "half": half,
+                "set": set_no,
+                "note": note.strip(),
+            }
+        )
+    return result

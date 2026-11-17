@@ -16,9 +16,6 @@ def load(relative, name):
 
 vocabulary = load("sports_federation_base/readiness_vocabulary.py", "vocabulary")
 cards = load("sports_federation_portal/journey_cards.py", "journey_cards")
-member_policy = load(
-    "sports_federation_member_services/lifecycle_policy.py", "member_policy"
-)
 
 
 class ContractTests(unittest.TestCase):
@@ -70,11 +67,6 @@ class JourneyTests(unittest.TestCase):
 
 
 class WordingTests(unittest.TestCase):
-    def test_unrecognised_membership_is_not_called_checked(self):
-        label = member_policy.membership_label("mystery")
-        self.assertNotIn("Not checked", label)
-        self.assertTrue(label.startswith("Action needed"))
-
     def test_line_up_states_map_to_the_shared_words(self):
         expected = {
             "not_started": "Action needed",

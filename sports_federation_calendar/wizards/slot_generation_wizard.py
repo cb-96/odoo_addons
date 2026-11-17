@@ -47,9 +47,10 @@ class FederationMatchdaySlotGenerationWizard(models.TransientModel):
         help="Pause beginning at 12:00 local game-day time.",
     )
     replace_existing_slots = fields.Boolean(
-        string="Replace Existing Slots",
+        string="Replace existing court times",
         default=False,
-        help="Delete existing draft/capacity slots before generating the new plan.",
+        help="Delete the existing draft court times (slots) of this game day and "
+        "create them again from the settings above.",
     )
     generated_slot_count = fields.Integer(compute="_compute_preview")
     blocked_slot_count = fields.Integer(compute="_compute_preview")
@@ -126,21 +127,28 @@ class FederationMatchdaySlotGenerationWizard(models.TransientModel):
     def _check_generation_parameters(self):
         for wizard in self:
             if not 0 <= wizard.start_hour < 24 or not 0 < wizard.end_hour <= 24:
-                raise ValidationError(_("Start and end must be valid times of day."))
+                raise ValidationError(
+                    _("Start and end must be times between 00:00 and 24:00.")
+                )
             if wizard.end_hour <= wizard.start_hour:
-                raise ValidationError(_("Game-day end must be after game-day start."))
+                raise ValidationError(
+                    _("The game day must end after it starts. Check start and end.")
+                )
             if wizard.slot_duration_minutes <= 0:
-                raise ValidationError(_("Total slot duration must be positive."))
+                raise ValidationError(_("Minutes per match must be more than 0."))
             if wizard.noon_pause and wizard.noon_pause_minutes <= 0:
-                raise ValidationError(_("Noon pause duration must be positive."))
+                raise ValidationError(
+                    _("The noon pause must last more than 0 minutes, or switch it off.")
+                )
 
     def action_generate(self):
         self.ensure_one()
         if self.matchday_id.slot_ids and not self.replace_existing_slots:
             raise ValidationError(
                 _(
-                    "Existing slots are present. Enable Replace Existing Slots "
-                    "to continue."
+                    "This game day already has court times. Tick 'Replace existing "
+                    "court times' to create them again, or close this dialog to "
+                    "keep them."
                 )
             )
         self.matchday_id.write(

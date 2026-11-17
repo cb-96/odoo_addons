@@ -96,7 +96,9 @@ class FederationPortalBase(CustomerPortal):
 
         Layout templates need representative and referee context even before a
         route has decided which portal persona is active, so these reads happen
-        through controlled elevated access.
+        through controlled elevated access. This runs on every portal page, so
+        it stays limited to the two persona lookups; the overview on ``/my``
+        computes its own counts.
         """
         values = super()._prepare_portal_layout_values()
         representative = (
@@ -116,68 +118,6 @@ class FederationPortalBase(CustomerPortal):
         values["federation_representative"] = representative
         values["federation_club"] = representative.club_id if representative else None
         values["federation_referee"] = referee
-
-        if referee and "federation.match.referee" in request.env:
-            assignment_model = request.env["federation.match.referee"].sudo()
-            assignment_domain = [("referee_id", "=", referee.id)]
-            pending_assignments = assignment_model.search(
-                assignment_domain + [("state", "=", "draft")]
-            )
-            values["federation_pending_assignment_count"] = len(pending_assignments)
-            values["federation_overdue_assignment_count"] = len(
-                pending_assignments.filtered("is_confirmation_overdue")
-            )
-        else:
-            values["federation_pending_assignment_count"] = 0
-            values["federation_overdue_assignment_count"] = 0
-
-        # Count badges for portal home sidebar urgency indicators
-        if representative:
-            operation_task_model = request.env.get("federation.operation.task")
-            if operation_task_model is not None:
-                operation_task_model.sudo().sync_for_user(user=request.env.user)
-                task_domain = operation_task_model._portal_get_domain(
-                    user=request.env.user
-                )
-                values[
-                    "federation_operation_task_count"
-                ] = operation_task_model.sudo().search_count(
-                    task_domain + [("state", "!=", "done")]
-                )
-            else:
-                values["federation_operation_task_count"] = 0
-            clubs = representative.mapped("club_id")
-            club_ids = clubs.ids
-            values["federation_pending_duties_count"] = (
-                request.env["federation.match.club.referee.duty"]
-                .sudo()
-                .search_count(
-                    [
-                        ("club_id", "in", club_ids),
-                        ("state", "in", ("open", "rejected")),
-                    ]
-                )
-            )
-            values["federation_pending_results_count"] = (
-                (
-                    request.env["federation.match.result"]
-                    .sudo()
-                    .search_count(
-                        [
-                            ("state", "=", "pending_approval"),
-                            "|",
-                            ("match_id.home_team_id.club_id", "in", club_ids),
-                            ("match_id.away_team_id.club_id", "in", club_ids),
-                        ]
-                    )
-                )
-                if "federation.match.result" in request.env
-                else 0
-            )
-        else:
-            values["federation_pending_duties_count"] = 0
-            values["federation_pending_results_count"] = 0
-            values["federation_operation_task_count"] = 0
 
         return values
 

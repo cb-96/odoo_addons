@@ -6,11 +6,11 @@ Review cadence: Every release
 
 Acceptance scenarios for court-cache precedence, revision-bound document
 review, operational job claiming and retry, finance company and lifecycle
-boundaries, renewal metadata, the opt-in scope of member services and native
-accounting, and projection/command separation.
+boundaries, the opt-in scope of native accounting, and projection/command
+separation.
 
-The default installation is `sports_federation_app`; member services and
-native accounting are opt-in and must be installed explicitly. Finance and
+The default installation is `sports_federation_app`; native accounting is
+opt-in and must be installed explicitly. Finance and
 disciplinary ownership are company-scoped; this does not mean every sporting
 model supports independent multi-tenant federations.
 
@@ -54,7 +54,7 @@ with an approved sanitized backup. Do not substitute echo commands or fabricated
 
 1. Fresh core installation: verify opt-in addons are absent by default.
 2. Fresh opt-in installation in a separate accounting-configured database. Run
-   `sf_release_confidence` and `sf_member_services` tests. Configure a real company
+   `sf_release_confidence` tests. Configure a real company
    chart, sales journal, product accounts and taxes. Keep external-handoff core
    expectations separate from native charge lifecycle expectations.
 3. Upgrade the baseline database and installed affected addons: base, discipline,
@@ -87,8 +87,8 @@ viewport, browser/device, timestamps, assistance, failures and recovery. Avoid r
 personal document contents in screenshots.
 
 - Novice organiser: create competition, find next step, register teams, preview/publish schedule.
-- Novice club user: find membership/entry, upload evidence, distinguish review from eligibility,
-  renew an active membership and find the resulting draft.
+- Novice club user: find the competition entry, upload evidence and distinguish review from
+  eligibility.
 - Reviewer: inspect exact snapshot and recover from a stale decision without approving wrong bytes.
 - Mobile court operator: enter scores at narrow viewport, lose connectivity, reload/reconnect,
   reconcile without duplicate submission or lost local evidence.

@@ -81,6 +81,24 @@ class FederationTeamRoster(models.Model):
         related="team_id.club_id",
         store=True,
     )
+    team_gender = fields.Selection(
+        related="team_id.gender",
+        string="Team Gender",
+    )
+    player_gender_a = fields.Char(
+        compute="_compute_player_gender_filter",
+        help="Technical: first player gender allowed on this roster's team.",
+    )
+    player_gender_b = fields.Char(
+        compute="_compute_player_gender_filter",
+        help="Technical: second player gender allowed on this roster's team.",
+    )
+    rostered_player_ids = fields.Many2many(
+        "federation.player",
+        compute="_compute_rostered_player_ids",
+        help="Compatibility field for stored roster-picker views during upgrade; "
+        "contains players already on this roster.",
+    )
     min_players_required = fields.Integer(
         string="Min Players Required",
         help="Minimum number of eligible active players the squad must contain before"
@@ -134,6 +152,28 @@ class FederationTeamRoster(models.Model):
     #   1. _assert_unique_active_roster() Python check in write()
     #   2. DB partial unique indexes from migration 19.0.1.4.0
     #      (federation_team_roster_unique_active_no_comp / _with_comp)
+
+    @api.depends("team_id.gender")
+    def _compute_player_gender_filter(self):
+        """Expose the player genders that fit the team, for the roster form.
+
+        Men's and women's teams accept players of that gender; mixed teams
+        accept both. The two values feed the player picker's domain, which
+        cannot hold a conditional list itself.
+        """
+        allowed = {
+            "male": ("male", "male"),
+            "female": ("female", "female"),
+        }
+        for roster in self:
+            first, second = allowed.get(roster.team_id.gender, ("male", "female"))
+            roster.player_gender_a = first
+            roster.player_gender_b = second
+
+    @api.depends("line_ids.player_id")
+    def _compute_rostered_player_ids(self):
+        for roster in self:
+            roster.rostered_player_ids = roster.line_ids.player_id
 
     def _build_generated_name(self, team, season, competition=False):
         """Build generated name."""
@@ -541,17 +581,21 @@ class FederationTeamRoster(models.Model):
                 )
 
     def _get_reference_date(self):
-        """Return reference date."""
+        """Date on which this roster's eligibility is judged.
+
+        Today, kept inside the roster's own validity window: a future roster is
+        judged on its first day and a past roster on its last day, so a roster
+        from an ended season is not reported as ineligible just because its
+        licences expired with that season.
+        """
         self.ensure_one()
         today = fields.Date.context_today(self)
-        if self.valid_from and self.valid_from > today:
-            return self.valid_from
-        if (
-            self.season_id
-            and self.season_id.date_start
-            and self.season_id.date_start > today
-        ):
-            return self.season_id.date_start
+        start = self.valid_from or self.season_id.date_start
+        end = self.valid_to or self.season_id.date_end
+        if start and start > today:
+            return start
+        if end and end < today:
+            return end
         return today
 
     @api.model

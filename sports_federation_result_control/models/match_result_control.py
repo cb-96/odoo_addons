@@ -328,8 +328,15 @@ class FederationMatchResultControl(models.Model):
                 if dispatcher is not None:
                     dispatcher.send_result_submitted(record)
             editions = self.mapped(lambda match: match._competition_workflow_edition())
-            if editions and not any(
-                edition.result_verification_required for edition in editions
+            # Results captured on court (device or court app) always wait for
+            # the tournament manager, whatever the competition's review flags.
+            manager_review = self.env.context.get("result_manager_review_required")
+            if (
+                editions
+                and not manager_review
+                and not any(
+                    edition.result_verification_required for edition in editions
+                )
             ):
                 self.with_context(workflow_policy_bypass=True).action_verify_result()
                 if not any(edition.result_approval_required for edition in editions):
@@ -398,6 +405,15 @@ class FederationMatchResultControl(models.Model):
                 editions
                 and all(edition.result_self_approval_allowed for edition in editions)
             )
+            # One-step review: the approver verified the result in the same
+            # action, so only the submitter is excluded.
+            one_step = self.env.context.get("result_one_step_review")
+            if allow_self:
+                forbidden = ()
+            elif one_step:
+                forbidden = ("result_submitted_by_id",)
+            else:
+                forbidden = ("result_submitted_by_id", "result_verified_by_id")
             self._lock_result_transition()
             result = self._result_transition(
                 "approved",
@@ -407,16 +423,13 @@ class FederationMatchResultControl(models.Model):
                     "result_approved_on": fields.Datetime.now(),
                     "include_in_official_standings": True,
                 },
-                forbidden_actor_fields=(
-                    ()
-                    if allow_self
-                    else (
-                        "result_submitted_by_id",
-                        "result_verified_by_id",
-                    )
-                ),
+                forbidden_actor_fields=forbidden,
                 event_type="approved",
-                description="Result approved and included in official standings.",
+                description=(
+                    "Result approved in one step and included in official standings."
+                    if one_step
+                    else "Result approved and included in official standings."
+                ),
             )
             for record in self:
                 dispatcher = record.env.get("federation.notification.dispatcher")
@@ -425,6 +438,34 @@ class FederationMatchResultControl(models.Model):
             self._complete_after_result_approval()
             self._recompute_related_standings()
             return result
+
+    def action_approve_result_one_step(self):
+        """Verify and approve submitted results in one tournament-manager step.
+
+        Used for results captured on court: the tournament manager checks the
+        court evidence once and approves. Both workflow steps are recorded
+        with the same user, so audit events and standings triggers are kept.
+        """
+        self._check_result_group(
+            "sports_federation_result_control.group_result_approver",
+            "Only result approvers can approve results.",
+        )
+        with self.env.cr.savepoint():
+            self._lock_result_transition()
+            invalid = self.filtered(
+                lambda match: match.result_state not in ("submitted", "verified")
+            )
+            if invalid:
+                raise ValidationError(
+                    "Only submitted or verified results can be approved."
+                )
+            one_step = self.with_context(result_one_step_review=True)
+            submitted = one_step.filtered(
+                lambda match: match.result_state == "submitted"
+            )
+            if submitted:
+                submitted.action_verify_result()
+            return one_step.action_approve_result()
 
     def action_contest_result(self):
         """Contest submitted, verified, or approved results atomically."""

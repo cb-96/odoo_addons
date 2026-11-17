@@ -33,12 +33,6 @@ REQUIRED = {
         "record_execution",
         "record_failure_durable",
     ),
-    "sports_federation_member_services/models/evidence_retention.py": (
-        "_evidence_retention_candidates",
-        "legal_hold",
-        "record_execution",
-        "record_failure_durable",
-    ),
 }
 
 

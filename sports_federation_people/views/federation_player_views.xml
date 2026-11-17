@@ -50,6 +50,7 @@
                     <group>
                         <group string="Contact">
                             <field name="email" widget="email"/>
+                            <field name="lang"/>
                             <field name="phone" widget="phone"/>
                             <field name="mobile" widget="phone"/>
                         </group>

@@ -146,7 +146,14 @@ class Resolve(models.TransientModel):
         if self.applied:
             return m.action_open_coverage()
         m._coverage_assert_current()
-        if not self.expected_signature or self.expected_signature != self._signature():
+        if not self.expected_signature:
+            raise ValidationError(
+                _(
+                    "This resolution has no coverage preview. Close it and open "
+                    "Resolve / replace again from the match."
+                )
+            )
+        if self.expected_signature != self._signature():
             raise ValidationError(
                 _(
                     (

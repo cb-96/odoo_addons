@@ -6,7 +6,28 @@ from .portal_helpers import FederationPortalBase
 
 
 class FederationClubPortal(FederationPortalBase):
-    """Club and team portal routes."""
+    """Club and team portal routes.
+
+    Reads go through ``federation.portal.privilege.portal_search`` with an
+    explicit club domain instead of a controller-level elevated read.
+    """
+
+    def _portal_read(self, model, domain, **kwargs):
+        return request.env["federation.portal.privilege"].portal_search(
+            request.env[model], domain, user=request.env.user, **kwargs
+        )
+
+    @staticmethod
+    def _selected_club(clubs, value):
+        """Return the represented club named by ``value``, or None if foreign."""
+        if value in (None, ""):
+            return clubs[:1]
+        try:
+            club_id = int(value)
+        except (TypeError, ValueError):
+            return None
+        club = clubs.filtered(lambda item: item.id == club_id)
+        return club or None
 
     @http.route(
         ["/my/club"],
@@ -14,23 +35,21 @@ class FederationClubPortal(FederationPortalBase):
         auth="user",
         website=True,
     )
-    def portal_my_club(self, **kw):
-        """Show the portal user's club information."""
+    def portal_my_club(self, club=None, **kw):
+        """Show one of the portal user's clubs (the first, or the chosen one)."""
         clubs = self._get_portal_clubs()
         if not clubs:
             return self._render_unassigned_club()
 
-        club = clubs[0]
-        teams = (
-            request.env["federation.team"]
-            .sudo()
-            .search(
-                [("club_id", "=", club.id)],
-                order="name",
-            )
+        selected = self._selected_club(clubs, club)
+        if not selected:
+            return self._render_access_denied()
+        teams = self._portal_read(
+            "federation.team", [("club_id", "=", selected.id)], order="name"
         )
         values = {
-            "club": club,
+            "club": selected,
+            "clubs": clubs,
             "teams": teams,
             "page_name": "my_club",
         }
@@ -48,13 +67,8 @@ class FederationClubPortal(FederationPortalBase):
         if not clubs:
             return self._redirect_with_query("/my/club")
 
-        teams = (
-            request.env["federation.team"]
-            .sudo()
-            .search(
-                [("club_id", "in", clubs.ids)],
-                order="name",
-            )
+        teams = self._portal_read(
+            "federation.team", [("club_id", "in", clubs.ids)], order="name"
         )
         values = {
             "teams": teams,
@@ -103,11 +117,15 @@ class FederationClubPortal(FederationPortalBase):
             club_id = int(club_id)
         except (ValueError, TypeError):
             return self._redirect_with_query(
-                "/my/teams/new", error="Invalid club selection"
+                "/my/teams/new", error=request.env._("Invalid club selection")
             )
 
+        club = self._selected_club(self._get_portal_clubs(), club_id)
+        if not club:
+            return self._redirect_with_query(
+                "/my/teams/new", error=request.env._("Invalid club selection")
+            )
         try:
-            club = request.env["federation.club"].sudo().browse(club_id)
             request.env["federation.team"]._portal_create_team(
                 club,
                 values={
@@ -123,11 +141,13 @@ class FederationClubPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/teams/new",
                 error=str(error),
-                error_hint="Verify all required fields are filled in and the team code is unique for your club.",
+                error_hint=request.env._(
+                    "Verify all required fields are filled in and the team code is unique for your club."
+                ),
             )
 
         return self._redirect_with_query(
-            "/my/teams", success="Team created successfully"
+            "/my/teams", success=request.env._("Team created successfully")
         )
 
     # ------------------------------------------------------------------
@@ -158,10 +178,8 @@ class FederationClubPortal(FederationPortalBase):
         else:
             state = ""
 
-        players = (
-            request.env["federation.player"]
-            .sudo()
-            .search(domain, order="last_name, first_name")
+        players = self._portal_read(
+            "federation.player", domain, order="last_name, first_name"
         )
         values = {
             "players": players,
@@ -187,7 +205,10 @@ class FederationClubPortal(FederationPortalBase):
         if not clubs:
             return self._redirect_with_query("/my/club")
 
+        selected = self._selected_club(clubs, kw.get("club_id"))
         values = {
+            "clubs": clubs,
+            "selected_club_id": selected.id if selected and len(clubs) > 1 else False,
             "page_name": "new_player",
             "error": kw.get("error"),
             "error_hint": kw.get("error_hint"),
@@ -212,14 +233,25 @@ class FederationClubPortal(FederationPortalBase):
         phone=None,
         **kw,
     ):
-        """Create a player through the portal."""
+        """Create a player through the portal for one of the user's clubs."""
         clubs = self._get_portal_clubs()
         if not clubs:
             return self._redirect_with_query("/my/club")
 
+        # A representative of several clubs must choose; one club is implicit.
+        if len(clubs) > 1 and not kw.get("club_id"):
+            return self._redirect_with_query(
+                "/my/players/new",
+                error=request.env._("Choose the club of the new player."),
+            )
+        club = self._selected_club(clubs, kw.get("club_id"))
+        if not club:
+            return self._redirect_with_query(
+                "/my/players/new", error=request.env._("Invalid club selection")
+            )
         try:
             request.env["federation.player"]._portal_create_player(
-                clubs[0],
+                club,
                 values={
                     "first_name": first_name,
                     "last_name": last_name,
@@ -234,9 +266,12 @@ class FederationClubPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/players/new",
                 error=str(error),
-                error_hint="Verify all required player fields are filled in correctly.",
+                error_hint=request.env._(
+                    "Verify all required player fields are filled in correctly."
+                ),
+                club_id=club.id if len(clubs) > 1 else None,
             )
 
         return self._redirect_with_query(
-            "/my/players", success="Player added successfully"
+            "/my/players", success=request.env._("Player added successfully")
         )

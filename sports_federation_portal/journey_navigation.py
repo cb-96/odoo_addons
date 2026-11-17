@@ -5,7 +5,7 @@ import re
 
 RETURNS = {
     "club": "/my/action-items",
-    "home": "/my/work",
+    "home": "/my",
     "official": "/my/referee-assignments",
     "manager": "/federation/operations/action-items",
 }
@@ -48,7 +48,7 @@ def safe_destination(value):
         re.fullmatch(
             r"/my/(?:competition-entries|rosters|match-sheets|referee-duties|results)(?:/[1-9][0-9]*)?"
             r"|/my/players/[1-9][0-9]*/parental-approvals"
-            r"|/my/work/registrations/[1-9][0-9]*",
+            r"|/my/season-registrations/[1-9][0-9]*/roster",
             parts.path,
         )
     )

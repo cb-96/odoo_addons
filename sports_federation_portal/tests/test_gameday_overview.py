@@ -3,6 +3,10 @@ from datetime import timedelta
 from odoo import fields
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 @tagged("post_install", "-at_install", "sf_gameday_overview")
 class TestGamedayOverview(TransactionCase):
@@ -102,8 +106,9 @@ class TestGamedayOverview(TransactionCase):
                 "gender": "male",
             }
         )
-        cls.roster_line = env["federation.team.roster.line"].create(
-            {"roster_id": cls.roster.id, "player_id": player.id}
+        cls.roster_line = create_registered_roster_lines(
+            env["federation.team.roster.line"],
+            {"roster_id": cls.roster.id, "player_id": player.id},
         )
         cls.roster.action_activate()
         cls.old_roster = env["federation.team.roster"].create(

@@ -1,6 +1,7 @@
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 from datetime import date, timedelta
+from unittest.mock import patch
 from odoo.tools.misc import mute_logger
 
 
@@ -338,3 +339,133 @@ class TestClubRepresentative(TransactionCase):
             }
         )
         self.assertIn(self.club, self.user.represented_club_ids)
+
+    # ------------------------------------------------------------------
+    # Tenures and delegations end by date, not by an edit
+    # ------------------------------------------------------------------
+
+    def _rep_for(self, user, **values):
+        return self.env["federation.club.representative"].create(
+            {
+                "club_id": self.club.id,
+                "partner_id": user.partner_id.id,
+                "user_id": user.id,
+                "role_type_id": self.role_competition.id,
+                **values,
+            }
+        )
+
+    def _on_day(self, day):
+        """Patch "today" for code that reads ``fields.Date.context_today``."""
+        return patch("odoo.fields.Date.context_today", return_value=day)
+
+    def test_is_current_answers_for_today_without_a_stored_flag(self):
+        Rep = self.env["federation.club.representative"]
+        today = date.today()
+        rep = self._rep_for(self.user, date_end=today + timedelta(days=1))
+        self.assertIn(rep, Rep.search([("is_current", "=", True)]))
+        self.assertIn(self.club, Rep._get_clubs_for_user(self.user))
+
+        with self._on_day(today + timedelta(days=2)):
+            rep.invalidate_recordset(["is_current"])
+            self.assertFalse(rep.is_current)
+            self.assertNotIn(rep, Rep.search([("is_current", "=", True)]))
+            self.assertIn(rep, Rep.search([("is_current", "!=", True)]))
+            self.assertFalse(Rep._get_clubs_for_user(self.user))
+
+    def test_future_tenure_is_found_once_its_day_comes(self):
+        Rep = self.env["federation.club.representative"]
+        start = date.today() + timedelta(days=5)
+        rep = self._rep_for(self.user, date_start=start)
+        self.assertNotIn(rep, Rep.search([("is_current", "=", True)]))
+        with self._on_day(start):
+            self.assertIn(rep, Rep.search([("is_current", "=", True)]))
+
+    def test_archived_tenure_is_never_current(self):
+        Rep = self.env["federation.club.representative"]
+        rep = self._rep_for(self.user)
+        rep.active = False
+        self.assertFalse(
+            Rep.with_context(active_test=False).search(
+                [("id", "=", rep.id), ("is_current", "=", True)]
+            )
+        )
+
+    def test_refresh_job_ends_portal_scope_of_an_ended_tenure(self):
+        today = date.today()
+        self._rep_for(self.user, date_end=today)
+        self.assertEqual(self.user.portal_club_scope_ids, self.club)
+
+        with self._on_day(today + timedelta(days=1)):
+            self.env["federation.club.representative"]._cron_refresh_time_based_state()
+        self.user.invalidate_recordset(["portal_club_scope_ids"])
+
+        self.assertFalse(self.user.portal_club_scope_ids)
+
+    def test_refresh_job_starts_portal_scope_of_a_future_tenure(self):
+        start = date.today() + timedelta(days=2)
+        self._rep_for(self.user, date_start=start)
+        self.assertFalse(self.user.portal_club_scope_ids)
+
+        with self._on_day(start):
+            self.env["federation.club.representative"]._cron_refresh_time_based_state()
+        self.user.invalidate_recordset(["portal_club_scope_ids"])
+
+        self.assertEqual(self.user.portal_club_scope_ids, self.club)
+
+    def test_refresh_job_leaves_unchanged_scopes_alone(self):
+        self._rep_for(self.user, date_end=date.today() + timedelta(days=30))
+        stale = self.env["res.users"]._refresh_portal_scopes()
+        self.assertNotIn(self.user, stale)
+
+    def test_delegation_ends_on_its_last_day(self):
+        delegate_user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Delegate Representative",
+                    "login": "delegate.representative@example.com",
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                self.env.ref(
+                                    "sports_federation_portal.group_federation_portal_club"
+                                ).id
+                            ],
+                        )
+                    ],
+                }
+            )
+        )
+        today = date.today()
+        holder = self._rep_for(self.user)
+        delegate = self._rep_for(delegate_user)
+        holder.write({"delegated_to_id": delegate.id, "delegation_until": today})
+        self.assertEqual(holder.effective_user_id, delegate_user)
+
+        with self._on_day(today + timedelta(days=1)):
+            self.env["federation.club.representative"]._cron_refresh_time_based_state()
+        holder.invalidate_recordset(["effective_user_id"])
+
+        self.assertEqual(holder.effective_user_id, self.user)
+
+    def test_delegation_to_an_ended_tenure_falls_back_to_the_holder(self):
+        other = self.env["res.partner"].create({"name": "Short Delegate"})
+        today = date.today()
+        holder = self._rep_for(self.user)
+        delegate = self.env["federation.club.representative"].create(
+            {
+                "club_id": self.club.id,
+                "partner_id": other.id,
+                "role_type_id": self.role_finance.id,
+                "date_end": today,
+            }
+        )
+        holder.write({"delegated_to_id": delegate.id})
+        with self._on_day(today + timedelta(days=1)):
+            self.env["federation.club.representative"]._cron_refresh_time_based_state()
+        holder.invalidate_recordset(["effective_user_id"])
+        self.assertEqual(holder.effective_user_id, self.user)

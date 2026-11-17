@@ -1,4 +1,5 @@
 """Read-only readiness and issue projection for the competition planner."""
+
 from collections import defaultdict
 
 from odoo import _, api, models
@@ -48,7 +49,9 @@ class FederationCompetitionPlannerReadiness(models.Model):
         rows = []
         issues = []
         current_structures = self.env["federation.competition.structure"]
-        windows_by_division = defaultdict(lambda: self.env["federation.registration.window"])
+        windows_by_division = defaultdict(
+            lambda: self.env["federation.registration.window"]
+        )
         structures_by_division = defaultdict(
             lambda: self.env["federation.competition.structure"]
         )
@@ -57,11 +60,15 @@ class FederationCompetitionPlannerReadiness(models.Model):
         for structure in structures:
             structures_by_division[structure.division_id.id] |= structure
 
-        for division in self.tournament_ids.sorted(lambda item: (item.name or "", item.id)):
+        for division in self.tournament_ids.sorted(
+            lambda item: (item.name or "", item.id)
+        ):
             division_windows = windows_by_division[division.id]
-            participant_sets = division_windows.mapped("participant_set_id").filtered(
-                lambda item: item.state == "finalized"
-            ).sorted(lambda item: item.id, reverse=True)
+            participant_sets = (
+                division_windows.mapped("participant_set_id")
+                .filtered(lambda item: item.state == "finalized")
+                .sorted(lambda item: item.id, reverse=True)
+            )
             participant_set = participant_sets[:1]
             team_count = len(participant_set.mapped("line_ids.team_id"))
             division_structures = structures_by_division[division.id]
@@ -115,7 +122,10 @@ class FederationCompetitionPlannerReadiness(models.Model):
                         "message": _("Choose how this division plays."),
                     }
                 )
-            elif current_structure.state == "draft" and current_structure.format_type == "custom":
+            elif (
+                current_structure.state == "draft"
+                and current_structure.format_type == "custom"
+            ):
                 issues.append(
                     {
                         "key": "division-%s-stages" % division.id,
@@ -159,7 +169,9 @@ class FederationCompetitionPlannerReadiness(models.Model):
                         "step": "format",
                         "severity": "blocking",
                         "title": division.display_name,
-                        "message": _("This format produces no matches. Check the teams and format."),
+                        "message": _(
+                            "This format produces no matches. Check the teams and format."
+                        ),
                     }
                 )
 
@@ -179,8 +191,10 @@ class FederationCompetitionPlannerReadiness(models.Model):
                     "ready": teams_ready and format_ready,
                 }
             )
-        return rows, issues, current_structures.filtered(
-            lambda item: item.state == "frozen"
+        return (
+            rows,
+            issues,
+            current_structures.filtered(lambda item: item.state == "frozen"),
         )
 
     def _planner_global_issues(self, gamedays, schedules, expected_fixtures):
@@ -188,7 +202,13 @@ class FederationCompetitionPlannerReadiness(models.Model):
         allocated_fixtures = gamedays.mapped("allocation_ids.fixture_ids").filtered(
             lambda item: item.state != "cancelled"
         )
-        unallocated_fixtures = expected_fixtures - allocated_fixtures
+        # Only matches that can be placed on a game day need a game day. A
+        # placeholder whose participants are not resolved yet (for example a
+        # bye or "#1 Top vs TBD" waiting for progression) is not schedulable and
+        # is not offered on the match board either; it counts once it is.
+        unallocated_fixtures = (expected_fixtures - allocated_fixtures).filtered(
+            lambda item: item._is_schedulable()
+        )
         if unallocated_fixtures:
             issues.append(
                 {
@@ -313,9 +333,7 @@ class FederationCompetitionPlannerReadiness(models.Model):
                         "step": "publication",
                         "severity": "blocking",
                         "title": gameday.display_name,
-                        "message": _(
-                            "Publish this game day's schedule."
-                        ),
+                        "message": _("Publish this game day's schedule."),
                     }
                 )
             elif (

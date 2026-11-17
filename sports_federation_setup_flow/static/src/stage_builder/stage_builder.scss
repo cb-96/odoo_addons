@@ -1,9 +1,9 @@
 .o_stage_builder {
-    background: var(--body-bg, #f6f7f9);
+    background: var(--bs-tertiary-bg);
 
     .sf-builder-panel {
-        background: var(--o-view-background-color, #fff);
-        border: 1px solid var(--border-color, #dee2e6);
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
         border-radius: 0.5rem;
         padding: 1rem;
     }

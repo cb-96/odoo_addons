@@ -2,7 +2,7 @@
 <odoo>
   <template id="club_preparation_journey" name="Club Preparation">
     <t t-call="portal.portal_layout"><main class="container py-4 sf-preparation" data-journey-user="1">
-      <a href="/my/work?role=club" class="btn btn-outline-secondary mb-3" data-journey-return="1">Back to my work</a>
+      <a href="/my" class="btn btn-outline-secondary mb-3" data-journey-return="1">Back to overview</a>
       <h1>Prepare your team</h1>
       <p class="text-muted">Complete the next requirement. Submission and approval remain separate.</p>
       <div t-if="not rows" class="sf-empty"><p>No confirmed registration in this view.</p><a t-att-href="preparation_url('/my/competitions')" class="btn btn-primary" data-journey-open="1">Register a team</a></div>
@@ -30,9 +30,8 @@
         </div>
       </section>
       <details t-if="sheets" class="sf-disclosure"><summary>Game days</summary><a t-foreach="sheets" t-as="sheet" t-attf-href="/my/match-sheets/#{sheet.id}" class="list-group-item list-group-item-action" data-journey-open="1"><t t-esc="sheet.team_id.display_name"/> · <t t-esc="sheet.match_id.display_name"/> · <t t-esc="sheet.get_portal_state_label()"/></a></details>
-      <details class="sf-disclosure"><summary>Other team work</summary><nav class="d-flex gap-2 flex-wrap" aria-label="Team work"><a t-att-href="preparation_url('/my/competitions')" data-journey-open="1">Registration</a><a t-att-href="preparation_url('/my/rosters')" data-journey-open="1">Rosters</a><a t-att-href="preparation_url('/my/match-sheets')" data-journey-open="1">Game days</a></nav></details>
     </main></t>
   </template>
-  <template id="competition_preparation_link" inherit_id="sports_federation_portal.portal_my_competitions"><xpath expr="//div[contains(@class, 'container')]" position="inside"><a href="/my/preparation" class="btn btn-outline-secondary my-3" data-journey-open="1">Prepare your team</a></xpath></template>
-  <template id="roster_preparation_link" inherit_id="sports_federation_portal.portal_my_roster_detail"><xpath expr="//t[@t-call='portal.portal_layout']" position="inside"><a href="/my/work?role=club" class="btn btn-outline-secondary m-3" data-journey-return="1">Back to my work</a></xpath></template>
+  <template id="competition_preparation_link" inherit_id="sports_federation_portal.portal_my_competitions"><xpath expr="//div[hasclass('container')]" position="inside"><a href="/my/preparation" class="btn btn-outline-secondary my-3" data-journey-open="1">Prepare your team</a></xpath></template>
+  <template id="roster_preparation_link" inherit_id="sports_federation_portal.portal_my_roster_detail"><xpath expr="//t[@t-call='portal.portal_layout']" position="inside"><a href="/my/preparation" class="btn btn-outline-secondary m-3" data-journey-return="1">Back to team preparation</a></xpath></template>
 </odoo>

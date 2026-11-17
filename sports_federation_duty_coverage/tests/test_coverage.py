@@ -8,9 +8,14 @@ from unittest.mock import patch
 
 from odoo import fields
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tests import Form
 from odoo.tests.common import TransactionCase, tagged
 
 from .common import CoverageFixture
+
+from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+    with_published_planning_token,
+)
 
 
 @tagged("post_install", "-at_install", "sf_release_confidence", "sf_duty_coverage")
@@ -219,7 +224,9 @@ class TestCoverage(CoverageFixture, TransactionCase):
 
     def test_officiating_overlap_visible(self):
         """A second overlapping duty invalidates current eligibility."""
-        self.other_match.date_scheduled = self.slot.start_datetime
+        with_published_planning_token(self.other_match).date_scheduled = (
+            self.slot.start_datetime
+        )
         overlapping = self.env["federation.match.referee"].create(
             {
                 "match_id": self.other_match.id,
@@ -237,7 +244,7 @@ class TestCoverage(CoverageFixture, TransactionCase):
         self._accept()
         original_signature = self.assignment.accepted_signature
         original_timestamp = self.assignment.accepted_on
-        self.match.date_scheduled = "2026-06-15 19:00:00"
+        with_published_planning_token(self.match).date_scheduled = "2026-06-15 19:00:00"
         snapshot = self._snapshot()
         self.assertNotEqual(original_signature, self.assignment._coverage_signature())
         self.assertFalse(self.assignment.coverage_accepted)
@@ -259,7 +266,7 @@ class TestCoverage(CoverageFixture, TransactionCase):
             reason="Unavailable",
         )
         before_ids = self._assignments().ids
-        self.match.date_scheduled = "2026-06-15 19:00:00"
+        with_published_planning_token(self.match).date_scheduled = "2026-06-15 19:00:00"
         self._assert_rejected(ValidationError, wizard.action_apply)
         self.assertEqual(self._assignments().ids, before_ids)
         self.assertEqual(self.assignment.state, "draft")
@@ -364,7 +371,9 @@ class TestCoverage(CoverageFixture, TransactionCase):
 
     def test_escalation_idempotent_and_cleanup(self):
         """One overdue activity is removed on readiness and presence recovery."""
-        self.match.write({"date_scheduled": "2026-06-17 18:00:00"})
+        with_published_planning_token(self.match).write(
+            {"date_scheduled": "2026-06-17 18:00:00"}
+        )
         self.slot.write(
             {
                 "start_datetime": "2026-06-17 18:00:00",
@@ -415,3 +424,48 @@ class TestCoverage(CoverageFixture, TransactionCase):
         self._assert_rejected(ValidationError, self.assignment.unlink)
         self.assertTrue(self.assignment.exists())
         self.assertEqual(self.assignment.state, "cancelled")
+
+    # ------------------------------------------------------------------
+    # The wizard as the web client uses it
+    # ------------------------------------------------------------------
+
+    def _form(self):
+        return Form(
+            self.env["federation.coverage.resolve.wizard"].with_context(
+                default_match_id=self.match.id
+            )
+        )
+
+    def test_form_keeps_the_preview_signature(self):
+        """The signature is read-only and invisible, yet must survive saving."""
+        form = self._form()
+        form.operation = "club"
+        form.selected_role = "fourth"
+        form.club_id = self.club
+        wizard = form.save()
+        self.assertTrue(wizard.expected_signature)
+        self.assertEqual(wizard.expected_signature, wizard._signature())
+
+    def test_club_duty_can_be_added_from_the_form(self):
+        form = self._form()
+        form.operation = "club"
+        form.selected_role = "fourth"
+        form.club_id = self.club
+        form.save().action_apply()
+        duty = self.env["federation.match.club.referee.duty"].search(
+            [
+                ("match_id", "=", self.match.id),
+                ("club_id", "=", self.club.id),
+                ("role", "=", "fourth"),
+            ]
+        )
+        self.assertEqual(len(duty), 1)
+        self.assertEqual(duty.state, "open")
+
+    def test_missing_preview_is_reported_as_such(self):
+        wizard = self.env["federation.coverage.resolve.wizard"].create(
+            {"match_id": self.match.id, "operation": "club", "club_id": self.club.id}
+        )
+        self.assertFalse(wizard.expected_signature)
+        with self.assertRaisesRegex(ValidationError, "no coverage preview"):
+            wizard.action_apply()

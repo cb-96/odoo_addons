@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Warn clubs on the game-day line-up page when a player would move up. -->
+    <template id="portal_my_match_sheet_detail_club_rank" inherit_id="sports_federation_portal.portal_my_match_sheet_detail">
+        <xpath expr="//t[@t-call='portal.portal_layout']/*[1]" position="before">
+            <t t-set="club_rank_warning" t-value="sheet.club_rank_warning"/>
+            <div t-if="club_rank_warning" class="container mt-3">
+                <div class="alert alert-warning mb-0" role="alert" style="white-space: pre-line;">
+                    <strong>Team promotion:</strong>
+                    <t t-esc="club_rank_warning"/>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

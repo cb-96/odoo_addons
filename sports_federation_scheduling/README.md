@@ -21,6 +21,40 @@ table names for its selected game days and structures. This keeps PostgreSQL
 identifiers below its 63-character limit during module installation and upgrade.
 
 
+## Generating a schedule
+
+**Generate schedule** shows the planning steps (game days, generate, review and
+move matches, publish) and a status card that always states the current
+situation and the next action: choose game days, check and generate, fix the
+listed problems, generate with preference warnings, or generate. After a check
+it also shows the matches included and left out and the number of *Must fix*
+and *Could improve* findings.
+
+The scheduler separates two kinds of findings:
+
+- **Must fix** (Feasibility tab): rules that always hold, such as one match per
+  court at a time, play on the selected game days within their courts and hours,
+  later stages after their source stage, and keeping matches placed by hand
+  (except when rebuilding).
+  Nothing is planned while one of these fails.
+- **Could improve** (Quality tab): preferences such as the preferred rest
+  between a team's matches, separating teams of the same club and a fair spread
+  of times and courts. The schedule can still be generated; short rest is
+  accepted explicitly when publishing.
+
+For advanced operators, the rerun mode explains its effect before generation.
+*Fill* keeps existing planning; *replace automatic* re-plans earlier automatic
+placements and keeps manual placements and court times; *rebuild* deletes the
+unpublished planning of the selected game days, including manual placements,
+and shows how many court times and unpublished schedules are affected. Game days
+in review, published, open or closed are never rebuilt.
+
+The fair auto-schedule wizard on a schedule previews before it applies. When
+matches remain without a court and time, it explains that hard rules are never
+broken to place them and that they can be placed by hand, because the automatic
+search is heuristic rather than proof that no placement exists.
+
+
 ## Operator handoff to independent review
 
 A planner completes fixture-to-slot assignments in **Schedule Planner** and uses

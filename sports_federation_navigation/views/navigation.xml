@@ -5,8 +5,8 @@
     This file is the single authoritative map of names, parents, ordering and
     group visibility for every menu owned by the addons this module depends
     on. Domain addons keep owning their actions, models, ACLs and menu XML IDs.
-    Optional addons that load later (accounting, member services) place their
-    own menus in the sections defined here or in sports_federation_base.
+    Optional addons that load later (accounting) place their own menus in the
+    sections defined here or in sports_federation_base.
 
     Rules (see docs/user-guide/backend-navigation.md):
     - at most three levels below the app: area > section > item;
@@ -92,15 +92,15 @@
   </record>
   <record id="sports_federation_base.menu_federation_season" model="ir.ui.menu">
     <field name="name">Seasons</field>
-    <field name="parent_id" ref="sports_federation_base.menu_federation_planning"/>
+    <field name="parent_id" ref="sports_federation_base.menu_federation_administration"/>
     <field name="sequence">10</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
   <record id="sports_federation_base.menu_federation_registration" model="ir.ui.menu">
-    <field name="name">Season Registrations</field>
+    <field name="name">Annual Team Enrolments</field>
     <field name="parent_id" ref="sports_federation_base.menu_federation_planning"/>
     <field name="sequence">20</field>
-    <field name="group_ids" eval="[(6, 0, [])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_tournament.menu_federation_tournament_list" model="ir.ui.menu">
     <field name="name">Divisions</field>
@@ -151,13 +151,19 @@
     <field name="sequence">30</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
+  <!-- Federation approval of the season player lists that clubs submit. -->
+  <record id="sports_federation_people.menu_club_season_registration" model="ir.ui.menu">
+    <field name="name">Season Player Registrations</field>
+    <field name="parent_id" ref="sports_federation_base.menu_federation_setup"/>
+    <field name="sequence">35</field>
+    <field name="group_ids" eval="[(6, 0, [])]"/>
+  </record>
   <record id="sports_federation_portal.menu_federation_club_representative" model="ir.ui.menu">
     <field name="name">Club Representatives</field>
     <field name="parent_id" ref="sports_federation_base.menu_federation_setup"/>
     <field name="sequence">40</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
-  <!-- sports_federation_member_services adds a Membership section here (sequence 50). -->
 
   <!-- ===== Federation > Match Operations ================================= -->
   <record id="sports_federation_base.menu_federation_match_day" model="ir.ui.menu">
@@ -519,7 +525,6 @@
     <field name="sequence">61</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
-  <!-- sports_federation_member_services adds member audit records (sequence 70-72). -->
   <record id="sports_federation_reporting.menu_federation_report_portal_audit" model="ir.ui.menu">
     <field name="name">Portal Audit</field>
     <field name="parent_id" ref="sports_federation_base.menu_federation_system_health"/>

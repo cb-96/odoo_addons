@@ -5,6 +5,9 @@ from odoo.addons.sports_federation_base.destructive_tokens import (
     MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY,
     MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
 )
+from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+    with_published_planning_token,
+)
 
 
 class FederationMatchdayRestart(models.Model):
@@ -167,6 +170,9 @@ class FederationMatchdayRestart(models.Model):
         )
 
         self.sudo().write({"current_publication_id": False})
+        # Deleting the governed game day releases its matches from the
+        # publication; that is a planning change owned by this command.
+        matches = with_published_planning_token(matches)
         matches.write(
             {
                 "schedule_publication_id": False,

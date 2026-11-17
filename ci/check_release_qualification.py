@@ -32,7 +32,8 @@ checks = {
     "workflow upgrade execution": "run_release.py rc --lane upgrade" in workflow,
     "workflow federation full execution": "run_release.py rc --lane full" in workflow,
     "workflow uses Compose RC runtime": "RC_COMPOSE_PROJECT" in workflow,
-    "workflow cleans Compose RC runtime": "run_release.py rc --lane cleanup" in workflow,
+    "workflow cleans Compose RC runtime": "run_release.py rc --lane cleanup"
+    in workflow,
     "workflow does not require host Odoo": "ODOO_BIN" not in workflow,
     "baseline records every required lane": all(
         f"  {lane}\n" in baseline_script

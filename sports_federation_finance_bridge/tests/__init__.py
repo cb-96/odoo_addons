@@ -6,3 +6,4 @@ from . import test_sanction_finance
 from . import test_season_registration_finance
 from . import test_workflow
 from . import test_browser_finance_bridge
+from . import test_player_season_registration_finance

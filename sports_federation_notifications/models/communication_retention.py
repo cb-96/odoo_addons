@@ -14,6 +14,8 @@ from odoo import api, fields, models
 
 from .. import communication_policy as policy
 
+from odoo.addons.sports_federation_base.batch_jobs import for_each_chunk
+
 RETENTION_PARAMETER = "sports_federation_notifications.inbox_retention_days"
 RETENTION_POLICY_CODE = "participant_inbox"
 # Receipts also enforce one notification per event and recipient. Keeping
@@ -99,9 +101,15 @@ class CommunicationReceiptRetention(models.Model):
         )
         cutoff = reference_dt - timedelta(days=days)
         receipts = self._inbox_retention_candidates(cutoff)
-        deliveries = receipts.mapped("delivery_ids")
         result["candidates"] = len(receipts)
         result["receipts"] = len(receipts)
+        result["deliveries"] = for_each_chunk(receipts, self._purge_inbox_chunk)
+        return result
+
+    @api.model
+    def _purge_inbox_chunk(self, receipts):
+        """Delete one batch of receipts and the deliveries they leave behind."""
+        deliveries = receipts.mapped("delivery_ids")
         receipts.unlink()
         Delivery = self.env["federation.communication.delivery"].sudo()
         orphaned = Delivery.search(
@@ -111,13 +119,13 @@ class CommunicationReceiptRetention(models.Model):
                 ("receipt_ids", "=", False),
             ]
         )
-        result["deliveries"] = len(orphaned)
+        count = len(orphaned)
         mails = orphaned.mapped("mail_id")
         logs = orphaned.mapped("log_id")
         orphaned.unlink()
         logs._retention_deletable(allow_cancelled=True).unlink()
         mails._purge_notification_orphans()
-        return result
+        return count
 
     @api.model
     def _cron_purge_inbox(self):

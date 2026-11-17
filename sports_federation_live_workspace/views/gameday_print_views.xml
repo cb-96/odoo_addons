@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="matchday_form_print" model="ir.ui.view">
+        <field name="name">federation.matchday.form.print</field>
+        <field name="model">federation.matchday</field>
+        <field name="inherit_id" ref="sports_federation_calendar.matchday_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <!-- Technical modifier relay: printing needs a live publication. -->
+                <field name="current_publication_id" invisible="1"/>
+                <button name="action_print_gameday_schedule" type="object" string="Print schedule" icon="fa-print" invisible="not current_publication_id"/>
+                <button name="action_print_gameday_scoresheets" type="object" string="Print score sheets" icon="fa-print" invisible="not current_publication_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

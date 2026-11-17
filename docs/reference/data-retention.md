@@ -25,8 +25,6 @@ The current automated retention policy covers these repository-owned surfaces:
 - `federation.communication.receipt` and `federation.communication.delivery`
   (participant inbox) in `sports_federation_notifications`, once a period is
   configured
-- `federation.member.evidence.revision` in the optional
-  `sports_federation_member_services`, once a period is configured
 
 Non-terminal workflow records are intentionally excluded from automated purge.
 If a delivery is still waiting for preview, approval, or live processing, it is
@@ -44,6 +42,7 @@ retained until an operator resolves it.
 | Inbound deliveries | `processed_with_errors` | 180 days | `processed_on` | Delete delivery and staged payload attachment |
 | Inbound deliveries | `failed` | 365 days | `received_on` | Delete delivery and staged payload attachment |
 | Generated report files | Last successful export snapshot | 60 days | `last_run_on` | Clear stored file payload and filename, keep schedule |
+| Portal journey events | All | 90 days (`federation.journey_event_retention_days`) | `occurred_on` | Delete anonymous event row |
 
 ## Automation
 
@@ -54,7 +53,6 @@ affected addons:
 - `sports_federation_import_tools.ir_cron_federation_integration_delivery_retention`
 - `sports_federation_reporting.ir_cron_federation_report_schedule_retention`
 - `sports_federation_notifications.ir_cron_participant_inbox_retention`
-- `sports_federation_member_services.ir_cron_member_evidence_retention`
 
 These jobs are active by default and call the corresponding model cleanup
 helpers during normal Odoo cron execution.
@@ -81,16 +79,15 @@ When retention windows or cleanup scope change:
 
 ## Configurable retention for personal data
 
-The federation decides how long participant communications and member evidence
-are kept. The platform ships the mechanism but no period: until a period is
-configured, nothing is deleted and each daily run records a dry-run evidence
-entry saying so. Set the periods under **Settings > Technical > Parameters >
+The federation decides how long participant communications are kept. The
+platform ships the mechanism but no period: until a period is configured,
+nothing is deleted and each daily run records a dry-run evidence entry saying
+so. Set the periods under **Settings > Technical > Parameters >
 System Parameters** after the federation has approved them.
 
 | Surface | System parameter | Removed after the period | Always kept |
 |---------|------------------|--------------------------|-------------|
 | Participant inbox items and their deliveries | `sports_federation_notifications.inbox_retention_days` | Inbox items that are closed (acted upon, expired or superseded) and whose closing date is older than the period; their deliveries once finished (`sent`, `cancelled`, `suppressed`) and no longer used by another item | Open items; items with a waiting, queued or failed delivery |
-| Member evidence revisions (optional member services) | `sports_federation_member_services.evidence_retention_days` | Replaced revisions, and revisions of cancelled requests, older than the period | The current revision of an open request; revisions under legal hold |
 
 Rules:
 
@@ -100,24 +97,6 @@ Rules:
   deletes nothing and records a failed evidence entry with the reason.
 - An invalid value (not a whole number) is reported the same way.
 - Notification logs keep their own windows (see the table above).
-
-### Legal hold and erasure of member evidence
-
-Federation managers open **Federation > Administration > System > Member Evidence
-History** (developer mode), select revisions and use **Action > Legal hold or erasure**:
-
-- **Place legal hold** excludes the revisions from scheduled retention and
-  from erasure. The reason, person and time are recorded on the revision and
-  posted on the member request.
-- **Release legal hold** requires a reason and is posted the same way.
-- **Erase permanently** deletes the selected revisions and their files, for
-  example on a data-subject erasure request. It requires a reason and an
-  explicit confirmation, is refused for held revisions, is posted on the member
-  request and is recorded as retention evidence with policy
-  `member_evidence_erasure`.
-
-Revisions stay immutable otherwise: ordinary editing and deletion remain
-blocked for every user.
 
 ### Court-scoring data on devices
 

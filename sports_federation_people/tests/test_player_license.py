@@ -58,11 +58,12 @@ class TestPlayerLicense(TransactionCase):
         lic.action_cancel()
         self.assertEqual(lic.state, "cancelled")
 
-    def test_draft_resets_from_active(self):
+    def test_approved_registration_cannot_reset_to_draft(self):
         lic = self._make_license()
         lic.action_activate()
-        lic.action_draft()
-        self.assertEqual(lic.state, "draft")
+        with self.assertRaises(ValidationError):
+            lic.action_draft()
+        self.assertEqual(lic.state, "active")
 
     def test_is_eligible_true_with_active_license(self):
         lic = self._make_license()

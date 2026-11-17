@@ -1,6 +1,8 @@
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_base.batch_jobs import process_each
+
 
 class FederationSuspension(models.Model):
     _name = "federation.suspension"
@@ -135,16 +137,29 @@ class FederationSuspension(models.Model):
 
     @api.model
     def _cron_update_suspensions(self):
-        """Start upcoming suspensions and end served ones (daily job)."""
+        """Start upcoming suspensions and end served ones (daily job).
+
+        Each suspension is handled on its own: one that cannot start or end
+        (for example a player record that fails validation) is logged and the
+        others still change state.
+        """
         today = fields.Date.context_today(self)
         due = self.search([("state", "=", "scheduled"), ("date_start", "<=", today)])
-        if due:
-            due.write({"state": "active"})
-            for record in due:
-                record.player_id.action_suspend()
+        process_each(
+            due, lambda record: record._start_scheduled(), label="Start suspension"
+        )
         active = self.search([("state", "=", "active")])
-        active.filtered(lambda record: record._is_served(today)).action_expire()
+        process_each(
+            active.filtered(lambda record: record._is_served(today)),
+            lambda record: record.action_expire(),
+            label="End served suspension",
+        )
         return True
+
+    def _start_scheduled(self):
+        self.ensure_one()
+        self.write({"state": "active"})
+        self.player_id.action_suspend()
 
     def _expire_served_by_matches(self, teams):
         """Called when a match finishes: end match-count suspensions served."""

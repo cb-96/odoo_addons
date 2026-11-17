@@ -186,3 +186,10 @@ License: draft → active → expired
 - [Tournament Lifecycle](tournament-lifecycle.md) — tournaments open to registered clubs
 - [Compliance Management](compliance-management.md) — document collection detail
 - [Financial Tracking](financial-tracking.md) — fee handling detail
+
+## Annual player registration
+
+The team-level registration described above remains an internal participation
+record. Annual club player registration and billing use the
+[club season player registration workflow](club-season-player-registration.md).
+Only approved season players can join team rosters.

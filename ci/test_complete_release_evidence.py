@@ -1,4 +1,5 @@
 """Negative evidence regressions with test fixtures, not real release evidence."""
+
 from contextlib import redirect_stdout
 from copy import deepcopy
 from io import StringIO
@@ -26,22 +27,40 @@ class TestMigrationEvidence(unittest.TestCase):
             "schema_version": 1,
             "counts": {key: 10 for key in contract["counts"]},
             "zero_checks": {key: 0 for key in contract["zero_checks"]},
-            "count_modes": {key: contract.get("count_modes", {}).get(key, "exact") for key in contract["counts"]},
+            "count_modes": {
+                key: contract.get("count_modes", {}).get(key, "exact")
+                for key in contract["counts"]
+            },
         }
         for name in ("before-upgrade.json", "after-upgrade.json", "rollback.json"):
             self.write(name, self.snapshot)
-        self.write("invariant-comparison.json", {"schema_version": 1, "status": "passed", "differences": []})
+        self.write(
+            "invariant-comparison.json",
+            {"schema_version": 1, "status": "passed", "differences": []},
+        )
         for name in ("restore-before-upgrade.txt", "restore-rollback.txt"):
             (self.root / name).write_text("filestore_restored=yes\n")
         for name, lane, log_name in (
             ("upgrade.json", "migration-upgrade", "upgrade.log"),
-            ("operator-acceptance.json", "role-separated-acceptance", "operator-acceptance.log"),
+            (
+                "operator-acceptance.json",
+                "role-separated-acceptance",
+                "operator-acceptance.log",
+            ),
         ):
             log = self.root / log_name
             log.write_text("isolated test fixture, not an executed runtime log\n")
-            self.write(name, {"schema_version": 2, "commit": COMMIT, "lane": lane,
-                              "status": "passed", "exit_code": 0,
-                              "log": {"sha256": migration.digest(log)}})
+            self.write(
+                name,
+                {
+                    "schema_version": 2,
+                    "commit": COMMIT,
+                    "lane": lane,
+                    "status": "passed",
+                    "exit_code": 0,
+                    "log": {"sha256": migration.digest(log)},
+                },
+            )
         self.backup = self.root / "test-fixture.dump"
         self.backup.write_bytes(b"test fixture, not a database backup")
 
@@ -58,12 +77,24 @@ class TestMigrationEvidence(unittest.TestCase):
 
     def test_wrong_commit_is_rejected(self):
         self.seal()
-        self.assertTrue(any("candidate commit" in error for error in migration.validate_bundle(self.root, "b" * 40)))
+        self.assertTrue(
+            any(
+                "candidate commit" in error
+                for error in migration.validate_bundle(self.root, "b" * 40)
+            )
+        )
 
     def test_changed_artifact_is_rejected(self):
         self.seal()
-        (self.root / "restore-rollback.txt").write_text("filestore_restored=yes\nchanged\n")
-        self.assertTrue(any("checksum" in error for error in migration.validate_bundle(self.root, COMMIT)))
+        (self.root / "restore-rollback.txt").write_text(
+            "filestore_restored=yes\nchanged\n"
+        )
+        self.assertTrue(
+            any(
+                "checksum" in error
+                for error in migration.validate_bundle(self.root, COMMIT)
+            )
+        )
 
     def test_missing_artifact_cannot_be_sealed(self):
         (self.root / "rollback.json").unlink()
@@ -124,7 +155,12 @@ class TestMigrationEvidence(unittest.TestCase):
         manifest = self.seal()
         manifest["schema_version"] = 1
         self.write("manifest.json", manifest)
-        self.assertTrue(any("schema 2" in error for error in migration.validate_bundle(self.root, COMMIT)))
+        self.assertTrue(
+            any(
+                "schema 2" in error
+                for error in migration.validate_bundle(self.root, COMMIT)
+            )
+        )
 
     def test_malformed_json_is_rejected(self):
         (self.root / "rollback.json").write_text("[]")
@@ -158,16 +194,35 @@ class TestMigrationEvidence(unittest.TestCase):
 class TestReleaseSignoff(unittest.TestCase):
     def test_migration_commit_is_required(self):
         baseline = {"commit": COMMIT, "status": "passed", "complete": True}
-        manifest = {"status": "passed", "rollback_owner": "owner", "rollback_trigger": "trigger",
-                    "backup": {"sha256": "a" * 64}}
-        self.assertTrue(any("migration evidence belongs" in error for error in validate(baseline, manifest, COMMIT)))
+        manifest = {
+            "status": "passed",
+            "rollback_owner": "owner",
+            "rollback_trigger": "trigger",
+            "backup": {"sha256": "a" * 64},
+        }
+        self.assertTrue(
+            any(
+                "migration evidence belongs" in error
+                for error in validate(baseline, manifest, COMMIT)
+            )
+        )
         manifest["commit"] = COMMIT
         self.assertEqual(validate(baseline, manifest, COMMIT), [])
 
     def test_missing_lanes_and_truthy_complete_do_not_pass(self):
-        baseline = {"commit": COMMIT, "status": "passed", "complete": "yes", "missing_lanes": ["full"]}
-        manifest = {"commit": COMMIT, "status": "passed", "rollback_owner": "owner", "rollback_trigger": "trigger",
-                    "backup": {"sha256": "a" * 64}}
+        baseline = {
+            "commit": COMMIT,
+            "status": "passed",
+            "complete": "yes",
+            "missing_lanes": ["full"],
+        }
+        manifest = {
+            "commit": COMMIT,
+            "status": "passed",
+            "rollback_owner": "owner",
+            "rollback_trigger": "trigger",
+            "backup": {"sha256": "a" * 64},
+        }
         errors = validate(baseline, manifest, COMMIT)
         self.assertTrue(any("complete" in error for error in errors))
         self.assertTrue(any("missing_lanes" in error for error in errors))
@@ -177,12 +232,17 @@ class TestHumanAcceptance(unittest.TestCase):
     def check(self, sessions, **extra):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "human-acceptance.json").write_text(json.dumps({"commit": COMMIT, "sessions": sessions, **extra}))
+            (root / "human-acceptance.json").write_text(
+                json.dumps({"commit": COMMIT, "sessions": sessions, **extra})
+            )
             return check_human(root, COMMIT)
 
     def sessions(self):
-        return [{"role": role, "completed": True} for role in
-                ("club_representative", "organiser", "court_operator") for _ in range(5)]
+        return [
+            {"role": role, "completed": True}
+            for role in ("club_representative", "organiser", "court_operator")
+            for _ in range(5)
+        ]
 
     def test_completed_sessions_for_each_role_pass(self):
         self.assertEqual(self.check(self.sessions()), ("completed", []))
@@ -194,7 +254,9 @@ class TestHumanAcceptance(unittest.TestCase):
                 session["completed"] = False
         status, errors = self.check(sessions)
         self.assertEqual(status, "incomplete")
-        self.assertTrue(any("0 organiser completed sessions" in error for error in errors))
+        self.assertTrue(
+            any("0 organiser completed sessions" in error for error in errors)
+        )
 
     def test_truthy_string_is_not_completed(self):
         sessions = self.sessions()
@@ -206,7 +268,10 @@ class TestHumanAcceptance(unittest.TestCase):
         self.assertEqual(self.check([None])[0], "incomplete")
 
     def test_critical_incidents_block_acceptance(self):
-        self.assertEqual(self.check(self.sessions(), critical_incidents=["unresolved"])[0], "incomplete")
+        self.assertEqual(
+            self.check(self.sessions(), critical_incidents=["unresolved"])[0],
+            "incomplete",
+        )
 
 
 class TestCompleteProfile(unittest.TestCase):
@@ -216,11 +281,23 @@ class TestCompleteProfile(unittest.TestCase):
             root.mkdir()
             evidence = Path(directory) / "evidence"
             calls = []
-            args = run_release.parser().parse_args(["verify-complete", "--evidence-dir", str(evidence)])
+            args = run_release.parser().parse_args(
+                ["verify-complete", "--evidence-dir", str(evidence)]
+            )
             with redirect_stdout(StringIO()):
-                run_release.run(args, env={}, root=root, get_revision=lambda root: COMMIT,
-                                execute=lambda argv, env, root: calls.append([str(value) for value in argv]))
-            self.assertEqual([call[1] for call in calls], ["ci/release_confidence.py", "ci/check_end_to_end_evidence.py"])
+                run_release.run(
+                    args,
+                    env={},
+                    root=root,
+                    get_revision=lambda root: COMMIT,
+                    execute=lambda argv, env, root: calls.append(
+                        [str(value) for value in argv]
+                    ),
+                )
+            self.assertEqual(
+                [call[1] for call in calls],
+                ["ci/release_confidence.py", "ci/check_end_to_end_evidence.py"],
+            )
             self.assertIn("release", calls[1])
             self.assertIn(COMMIT, calls[1])
 
@@ -228,13 +305,23 @@ class TestCompleteProfile(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "repo"
             root.mkdir()
-            args = run_release.parser().parse_args(["verify-complete", "--evidence-dir", str(Path(directory) / "evidence")])
+            args = run_release.parser().parse_args(
+                ["verify-complete", "--evidence-dir", str(Path(directory) / "evidence")]
+            )
             calls = []
+
             def fail(argv, env, root):
                 calls.append(argv)
                 raise subprocess.CalledProcessError(1, argv)
+
             with self.assertRaises(subprocess.CalledProcessError):
-                run_release.run(args, env={}, root=root, get_revision=lambda root: COMMIT, execute=fail)
+                run_release.run(
+                    args,
+                    env={},
+                    root=root,
+                    get_revision=lambda root: COMMIT,
+                    execute=fail,
+                )
             self.assertEqual(len(calls), 1)
 
 

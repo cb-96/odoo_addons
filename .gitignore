@@ -11,7 +11,6 @@ current_sources.txt
 current_git_metadata.txt
 current_sources.txt
 current_sources.jsonl.txt
-source_collector.py
 
 # Local environment and generated runtime config
 .env

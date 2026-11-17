@@ -1,0 +1,147 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Language: de\n"
+"Plural-Forms: \n"
+
+#. The sport. Do not translate; in Dutch 'trefbal' is a different game.
+msgid "dodgeball"
+msgstr ""
+
+#. The organisation that runs the competitions.
+msgid "federation"
+msgstr ""
+
+#. A member club of the federation.
+msgid "club"
+msgstr ""
+
+#. A person who acts for a club in the portal.
+msgid "club representative"
+msgstr ""
+
+#. A person responsible for one team of a club.
+msgid "team manager"
+msgstr ""
+
+#. A club's team that enters competitions.
+msgid "team"
+msgstr ""
+
+#. A licensed member who plays for a team.
+msgid "player"
+msgstr ""
+
+#. A recurring competition, for example a national league.
+msgid "competition"
+msgstr ""
+
+#. One season's run of a competition.
+msgid "edition"
+msgstr ""
+
+#. A group within a competition, for example men, women or mixed.
+msgid "division"
+msgstr ""
+
+#. The sporting year that registrations and rosters belong to.
+msgid "season"
+msgstr ""
+
+#. A team's registration with the federation for a season.
+msgid "season registration"
+msgstr ""
+
+#. A team's entry into a competition division.
+msgid "competition entry"
+msgstr ""
+
+#. A team's group of players for the season. Not the players of one game day.
+msgid "roster"
+msgstr ""
+
+#. The players a team brings to one game day, chosen from the roster.
+msgid "line-up"
+msgstr ""
+
+#. A day at one venue on which several matches are played.
+msgid "game day"
+msgstr ""
+
+#. One game between two teams.
+msgid "match"
+msgstr ""
+
+#. A part of a match; sets can be won, lost or drawn.
+msgid "set"
+msgstr ""
+
+#. The playing area at a venue where a match is played.
+msgid "court"
+msgstr ""
+
+#. The sports hall or location of a game day.
+msgid "venue"
+msgstr ""
+
+#. Which match is played when and on which court.
+msgid "schedule"
+msgstr ""
+
+#. The official, approved version of a game day's schedule.
+msgid "published schedule"
+msgstr ""
+
+#. The final score of a match.
+msgid "result"
+msgstr ""
+
+#. The ranking table of a division.
+msgid "standings"
+msgstr ""
+
+#. The printed or digital form on which a match is recorded.
+msgid "score sheet"
+msgstr ""
+
+#. A person who officiates a match: referee, line judge, table official.
+msgid "official"
+msgstr ""
+
+#. The official in charge of a match.
+msgid "referee"
+msgstr ""
+
+#. An official's task that a club must staff with its own people.
+msgid "club duty"
+msgstr ""
+
+#. Whether a player may play, by licence, age, suspension and rules.
+msgid "eligibility"
+msgstr ""
+
+#. A guardian's signed consent for a player under the age limit.
+msgid "parental approval"
+msgstr ""
+
+#. A player's answer whether they can play on a game day.
+msgid "player availability"
+msgstr ""
+
+#. A bill from the federation to a club.
+msgid "invoice"
+msgstr ""
+
+#. The website where clubs, players and officials do their work.
+msgid "portal"
+msgstr ""
+
+#. The portal home page.
+msgid "overview"
+msgstr ""

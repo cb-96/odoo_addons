@@ -43,10 +43,22 @@ class CommunicationPreference(models.Model):
     def _mode_for(self, user, kind):
         cached = self.env.context.get("notification_preference_modes")
         if cached is not None and self.env.su:
-            return cached.get((user.id, kind),
-                              "digest" if kind == "due_soon" else "inbox" if kind == "delivery_failure" else "immediate")
-        preference = self.sudo().search([('user_id', '=', user.id), ('kind', '=', kind)], limit=1)
-        return preference.mode or ('digest' if kind == 'due_soon' else 'inbox' if kind == 'delivery_failure' else 'immediate')
+            return cached.get(
+                (user.id, kind),
+                (
+                    "digest"
+                    if kind == "due_soon"
+                    else "inbox" if kind == "delivery_failure" else "immediate"
+                ),
+            )
+        preference = self.sudo().search(
+            [("user_id", "=", user.id), ("kind", "=", kind)], limit=1
+        )
+        return preference.mode or (
+            "digest"
+            if kind == "due_soon"
+            else "inbox" if kind == "delivery_failure" else "immediate"
+        )
 
     @api.model
     def _save_for_user(self, user, values):
@@ -298,24 +310,58 @@ class CommunicationDelivery(models.Model):
                 }
             )
         else:
-            mail = self.env['mail.mail'].sudo().create({
-                'subject': self.name, 'body_html': body, 'email_to': user.partner_id.email,
-                'email_from': self.env.company.partner_id.email_formatted or user.partner_id.email_formatted,
-                'auto_delete': False, 'federation_notification_owned': True,
-            })
-            self.write({'mail_id': mail.id})
+            mail = (
+                self.env["mail.mail"]
+                .sudo()
+                .create(
+                    {
+                        "subject": self.name,
+                        "body_html": body,
+                        "email_to": user.partner_id.email,
+                        "email_from": self.env.company.partner_id.email_formatted
+                        or user.partner_id.email_formatted,
+                        "auto_delete": False,
+                        "federation_notification_owned": True,
+                    }
+                )
+            )
+            self.write({"mail_id": mail.id})
         if not self.log_id:
-            log = self.env['federation.notification.log'].sudo().create({
-                'name': self.name, 'target_model': self._name, 'target_res_id': self.id,
-                'notification_type': 'email', 'recipient_partner_id': user.partner_id.id,
-                'recipient_email': user.partner_id.email, 'state': 'pending',
-                'correlation_id': self.delivery_key, 'mail_id': self.mail_id.id,
-            })
-            self.write({'log_id': log.id})
-        self.write({'state': 'queued', 'attempts': self.attempts + 1, 'failure_note': False,
-                    'next_attempt_on': False})
-        self.log_id.write({'mail_id': self.mail_id.id, 'state': 'pending', 'attempt_count': self.attempts,
-                           'last_attempt_on': fields.Datetime.now(), 'operator_message': False})
+            log = (
+                self.env["federation.notification.log"]
+                .sudo()
+                .create(
+                    {
+                        "name": self.name,
+                        "target_model": self._name,
+                        "target_res_id": self.id,
+                        "notification_type": "email",
+                        "recipient_partner_id": user.partner_id.id,
+                        "recipient_email": user.partner_id.email,
+                        "state": "pending",
+                        "correlation_id": self.delivery_key,
+                        "mail_id": self.mail_id.id,
+                    }
+                )
+            )
+            self.write({"log_id": log.id})
+        self.write(
+            {
+                "state": "queued",
+                "attempts": self.attempts + 1,
+                "failure_note": False,
+                "next_attempt_on": False,
+            }
+        )
+        self.log_id.write(
+            {
+                "mail_id": self.mail_id.id,
+                "state": "pending",
+                "attempt_count": self.attempts,
+                "last_attempt_on": fields.Datetime.now(),
+                "operator_message": False,
+            }
+        )
 
     def _accepted(self):
         if self.state == "sent":

@@ -4,6 +4,7 @@
 Checksums bind recorded artifacts, not an independent attestation of execution.
 Only the approved isolated rehearsal backend may produce passing evidence.
 """
+
 import argparse
 import hashlib
 import json
@@ -19,9 +20,16 @@ except ImportError:
 CONTRACT = Path(__file__).resolve().parent / "release_invariants.json"
 
 REQUIRED = (
-    "before-upgrade.json", "after-upgrade.json", "rollback.json",
-    "invariant-comparison.json", "restore-before-upgrade.txt", "restore-rollback.txt",
-    "upgrade.json", "operator-acceptance.json", "upgrade.log", "operator-acceptance.log",
+    "before-upgrade.json",
+    "after-upgrade.json",
+    "rollback.json",
+    "invariant-comparison.json",
+    "restore-before-upgrade.txt",
+    "restore-rollback.txt",
+    "upgrade.json",
+    "operator-acceptance.json",
+    "upgrade.log",
+    "operator-acceptance.log",
 )
 
 
@@ -53,10 +61,15 @@ def artifacts(root, commit=None):
         try:
             if name.endswith(".json"):
                 value = read_object(path)
-                if value.get("schema_version") != (2 if name in ("upgrade.json", "operator-acceptance.json") else 1):
+                if value.get("schema_version") != (
+                    2 if name in ("upgrade.json", "operator-acceptance.json") else 1
+                ):
                     errors.append("Unsupported migration artifact schema: " + name)
                 snapshots[name] = value
-            elif name.startswith("restore-") and "filestore_restored=yes" not in path.read_text().splitlines():
+            elif (
+                name.startswith("restore-")
+                and "filestore_restored=yes" not in path.read_text().splitlines()
+            ):
                 errors.append("Full filestore restoration not demonstrated: " + name)
         except (OSError, ValueError, TypeError) as error:
             errors.append(str(error))
@@ -67,42 +80,85 @@ def artifacts(root, commit=None):
     after = snapshots.get("after-upgrade.json")
     rollback = snapshots.get("rollback.json")
     if all(isinstance(value, dict) for value in (before, after, rollback)):
-        for name, value in (("before", before), ("after", after), ("rollback", rollback)):
+        for name, value in (
+            ("before", before),
+            ("after", after),
+            ("rollback", rollback),
+        ):
             if not isinstance(value.get("counts"), dict) or not value["counts"]:
                 errors.append(name + " snapshot has no invariant counts")
-            if not isinstance(value.get("zero_checks"), dict) or not value["zero_checks"]:
+            if (
+                not isinstance(value.get("zero_checks"), dict)
+                or not value["zero_checks"]
+            ):
                 errors.append(name + " snapshot has no integrity checks")
-        for name, value in (("before", before), ("after", after), ("rollback", rollback)):
+        for name, value in (
+            ("before", before),
+            ("after", after),
+            ("rollback", rollback),
+        ):
             for section in ("counts", "zero_checks"):
                 if isinstance(value.get(section), dict):
                     if set(value[section]) != set(contract[section]):
-                        errors.append(name + " snapshot does not cover the invariant contract: " + section)
-                    if any(type(number) is not int or number < 0 for number in value[section].values()):
-                        errors.append(name + " snapshot contains invalid numeric invariants")
-        expected_modes = {key: contract.get("count_modes", {}).get(key, "exact") for key in contract["counts"]}
+                        errors.append(
+                            name
+                            + " snapshot does not cover the invariant contract: "
+                            + section
+                        )
+                    if any(
+                        type(number) is not int or number < 0
+                        for number in value[section].values()
+                    ):
+                        errors.append(
+                            name + " snapshot contains invalid numeric invariants"
+                        )
+        expected_modes = {
+            key: contract.get("count_modes", {}).get(key, "exact")
+            for key in contract["counts"]
+        }
         if before.get("count_modes") != expected_modes:
-            errors.append("Before snapshot count modes differ from the invariant contract")
+            errors.append(
+                "Before snapshot count modes differ from the invariant contract"
+            )
         try:
-            differences = compare(before, after, "after") + compare(before, rollback, "rollback", force_exact=True)
+            differences = compare(before, after, "after") + compare(
+                before, rollback, "rollback", force_exact=True
+            )
             if differences:
                 errors.append("Recomputed migration/rollback invariants differ")
         except (ValueError, TypeError, AttributeError) as error:
             errors.append("Invalid invariant snapshots: " + str(error))
     for name, lane, log_name in (
         ("upgrade.json", "migration-upgrade", "upgrade.log"),
-        ("operator-acceptance.json", "role-separated-acceptance", "operator-acceptance.log"),
+        (
+            "operator-acceptance.json",
+            "role-separated-acceptance",
+            "operator-acceptance.log",
+        ),
     ):
         record = snapshots.get(name, {})
         if record.get("commit") != commit or record.get("lane") != lane:
             errors.append("Runtime lane belongs to another candidate or lane: " + name)
-        if record.get("status") != "passed" or type(record.get("exit_code")) is not int or record["exit_code"] != 0:
+        if (
+            record.get("status") != "passed"
+            or type(record.get("exit_code")) is not int
+            or record["exit_code"] != 0
+        ):
             errors.append("Runtime lane is not passing: " + name)
         log = (root / log_name).resolve()
         recorded_log = record.get("log", {})
-        if (root in log.parents and log.is_file()
-                and (not isinstance(recorded_log, dict) or recorded_log.get("sha256") != digest(log)
-                     or log.stat().st_size == 0)):
-            errors.append("Runtime lane log is empty or not bound to its evidence: " + name)
+        if (
+            root in log.parents
+            and log.is_file()
+            and (
+                not isinstance(recorded_log, dict)
+                or recorded_log.get("sha256") != digest(log)
+                or log.stat().st_size == 0
+            )
+        ):
+            errors.append(
+                "Runtime lane log is empty or not bound to its evidence: " + name
+            )
     return errors
 
 
@@ -115,7 +171,9 @@ def validate_bundle(directory, commit):
             raise ValueError("Migration manifest escapes its evidence directory")
         manifest = read_object(manifest_path)
         if manifest.get("schema_version") != 2:
-            errors.append("Migration manifest must be sealed schema 2; rerun the rehearsal")
+            errors.append(
+                "Migration manifest must be sealed schema 2; rerun the rehearsal"
+            )
         if manifest.get("commit") != commit:
             errors.append("Migration manifest is not for the exact candidate commit")
         if manifest.get("invariants_contract_sha256") != digest(CONTRACT):
@@ -130,10 +188,18 @@ def validate_bundle(directory, commit):
             checksums = {}
         for name in REQUIRED:
             path = (root / name).resolve()
-            if root in path.parents and path.is_file() and checksums.get(name) != digest(path):
+            if (
+                root in path.parents
+                and path.is_file()
+                and checksums.get(name) != digest(path)
+            ):
                 errors.append("Missing or changed artifact checksum: " + name)
         backup = manifest.get("backup", {})
-        if not isinstance(backup, dict) or not isinstance(backup.get("sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", backup["sha256"]):
+        if (
+            not isinstance(backup, dict)
+            or not isinstance(backup.get("sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", backup["sha256"])
+        ):
             errors.append("Migration backup checksum is missing or malformed")
     except (OSError, ValueError, TypeError) as error:
         errors.append("Invalid migration manifest: " + str(error))
@@ -150,9 +216,12 @@ def seal(directory, commit, backup, owner, trigger):
     if errors:
         raise ValueError("; ".join(errors))
     manifest = {
-        "schema_version": 2, "commit": commit, "status": "passed",
+        "schema_version": 2,
+        "commit": commit,
+        "status": "passed",
         "invariants_contract_sha256": digest(CONTRACT),
-        "rollback_owner": owner.strip(), "rollback_trigger": trigger.strip(),
+        "rollback_owner": owner.strip(),
+        "rollback_trigger": trigger.strip(),
         "backup": {"path": str(Path(backup).resolve()), "sha256": digest(backup)},
         "artifacts": list(REQUIRED),
         "artifact_sha256": {name: digest(root / name) for name in REQUIRED},
@@ -177,10 +246,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == "seal":
-            seal(args.evidence_dir, args.commit, args.backup, args.rollback_owner, args.rollback_trigger)
+            seal(
+                args.evidence_dir,
+                args.commit,
+                args.backup,
+                args.rollback_owner,
+                args.rollback_trigger,
+            )
         errors = validate_bundle(args.evidence_dir, args.commit)
         if errors:
-            print("Migration evidence rejected:\n- " + "\n- ".join(errors), file=sys.stderr)
+            print(
+                "Migration evidence rejected:\n- " + "\n- ".join(errors),
+                file=sys.stderr,
+            )
             return 1
     except (OSError, ValueError, TypeError) as error:
         print(str(error), file=sys.stderr)

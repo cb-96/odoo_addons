@@ -14,6 +14,10 @@ Verifies the correct semantics after removing the name-based unique constraint:
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_people.tests.registration_fixtures import (
+    create_registered_roster_lines,
+)
+
 
 class TestRosterScopeUniqueness(TransactionCase):
     """Scope and name semantics after removing the name-based unique constraint."""
@@ -83,8 +87,9 @@ class TestRosterScopeUniqueness(TransactionCase):
                 "competition_id": self.competition.id,
             }
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": r1.id, "player_id": self.player.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": r1.id, "player_id": self.player.id},
         )
         r1.action_activate()
         self.assertEqual(r1.status, "active")
@@ -109,16 +114,18 @@ class TestRosterScopeUniqueness(TransactionCase):
         r1 = self.env["federation.team.roster"].create(
             {"team_id": self.team.id, "season_id": self.season.id}
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": r1.id, "player_id": self.player.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": r1.id, "player_id": self.player.id},
         )
         r1.action_activate()
 
         r2 = self.env["federation.team.roster"].create(
             {"team_id": self.team.id, "season_id": self.season.id}
         )
-        self.env["federation.team.roster.line"].create(
-            {"roster_id": r2.id, "player_id": self.player.id}
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": r2.id, "player_id": self.player.id},
         )
         with self.assertRaises(ValidationError):
             r2.action_activate()

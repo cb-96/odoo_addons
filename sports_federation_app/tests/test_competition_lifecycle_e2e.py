@@ -495,7 +495,13 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         outcome="normal",
         reason="",
         save=True,
+        approve=True,
     ):
+        """Score a match on court; the tournament manager then approves it.
+
+        Court results always wait for the tournament manager (one-step
+        approval), whatever the competition's review flags.
+        """
         command_service = self.env["federation.court.commands"].with_user(
             self.court_operator
         )
@@ -514,16 +520,29 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             base = self._court_command(
                 command_service, matchday, match, "save", payload, opened
             )["current"]
-        return self._court_command(
+        result = self._court_command(
             command_service, matchday, match, "submit", payload, base
         )
+        if approve:
+            self.assertEqual(match.result_state, "submitted")
+            match.with_user(self.organizer).action_approve_result_one_step()
+        return result
 
     def _finish_gameday(self, matchday):
-        return (
-            self.env["federation.matchday.commands"]
-            .with_user(self.matchday_manager)
-            .close_matchday(matchday.id)
-        )
+        """Leave the game day closed.
+
+        The match-day automation closes a day by itself as soon as every
+        published match has an official result, so only close what is still
+        open.
+        """
+        matchday.invalidate_recordset(["state"])
+        if matchday.state == "open":
+            self.env["federation.matchday.commands"].with_user(
+                self.matchday_manager
+            ).close_matchday(matchday.id)
+            matchday.invalidate_recordset(["state"])
+        self.assertEqual(matchday.state, "closed")
+        return True
 
     def test_league_runs_from_creation_to_closed_competition(self):
         edition = self._create_competition("full-league", day_count=2)
@@ -1014,7 +1033,7 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self._open_gameday(matchday)
         for team in match.home_team_id | match.away_team_id:
             self._cross_out(match, team)
-        self._court_result(matchday, match, home=2, away=1)
+        self._court_result(matchday, match, home=2, away=1, approve=False)
         self.assertEqual(match.result_state, "submitted")
 
         blockers = edition.with_user(self.organizer)._get_close_blockers()

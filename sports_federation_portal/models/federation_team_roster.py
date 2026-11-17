@@ -506,9 +506,21 @@ class FederationTeamRosterLine(models.Model):
             ]
         if roster.team_id.gender in ("male", "female"):
             domain.append(("gender", "=", roster.team_id.gender))
-        already_on_roster = roster.sudo().line_ids.player_id.ids
-        if already_on_roster:
-            domain.append(("id", "not in", already_on_roster))
+        # Same rule as the backend roster form: already on the roster, blocked by
+        # the club team ranking, or on another club team in the same division.
+        registered = (
+            self.env["federation.player.license"]
+            .sudo()
+            ._registered_players(
+                roster.club_id,
+                roster.season_id,
+                roster._get_reference_date(),
+            )
+        )
+        domain.append(("id", "in", registered.ids))
+        unavailable = roster._unavailable_players().ids
+        if unavailable:
+            domain.append(("id", "not in", unavailable))
         return domain
 
     @api.model

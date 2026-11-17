@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compatibility entrypoint: execute behavioral workflow tests, not token checks."""
+
 from pathlib import Path
 import sys
 import unittest

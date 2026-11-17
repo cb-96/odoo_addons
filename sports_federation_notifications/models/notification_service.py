@@ -29,16 +29,30 @@ class FederationNotificationService(models.AbstractModel):
         """Persist a delivery intent and queue mail; never contact SMTP here."""
         if isinstance(email_to, (list, tuple, set)):
             email_to = ",".join(dict.fromkeys(email for email in email_to if email))
-        log = self.env["federation.notification.log"].sudo().create({
-            "name": log_name or "Email: %s" % template_xmlid,
-            "target_model": record._name, "target_res_id": record.id,
-            "notification_type": "email", "template_xmlid": template_xmlid,
-            "recipient_partner_id": partner.id if partner and partner.exists() else False,
-            "recipient_email": partner.email if partner and partner.exists() else email_to,
-            "correlation_id": ensure_correlation_id(self.env),
-        })
+        log = (
+            self.env["federation.notification.log"]
+            .sudo()
+            .create(
+                {
+                    "name": log_name or "Email: %s" % template_xmlid,
+                    "target_model": record._name,
+                    "target_res_id": record.id,
+                    "notification_type": "email",
+                    "template_xmlid": template_xmlid,
+                    "recipient_partner_id": (
+                        partner.id if partner and partner.exists() else False
+                    ),
+                    "recipient_email": (
+                        partner.email if partner and partner.exists() else email_to
+                    ),
+                    "correlation_id": ensure_correlation_id(self.env),
+                }
+            )
+        )
         if partner and not partner.exists():
-            log._queue_failed(ValueError("Recipient partner is missing or has been deleted."))
+            log._queue_failed(
+                ValueError("Recipient partner is missing or has been deleted.")
+            )
             return log
         return self._queue_template(log, record, partner=partner, email_to=email_to)
 
@@ -48,14 +62,19 @@ class FederationNotificationService(models.AbstractModel):
             with self.env.cr.savepoint():
                 template = self.env.ref(log.template_xmlid, raise_if_not_found=False)
                 if not template:
-                    raise ValueError("Template '%s' is not available in this database." % log.template_xmlid)
+                    raise ValueError(
+                        "Template '%s' is not available in this database."
+                        % log.template_xmlid
+                    )
                 values = {"auto_delete": False, "federation_notification_owned": True}
                 if partner:
                     values.update(recipient_ids=[(6, 0, [partner.id])], email_to=False)
                 elif email_to:
                     values.update(email_to=email_to, recipient_ids=[(5, 0, 0)])
                 mail_id = template.sudo().send_mail(
-                    record.id, force_send=False, email_values=values,
+                    record.id,
+                    force_send=False,
+                    email_values=values,
                 )
                 mail = self.env["mail.mail"].sudo().browse(mail_id).exists()
                 if not mail:
@@ -70,19 +89,40 @@ class FederationNotificationService(models.AbstractModel):
     @notification_effect()
     def queue_direct_email(self, record, subject, body_html, email_to, log_name=None):
         """Direct-content fallback uses the same mail queue and delivery evidence."""
-        log = self.env["federation.notification.log"].sudo().create({
-            "name": log_name or subject, "target_model": record._name,
-            "target_res_id": record.id, "notification_type": "email",
-            "recipient_email": email_to, "correlation_id": ensure_correlation_id(self.env),
-        })
+        log = (
+            self.env["federation.notification.log"]
+            .sudo()
+            .create(
+                {
+                    "name": log_name or subject,
+                    "target_model": record._name,
+                    "target_res_id": record.id,
+                    "notification_type": "email",
+                    "recipient_email": email_to,
+                    "correlation_id": ensure_correlation_id(self.env),
+                }
+            )
+        )
         try:
             with self.env.cr.savepoint():
-                mail = self.env["mail.mail"].sudo().create({
-                    "subject": subject, "body_html": body_html, "email_to": email_to,
-                    "email_from": (self.env.company.partner_id.email_formatted
-                                   or self.env.user.email_formatted or False),
-                    "auto_delete": False, "federation_notification_owned": True,
-                })
+                mail = (
+                    self.env["mail.mail"]
+                    .sudo()
+                    .create(
+                        {
+                            "subject": subject,
+                            "body_html": body_html,
+                            "email_to": email_to,
+                            "email_from": (
+                                self.env.company.partner_id.email_formatted
+                                or self.env.user.email_formatted
+                                or False
+                            ),
+                            "auto_delete": False,
+                            "federation_notification_owned": True,
+                        }
+                    )
+                )
                 log._queued(mail)
         except (DeadlockDetected, SerializationFailure):
             raise
@@ -132,7 +172,9 @@ class FederationNotificationService(models.AbstractModel):
                     {
                         "res_model_id": self.env["ir.model"]._get_id(record._name),
                         "res_id": record.id,
-                        "activity_type_id": activity_type.id if activity_type else False,
+                        "activity_type_id": (
+                            activity_type.id if activity_type else False
+                        ),
                         "summary": summary,
                         "note": note or "",
                         "user_id": user_id,

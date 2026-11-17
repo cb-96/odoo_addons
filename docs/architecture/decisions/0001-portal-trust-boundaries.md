@@ -1,7 +1,7 @@
 # ADR-0001: Portal Trust Boundaries
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-13
 Review cadence: Every release
 Status: Accepted
 
@@ -19,6 +19,26 @@ Portal writes use explicit, model-owned privilege boundaries:
 - The privilege boundary preserves the request user for audit attribution while keeping elevation narrow and explicit.
 - Controllers must not perform business writes through raw `sudo()`.
 - Positive in-scope, negative out-of-scope, direct-ID, and elevated-helper tests are mandatory for every privileged portal write surface.
+
+## ORM access of portal users
+
+Portal pages are not the only way in: a logged-in portal user can call the ORM
+directly (`/web/dataset/call_kw`), which uses access rights and record rules,
+not the page filters. Therefore:
+
+- Every access right granted to a portal group on a `federation.*` model has a
+  record rule for that same group (or a global one) that limits it to the
+  user's scope. `ci/check_portal_record_rules.py` enforces this; the only
+  exception, read-only seasons, is listed there with its reason.
+- Portal rules scope through `user.portal_club_scope_ids` (whole-club tenures)
+  and `user.portal_team_scope_ids` (team tenures), never through the raw
+  `user.representative_ids`, which includes ended tenures and treats a team
+  coach as a representative of the whole club.
+- Creation goes through `portal_create` (a field allowlist, then elevation);
+  portal groups therefore have no create right on players.
+- A tenure or delegation ends by date. `is_current` is evaluated for today and
+  never stored, and the stored portal scopes that record rules read are
+  refreshed hourly (`_cron_refresh_time_based_state`) and on upgrade.
 
 ## Consequences
 

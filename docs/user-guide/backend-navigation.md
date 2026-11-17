@@ -1,7 +1,7 @@
 # Backend navigation
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-14
 Review cadence: Every release
 
 The normal competition journey has one discoverable entry:
@@ -25,7 +25,7 @@ The **Federation** application opens on **Competitions > Competitions**, the
 Competition Hub. It has these top-level work areas, in this order:
 
 - **Competitions**: the Competition Hub and the Review Queue, plus planning tools and raw records (advanced).
-- **Clubs & People**: clubs, teams, players, club representatives and membership work.
+- **Clubs & People**: clubs, teams, players, season player approvals and club representatives.
 - **Match Operations**: game days and court operation; courts and venues, officiating and discipline (advanced).
 - **Publishing**: schedule review, publication and public editorial content.
 - **Finance & Assurance**: finance, compliance and governance overrides (advanced).
@@ -34,7 +34,7 @@ Competition Hub. It has these top-level work areas, in this order:
 
 ## Ordinary manager map
 
-A Federation Manager without specialist groups sees eleven entries:
+A Federation Manager without specialist groups sees twelve entries:
 
 ```text
 Federation
@@ -45,6 +45,7 @@ Federation
 │   ├── Clubs
 │   ├── Teams
 │   ├── Players
+│   ├── Season Player Registrations
 │   └── Club Representatives
 ├── Match Operations
 │   ├── Game Days
@@ -57,10 +58,18 @@ Federation
 ```
 
 The **Review Queue** lists decisions that are waiting for the federation
-across all competitions: submitted competition entries, submitted game-day
-line-ups and results to verify or approve. It refreshes the task projection
+across all competitions: submitted competition entries, season player lists
+submitted by clubs, submitted game-day line-ups and results to verify or
+approve. It refreshes the task projection
 when opened. Club work, such as referee nominations, stays in the club portal
 and the **Duty Coverage Board**.
+
+**Season Player Registrations** opens on the *To approve* filter: the club
+season player lists that clubs submitted from the portal. Open a list and
+choose **Approve pending players**. The button is only shown to federation
+managers and only on submitted lists; players a manager collects or adds
+directly are submitted first with **Submit pending players**. Remove the
+filter to see draft, approved and cancelled club seasons.
 
 The Competition Hub provides contextual actions for creating competitions,
 teams, format, game days, schedule generation, publication, rosters, game-day
@@ -84,21 +93,18 @@ Federation
 │   │   └── Schedule Planner
 │   └── Records
 │       ├── Seasons
-│       ├── Season Registrations
+│       ├── Annual Team Enrolments
 │       ├── Divisions
 │       ├── Matches
 │       ├── Game-Day Lineups
 │       └── Standings
-├── Clubs & People
-│   └── Membership                          (optional member services)
-│       ├── Memberships, Member Requests, Renewals to Review
-│       ├── Guardian Claims, Identity Review Queue
-│       └── Family Relationships, Membership Retention
 ├── Match Operations
 │   ├── Courts & Venues
 │   │   ├── Venues
 │   │   ├── Court Operators
 │   │   └── Court Recovery
+│   ├── Scoring Phones                      (prepared phones; revoke)
+│   ├── Club Scorers                        (club-nominated scorers)
 │   ├── Officiating
 │   │   ├── Duty Coverage Board
 │   │   ├── Referee Assignments
@@ -148,7 +154,6 @@ Federation
         ├── Operational Jobs, Standings Recompute Queue
         ├── Retention Policies, Retention Evidence
         ├── Competition Role Assignments, Game-Day Incidents, Operational Deviations
-        ├── Member Changes, Duplicate Person Decisions, Member Evidence History
         └── Portal Audit, Token Rotation Audit, Journey Instrumentation
 ```
 
@@ -172,6 +177,7 @@ Federation > Competitions > Competitions
 Federation > Competitions > Review Queue
 Federation > Clubs & People > Clubs
 Federation > Clubs & People > Teams
+Federation > Clubs & People > Season Player Registrations
 Federation > Match Operations > Game Days
 Federation > Reporting > Operational Health
 ```
@@ -216,9 +222,9 @@ In addition:
   or external identifier.
 - `sports_federation_navigation` is the single map of names, parents, ordering
   and groups for the addons it depends on. It assigns groups with
-  `(6, 0, ...)` so upgrades converge on the map. Optional addons
-  (`sports_federation_accounting`, `sports_federation_member_services`) place
-  their own menus in the sections defined there or in `sports_federation_base`.
+  `(6, 0, ...)` so upgrades converge on the map. The optional
+  `sports_federation_accounting` addon places its own menus in the sections
+  defined there or in `sports_federation_base`.
 - The **Advanced Federation Tools** group controls discoverability only. It
   implies Manager, but Manager does not imply it.
 - Audit, recovery and technical records belong under **Administration >

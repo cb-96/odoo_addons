@@ -180,8 +180,9 @@ class TestFederationPlayerLicense(TransactionCase):
         self.assertEqual(lic.state, "active")
         lic.action_cancel()
         self.assertEqual(lic.state, "cancelled")
-        lic.action_draft()
-        self.assertEqual(lic.state, "draft")
+        with self.assertRaises(ValidationError):
+            lic.action_draft()
+        self.assertEqual(lic.state, "cancelled")
 
     def test_duplicate_player_season_rejected(self):
         """Test that duplicate player season rejected."""

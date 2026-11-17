@@ -1,0 +1,13 @@
+<odoo>
+  <record id="roster_registered_season_players" model="ir.ui.view">
+    <field name="name">roster.registered.season.players</field><field name="model">federation.team.roster</field>
+    <field name="inherit_id" ref="view_federation_team_roster_form"/>
+    <field name="arch" type="xml">
+      <!-- Technical domain relay: the picker only offers approved season players. -->
+      <xpath expr="//field[@name='line_ids']" position="before"><field name="season_registered_player_ids" invisible="True"/></xpath>
+      <xpath expr="//field[@name='line_ids']//field[@name='player_id']" position="attributes">
+        <attribute name="domain">[('club_id', '=', parent.club_id), ('active', '=', True), ('id', 'in', parent.season_registered_player_ids), ('id', 'not in', parent.unavailable_player_ids), '|', ('gender', '=', False), ('gender', 'in', [parent.player_gender_a, parent.player_gender_b])]</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

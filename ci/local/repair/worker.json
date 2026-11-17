@@ -1,0 +1,6 @@
+{
+  "hermes_command": [
+    "/home/hermes/.local/bin/hermes"
+  ],
+  "max_timeout": 900
+}

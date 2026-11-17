@@ -2,6 +2,10 @@ from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_registration.models.participant_handoff import (
+    governed,
+)
+
 
 @tagged("post_install", "-at_install", "sf_live_workspace", "sf_competition_formats")
 class TestSeasonBoard(TransactionCase):
@@ -60,7 +64,7 @@ class TestSeasonBoard(TransactionCase):
                 "state": "finalized",
             }
         )
-        cls.env["federation.participant.set.line"].create(
+        governed(cls.env["federation.participant.set.line"]).create(
             [
                 {"participant_set_id": pset.id, "team_id": team.id, "seed": seed}
                 for seed, team in enumerate(cls.teams, 1)

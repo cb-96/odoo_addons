@@ -19,22 +19,35 @@ class CommunicationInbox(http.Controller):
             raise request.not_found()
         return receipt, info
 
-    @http.route(['/my/notifications', '/my/notifications/page/<int:page>'], type='http', auth='user', website=True, methods=['GET'])
-    def inbox(self, page=1, status='all', **kw):
+    @http.route(
+        ["/my/notifications", "/my/notifications/page/<int:page>"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["GET"],
+    )
+    def inbox(self, page=1, status="all", **kw):
         if page != 1:
-            return request.redirect('/my/notifications')
+            return request.redirect("/my/notifications")
         try:
-            before = max(0, int(kw.get('before') or 0))
+            before = max(0, int(kw.get("before") or 0))
         except (TypeError, ValueError):
             before = 0
-        status = status if status in ('acknowledged', 'unacknowledged') else 'all'
-        result = request.env['federation.notification.service']._inbox_page(
-            request.env.user, status=status, before=before,
+        status = status if status in ("acknowledged", "unacknowledged") else "all"
+        result = request.env["federation.notification.service"]._inbox_page(
+            request.env.user,
+            status=status,
+            before=before,
         )
-        return request.render('sports_federation_notifications.communication_inbox', {
-            'items': result['items'], 'next_before': result['next_before'],
-            'status': status, 'page_name': 'notifications',
-        })
+        return request.render(
+            "sports_federation_notifications.communication_inbox",
+            {
+                "items": result["items"],
+                "next_before": result["next_before"],
+                "status": status,
+                "page_name": "notifications",
+            },
+        )
 
     @http.route(
         "/my/notifications/<int:receipt_id>",

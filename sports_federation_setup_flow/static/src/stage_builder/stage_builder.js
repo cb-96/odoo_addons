@@ -21,6 +21,12 @@ export class StageBuilder extends Component {
         this.dialog = useService("dialog");
         this.notification = useService("notification");
         this.orm = useService("orm");
+        // Template expressions resolve bare names on the component, and OWL does
+        // not provide the JavaScript built-ins String and Number there. The link
+        // form compares place and stage ids with String(...), which failed with
+        // "ctx.String is not a function" as soon as it was opened.
+        this.String = String;
+        this.Number = Number;
         this.structureId = Number(this.props.action?.params?.structure_id);
         this.state = useState({
             data: null,

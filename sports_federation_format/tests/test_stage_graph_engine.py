@@ -2,6 +2,10 @@ from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.sports_federation_registration.models.participant_handoff import (
+    governed,
+)
+
 
 @tagged("post_install", "-at_install", "sf_stage_graph")
 class TestStageGraphEngine(TransactionCase):
@@ -48,7 +52,7 @@ class TestStageGraphEngine(TransactionCase):
                 "state": "finalized",
             }
         )
-        cls.env["federation.participant.set.line"].create(
+        governed(cls.env["federation.participant.set.line"]).create(
             [
                 {"participant_set_id": pset.id, "team_id": team.id, "seed": i}
                 for i, team in enumerate(cls.teams, 1)
@@ -289,8 +293,8 @@ class TestStageGraphEngine(TransactionCase):
             "federation.participant.set.line",
         ):
             model = self.env[model_name].with_user(designer)
-            self.assertTrue(model.check_access_rights("read", raise_exception=False))
-            self.assertFalse(model.check_access_rights("write", raise_exception=False))
+            self.assertTrue(model.has_access("read"))
+            self.assertFalse(model.has_access("write"))
 
     def test_placement_bracket_matrix_has_valid_sources(self):
         club = self.env["federation.club"].create({"name": "Matrix Club"})
@@ -309,7 +313,7 @@ class TestStageGraphEngine(TransactionCase):
                     "state": "finalized",
                 }
             )
-            self.env["federation.participant.set.line"].create(
+            governed(self.env["federation.participant.set.line"]).create(
                 [
                     {
                         "participant_set_id": participant_set.id,

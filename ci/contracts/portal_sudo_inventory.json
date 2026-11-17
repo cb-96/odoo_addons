@@ -1,5 +1,53 @@
 [
   {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "_registration",
+    "reason": "adjacent ownership scope check",
+    "statement": "registration = ( request.env[\"federation.club.season.registration\"] .sudo() .search( [ (\"id\", \"=\", registration_id), (\"club_id\", \"in\", clubs.ids), (\"company_id\", \"in\", request.env.companies.ids), ], limit=1, ) )"
+  },
+  {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "add_players",
+    "reason": "adjacent ownership scope check",
+    "statement": "players = ( request.env[\"federation.player\"] .sudo() .search( [ (\"id\", \"in\", list(ids)), (\"club_id\", \"=\", registration.club_id.id), (\"active\", \"=\", True), ] ) )"
+  },
+  {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "registration_detail",
+    "reason": "adjacent ownership scope check",
+    "statement": "existing = ( request.env[\"federation.player.license\"] .sudo() .search( [ (\"season_id\", \"=\", registration.season_id.id), (\"player_id.club_id\", \"=\", registration.club_id.id), ] ) .player_id )"
+  },
+  {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "registration_detail",
+    "reason": "adjacent ownership scope check",
+    "statement": "return request.render( \"sports_federation_portal.portal_season_players_detail\", { \"registration\": registration, \"players\": request.env[\"federation.player\"] .sudo() .search( [ (\"club_id\", \"=\", registration.club_id.id), (\"active\", \"=\", True), (\"id\", \"not in\", existing.ids), ] ), \"page_name\": \"season_players\", \"error\": kw.get(\"error\"), }, )"
+  },
+  {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "season_players",
+    "reason": "adjacent ownership scope check",
+    "statement": "return request.render( \"sports_federation_portal.portal_season_players\", { \"registrations\": request.env[\"federation.club.season.registration\"] .sudo() .search( [ (\"club_id\", \"in\", clubs.ids), (\"company_id\", \"in\", request.env.companies.ids), ] ), \"clubs\": clubs, \"seasons\": request.env[\"federation.season\"] .sudo() .search([(\"state\", \"=\", \"open\")]), \"page_name\": \"season_players\", \"error\": kw.get(\"error\"), }, )"
+  },
+  {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "season_players",
+    "reason": "adjacent ownership scope check",
+    "statement": "return request.render( \"sports_federation_portal.portal_season_players\", { \"registrations\": request.env[\"federation.club.season.registration\"] .sudo() .search( [ (\"club_id\", \"in\", clubs.ids), (\"company_id\", \"in\", request.env.companies.ids), ] ), \"clubs\": clubs, \"seasons\": request.env[\"federation.season\"] .sudo() .search([(\"state\", \"=\", \"open\")]), \"page_name\": \"season_players\", \"error\": kw.get(\"error\"), }, )"
+  },
+  {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "start_registration",
+    "reason": "adjacent ownership scope check",
+    "statement": "registration = ( request.env[\"federation.club.season.registration\"] .sudo() ._get_or_create(club, season) )"
+  },
+  {
+    "file": "sports_federation_portal/controllers/club_season_players.py",
+    "function": "start_registration",
+    "reason": "adjacent ownership scope check",
+    "statement": "season = ( request.env[\"federation.season\"] .sudo() .search( [ (\"id\", \"=\", season_id), (\"state\", \"=\", \"open\"), ], limit=1, ) )"
+  },
+  {
     "file": "sports_federation_portal/controllers/competition_portal.py",
     "function": "portal_create_competition_entry",
     "reason": "adjacent ownership scope check",
@@ -19,9 +67,9 @@
   },
   {
     "file": "sports_federation_portal/controllers/connected_journeys.py",
-    "function": "role_home",
+    "function": "_overview_official",
     "reason": "adjacent ownership scope check",
-    "statement": "assignments = request.env[\"federation.portal.privilege\"].portal_search( model, model._portal_get_domain(user=request.env.user) + [ ( \"publication_id\", \"in\", request.env[\"federation.matchday\"] .sudo() .search([(\"current_publication_id.state\", \"=\", \"live\")]) .mapped(\"current_publication_id\") .ids, ) ], user=request.env.user, order=\"id desc\", limit=100, )"
+    "statement": "live_publications = ( request.env[\"federation.matchday\"] .sudo() .search([(\"current_publication_id.state\", \"=\", \"live\")]) .mapped(\"current_publication_id\") )"
   },
   {
     "file": "sports_federation_portal/controllers/manager_operation_tasks.py",
@@ -42,42 +90,6 @@
     "statement": "Task = request.env[\"federation.operation.task\"].sudo()"
   },
   {
-    "file": "sports_federation_portal/controllers/portal_club.py",
-    "function": "portal_my_club",
-    "reason": "adjacent ownership scope check",
-    "statement": "teams = ( request.env[\"federation.team\"] .sudo() .search( [(\"club_id\", \"=\", club.id)], order=\"name\", ) )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_club.py",
-    "function": "portal_my_players",
-    "reason": "adjacent ownership scope check",
-    "statement": "players = ( request.env[\"federation.player\"] .sudo() .search(domain, order=\"last_name, first_name\") )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_club.py",
-    "function": "portal_my_teams",
-    "reason": "adjacent ownership scope check",
-    "statement": "teams = ( request.env[\"federation.team\"] .sudo() .search( [(\"club_id\", \"in\", clubs.ids)], order=\"name\", ) )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_club.py",
-    "function": "portal_my_teams_create",
-    "reason": "adjacent ownership scope check",
-    "statement": "club = request.env[\"federation.club\"].sudo().browse(club_id)"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_helpers.py",
-    "function": "_prepare_portal_layout_values",
-    "reason": "adjacent ownership scope check",
-    "statement": "assignment_model = request.env[\"federation.match.referee\"].sudo()"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_helpers.py",
-    "function": "_prepare_portal_layout_values",
-    "reason": "adjacent ownership scope check",
-    "statement": "operation_task_model.sudo().sync_for_user(user=request.env.user)"
-  },
-  {
     "file": "sports_federation_portal/controllers/portal_helpers.py",
     "function": "_prepare_portal_layout_values",
     "reason": "adjacent ownership scope check",
@@ -88,24 +100,6 @@
     "function": "_prepare_portal_layout_values",
     "reason": "adjacent ownership scope check",
     "statement": "representative = ( request.env[\"federation.club.representative\"] .sudo() .search( [(\"user_id\", \"=\", request.env.user.id)], limit=1, ) )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_helpers.py",
-    "function": "_prepare_portal_layout_values",
-    "reason": "adjacent ownership scope check",
-    "statement": "values[ \"federation_operation_task_count\" ] = operation_task_model.sudo().search_count( task_domain + [(\"state\", \"!=\", \"done\")] )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_helpers.py",
-    "function": "_prepare_portal_layout_values",
-    "reason": "adjacent ownership scope check",
-    "statement": "values[\"federation_pending_duties_count\"] = ( request.env[\"federation.match.club.referee.duty\"] .sudo() .search_count( [ (\"club_id\", \"in\", club_ids), (\"state\", \"in\", (\"open\", \"rejected\")), ] ) )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_helpers.py",
-    "function": "_prepare_portal_layout_values",
-    "reason": "adjacent ownership scope check",
-    "statement": "values[\"federation_pending_results_count\"] = ( ( request.env[\"federation.match.result\"] .sudo() .search_count( [ (\"state\", \"=\", \"pending_approval\"), \"|\", (\"match_id.home_team_id.club_id\", \"in\", club_ids), (\"match_id.away_team_id.club_id\", \"in\", club_ids), ] ) ) if \"federation.match.result\" in request.env else 0 )"
   },
   {
     "file": "sports_federation_portal/controllers/portal_registrations.py",

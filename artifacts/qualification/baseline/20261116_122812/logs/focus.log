@@ -1,0 +1,1014 @@
+[Release baseline] Running RC lane: focus
+#1 [internal] load local bake definitions
+#1 reading from stdin 621B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile.odoo-ci
+#2 transferring dockerfile:
+#2 transferring dockerfile: 1.35kB done
+#2 DONE 0.4s
+
+#3 [internal] load metadata for docker.io/library/odoo:19
+#3 DONE 0.7s
+
+#4 [internal] load .dockerignore
+#4 transferring context:
+#4 transferring context: 2B done
+#4 DONE 0.4s
+
+#5 [internal] load build context
+#5 DONE 0.0s
+
+#6 [1/4] FROM docker.io/library/odoo:19@sha256:19b1d3cc053b31f418b3db1f57c709c0e589a9c29fdabdff966b60d05d757028
+#6 resolve docker.io/library/odoo:19@sha256:19b1d3cc053b31f418b3db1f57c709c0e589a9c29fdabdff966b60d05d757028
+#6 resolve docker.io/library/odoo:19@sha256:19b1d3cc053b31f418b3db1f57c709c0e589a9c29fdabdff966b60d05d757028 0.6s done
+#6 DONE 0.7s
+
+#5 [internal] load build context
+#5 transferring context: 45B done
+#5 DONE 0.4s
+
+#7 [2/4] RUN if [ "0" = "1" ]; then         apt-get update         && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates;     else         apt-get update         && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends             ca-certificates             wget         && wget -q -O /tmp/google-chrome-stable_current_amd64.deb             https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb         && DEBIAN_FRONTEND=noninteractive apt-get install -y             /tmp/google-chrome-stable_current_amd64.deb         && rm -f /tmp/google-chrome-stable_current_amd64.deb         && ln -sf /usr/bin/google-chrome-stable /usr/local/bin/chromium-browser         && google-chrome-stable --version;     fi     && rm -rf /var/lib/apt/lists/*
+#7 CACHED
+
+#8 [3/4] COPY requirements-odoo-ci.txt /tmp/sports-federation-odoo-ci-requirements.txt
+#8 CACHED
+
+#9 [4/4] RUN python3 -m pip install     --break-system-packages     --no-cache-dir     -r /tmp/sports-federation-odoo-ci-requirements.txt     && python3 -c "import websocket; assert websocket.__version__ == '1.8.0'"     && if [ "0" != "1" ]; then chromium-browser --version; fi
+#9 CACHED
+
+#10 exporting to image
+#10 exporting layers done
+#10 exporting manifest sha256:a55a558f79b805fad59776eb2398ad552867d82bde165e49838c3aea0b7728bc 0.1s done
+#10 exporting config sha256:65e990f2e830a139b204ba1362f1adb7e800872b03a751febf55f7a59ef2ecca 0.1s done
+#10 exporting attestation manifest sha256:4203e0250b98b66d291a027badbe0ae4e84406572a6a1a68e1051857132ac9fb
+#10 exporting attestation manifest sha256:4203e0250b98b66d291a027badbe0ae4e84406572a6a1a68e1051857132ac9fb 1.1s done
+#10 exporting manifest list sha256:174e22f5389a1ac1fc7218b6261e187996fe475e1f62f0f1c96c4653a380c6d8
+#10 exporting manifest list sha256:174e22f5389a1ac1fc7218b6261e187996fe475e1f62f0f1c96c4653a380c6d8 0.5s done
+#10 naming to docker.io/library/sports-federation-odoo-ci:19
+#10 naming to docker.io/library/sports-federation-odoo-ci:19 0.1s done
+#10 unpacking to docker.io/library/sports-federation-odoo-ci:19 0.1s done
+#10 DONE 2.5s
+
+#11 resolving provenance for metadata file
+#11 DONE 0.0s
+ sports-federation-odoo-ci:19  Built
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Running
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Waiting
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Healthy
+[RC:focus] Streaming Odoo output; full log: /home/cedric/odoo/addons/odoo-rc.log
+[RC:focus] Broad upstream-compatibility lanes may run for more than an hour.
+ Container sf_rc_baseline_1794830536_2109396-ci-db-1  Running
+2026-11-16 12:16:58,315 32 INFO ? odoo: Odoo version 19.0-20260324 
+2026-11-16 12:16:58,315 32 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2026-11-16 12:16:58,315 32 INFO ? odoo: addons paths: _NamespacePath(['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/19.0', '/mnt/extra-addons', '/usr/lib/python3/dist-packages/addons']) 
+2026-11-16 12:16:58,315 32 INFO ? odoo: database: odoo@ci-db:5432 
+2026-11-16 12:16:58,581 32 INFO ? odoo.service.server: HTTP service (werkzeug) running on localhost:8069 
+2026-11-16 12:16:58,602 32 INFO sf_rc_validation odoo.tests.common: Importing test framework 
+2026-11-16 12:16:58,630 32 INFO sf_rc_validation odoo.modules.loading: loading 1 modules... 
+2026-11-16 12:16:58,635 32 INFO sf_rc_validation odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-11-16 12:16:58,663 32 INFO sf_rc_validation odoo.modules.loading: updating modules list 
+2026-11-16 12:16:58,665 32 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-11-16 12:16:59,722 32 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Sports Federation Base', 'Sports Federation People', 'Sports Federation Club Roles & Portal', 'Sports Federation Rules', 'Sports Federation Tournament', 'Sports Federation Officiating', 'Sports Federation Result Control', 'Sports Federation Notifications', 'Sports Federation Finance Bridge', 'Sports Federation Import Tools', 'Sports Federation Compliance', 'Sports Federation Public Site', 'Sports Federation Reporting', 'Sports Federation Governance', 'Sports Federation Demo Data', 'Competition Calendar', 'Competition Core', 'Sports Federation Discipline', 'Sports Federation Duty Coverage', 'Competition Format', 'Court Operations and Visual Planning', 'Match-Day Operations', 'Sports Federation Navigation', 'Competition Registration', 'Sports Federation Rosters', 'Schedule Approval', 'Competition Scheduling', 'Competition Setup Flow', 'Sports Federation Standings', 'Sports Federation Venues'] to user __system__ #1 via n/a 
+2026-11-16 12:16:59,722 32 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Sports Federation Base', 'Sports Federation People', 'Sports Federation Club Roles & Portal', 'Sports Federation Rules', 'Sports Federation Tournament', 'Sports Federation Officiating', 'Sports Federation Result Control', 'Sports Federation Notifications', 'Sports Federation Finance Bridge', 'Sports Federation Import Tools', 'Sports Federation Compliance', 'Sports Federation Public Site', 'Sports Federation Reporting', 'Sports Federation Governance', 'Sports Federation Demo Data', 'Competition Calendar', 'Competition Core', 'Sports Federation Discipline', 'Sports Federation Duty Coverage', 'Competition Format', 'Court Operations and Visual Planning', 'Match-Day Operations', 'Sports Federation Navigation', 'Competition Registration', 'Sports Federation Rosters', 'Schedule Approval', 'Competition Scheduling', 'Competition Setup Flow', 'Sports Federation Standings', 'Sports Federation Venues'] to user __system__ #1 via n/a 
+2026-11-16 12:17:00,629 32 INFO sf_rc_validation odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-11-16 12:17:00,758 32 INFO sf_rc_validation odoo.modules.loading: loading 72 modules... 
+2026-11-16 12:17:01,170 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_base (32/72) 
+2026-11-16 12:17:01,253 32 INFO sf_rc_validation odoo.registry: module sports_federation_base: creating or updating database tables 
+2026-11-16 12:17:01,356 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/security/res_groups.xml 
+2026-11-16 12:17:01,422 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/security/ir.model.access.csv 
+2026-11-16 12:17:01,445 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/data/ir_sequence.xml 
+2026-11-16 12:17:01,448 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/res_config_settings_views.xml 
+2026-11-16 12:17:01,485 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_season_registration_views.xml 
+2026-11-16 12:17:01,513 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_season_views.xml 
+2026-11-16 12:17:01,536 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_team_views.xml 
+2026-11-16 12:17:01,557 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/federation_club_views.xml 
+2026-11-16 12:17:01,578 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/menu_items.xml 
+2026-11-16 12:17:01,613 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/data/retention_policy_data.xml 
+2026-11-16 12:17:01,616 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/retention_evidence_views.xml 
+2026-11-16 12:17:01,651 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/views/operation_job_views.xml 
+2026-11-16 12:17:01,673 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_base/data/operation_job_cron.xml 
+2026-11-16 12:17:01,701 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_base loaded in 0.53s, 643 queries (+643 other) 
+2026-11-16 12:17:01,799 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_people (37/72) 
+2026-11-16 12:17:01,898 32 INFO sf_rc_validation odoo.registry: module sports_federation_people: creating or updating database tables 
+2026-11-16 12:17:01,968 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/security/ir.model.access.csv 
+2026-11-16 12:17:01,980 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/security/club_season_registration_rules.xml 
+2026-11-16 12:17:01,987 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/data/ir_sequence.xml 
+2026-11-16 12:17:01,991 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/federation_parental_approval_views.xml 
+2026-11-16 12:17:02,021 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/federation_player_views.xml 
+2026-11-16 12:17:02,046 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/federation_player_license_views.xml 
+2026-11-16 12:17:02,072 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/menu_items.xml 
+2026-11-16 12:17:02,077 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_people/views/club_season_registration_views.xml 
+2026-11-16 12:17:02,133 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_people loaded in 0.33s, 272 queries (+272 other) 
+2026-11-16 12:17:02,133 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_rules (38/72) 
+2026-11-16 12:17:02,144 32 INFO sf_rc_validation odoo.registry: module sports_federation_rules: creating or updating database tables 
+2026-11-16 12:17:02,196 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/security/ir.model.access.csv 
+2026-11-16 12:17:02,209 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_rule_set_views.xml 
+2026-11-16 12:17:02,247 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_points_rule_views.xml 
+2026-11-16 12:17:02,260 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_tie_break_rule_views.xml 
+2026-11-16 12:17:02,273 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_eligibility_rule_views.xml 
+2026-11-16 12:17:02,286 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/federation_qualification_rule_views.xml 
+2026-11-16 12:17:02,298 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rules/views/menu_items.xml 
+2026-11-16 12:17:02,316 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_rules loaded in 0.18s, 245 queries (+245 other) 
+2026-11-16 12:17:02,319 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_tournament (42/72) 
+2026-11-16 12:17:02,347 32 INFO sf_rc_validation odoo.registry: module sports_federation_tournament: creating or updating database tables 
+2026-11-16 12:17:02,433 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/security/ir.model.access.csv 
+2026-11-16 12:17:02,453 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_participant_views.xml 
+2026-11-16 12:17:02,485 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_match_views.xml 
+2026-11-16 12:17:02,512 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_round_views.xml 
+2026-11-16 12:17:02,536 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_group_views.xml 
+2026-11-16 12:17:02,556 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_stage_views.xml 
+2026-11-16 12:17:02,579 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_tournament_views.xml 
+2026-11-16 12:17:02,605 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_competition_edition_views.xml 
+2026-11-16 12:17:02,630 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_competition_views.xml 
+2026-11-16 12:17:02,650 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_season_registration_views_inherit.xml 
+2026-11-16 12:17:02,686 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/federation_season_views_inherit.xml 
+2026-11-16 12:17:02,704 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/menu_items.xml 
+2026-11-16 12:17:02,715 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_tournament/views/division_boundary.xml 
+2026-11-16 12:17:02,759 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_tournament loaded in 0.44s, 545 queries (+545 other) 
+2026-11-16 12:17:02,759 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_competition_core (43/72) 
+2026-11-16 12:17:02,773 32 INFO sf_rc_validation odoo.registry: module sports_federation_competition_core: creating or updating database tables 
+<string>:27: (ERROR/3) Unexpected indentation.
+<string>:25: (WARNING/2) Inline literal start-string without end-string.
+<string>:25: (WARNING/2) Inline interpreted text or phrase reference start-string without end-string.
+<string>:29: (WARNING/2) Block quote ends without a blank line; unexpected unindent.
+<string>:29: (WARNING/2) Inline literal start-string without end-string.
+<string>:29: (WARNING/2) Inline interpreted text or phrase reference start-string without end-string.
+2026-11-16 12:17:02,830 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/security/security.xml 
+2026-11-16 12:17:02,836 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/security/ir.model.access.csv 
+2026-11-16 12:17:02,844 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/views/competition_edition_views.xml 
+2026-11-16 12:17:02,873 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/views/menu.xml 
+2026-11-16 12:17:02,880 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_competition_core/views/competition_archive_views.xml 
+2026-11-16 12:17:02,945 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_competition_core loaded in 0.19s, 216 queries (+216 other) 
+2026-11-16 12:17:02,945 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_governance (44/72) 
+2026-11-16 12:17:02,958 32 INFO sf_rc_validation odoo.registry: module sports_federation_governance: creating or updating database tables 
+2026-11-16 12:17:03,002 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/security/governance_security.xml 
+2026-11-16 12:17:03,018 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/security/ir.model.access.csv 
+2026-11-16 12:17:03,029 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/override_request_views.xml 
+2026-11-16 12:17:03,062 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/override_decision_views.xml 
+2026-11-16 12:17:03,075 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/override_outcome_views.xml 
+2026-11-16 12:17:03,097 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/audit_note_views.xml 
+2026-11-16 12:17:03,108 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_governance/views/menu_views.xml 
+2026-11-16 12:17:03,148 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_approve_creates_decision ... 
+2026-11-16 12:17:03,167 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_close_after_implementation ... 
+2026-11-16 12:17:03,185 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_close_after_rejection ... 
+2026-11-16 12:17:03,198 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_close_guard_draft_and_approved_blocked ... 
+2026-11-16 12:17:03,218 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_create_override_request ... 
+2026-11-16 12:17:03,228 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_empty_reason_validation ... 
+2026-11-16 12:17:03,231 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_full_lifecycle_draft_to_closed ... 
+2026-11-16 12:17:03,244 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_implement_guard_requires_approved_state ... 
+2026-11-16 12:17:03,275 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_implementation_note_recorded_in_outcome ... 
+2026-11-16 12:17:03,290 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_mark_implemented ... 
+2026-11-16 12:17:03,303 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_override_models_use_shared_state_selections ... 
+2026-11-16 12:17:03,305 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_override_outcome_records_request_snapshot ... 
+2026-11-16 12:17:03,320 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_reject_creates_decision ... 
+2026-11-16 12:17:03,333 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_submit_guard_blocks_non_draft ... 
+2026-11-16 12:17:03,357 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_submit_override_request ... 
+2026-11-16 12:17:03,367 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_target_validation ... 
+2026-11-16 12:17:03,371 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_whitespace_only_reason_is_rejected ... 
+2026-11-16 12:17:03,374 32 INFO sf_rc_validation odoo.addons.sports_federation_governance.tests.test_governance: Starting TestGovernance.test_withdraw_returns_submitted_request_to_draft ... 
+2026-11-16 12:17:03,459 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:03,460 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_governance loaded in 0.51s (incl. 0.33s test), 217 queries (+372 test, +217 other) 
+2026-11-16 12:17:03,461 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_import_tools (45/72) 
+2026-11-16 12:17:03,486 32 INFO sf_rc_validation odoo.registry: module sports_federation_import_tools: creating or updating database tables 
+2026-11-16 12:17:03,584 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/security/ir.model.access.csv 
+2026-11-16 12:17:03,608 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/import_template_data.xml 
+2026-11-16 12:17:03,615 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/integration_contract_data.xml 
+2026-11-16 12:17:03,628 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/integration_retention_cron.xml 
+2026-11-16 12:17:03,630 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/data/integration_token_rotation_cron.xml 
+2026-11-16 12:17:03,632 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/import_governance_views.xml 
+2026-11-16 12:17:03,673 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/integration_partner_views.xml 
+2026-11-16 12:17:03,737 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/import_wizard_views.xml 
+2026-11-16 12:17:03,782 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_import_tools/views/menu_views.xml 
+2026-11-16 12:17:03,849 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_import_tools loaded in 0.39s, 558 queries (+558 other) 
+2026-11-16 12:17:03,849 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_result_control (46/72) 
+2026-11-16 12:17:03,861 32 INFO sf_rc_validation odoo.registry: module sports_federation_result_control: creating or updating database tables 
+2026-11-16 12:17:03,907 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_result_control/security/result_control_security.xml 
+2026-11-16 12:17:03,928 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_result_control/security/ir.model.access.csv 
+2026-11-16 12:17:03,941 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_result_control/views/match_views_inherit.xml 
+2026-11-16 12:17:04,020 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_result_control loaded in 0.17s, 160 queries (+160 other) 
+2026-11-16 12:17:04,020 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_standings (47/72) 
+2026-11-16 12:17:04,034 32 INFO sf_rc_validation odoo.registry: module sports_federation_standings: creating or updating database tables 
+2026-11-16 12:17:04,087 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/security/ir.model.access.csv 
+2026-11-16 12:17:04,097 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/data/standing_recompute_cron.xml 
+2026-11-16 12:17:04,118 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/views/standing_views.xml 
+2026-11-16 12:17:04,178 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/views/tournament_views_inherit.xml 
+2026-11-16 12:17:04,201 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_standings/views/menu_views.xml 
+2026-11-16 12:17:04,243 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_standings loaded in 0.22s, 249 queries (+249 other) 
+2026-11-16 12:17:04,243 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_venues (48/72) 
+2026-11-16 12:17:04,264 32 INFO sf_rc_validation odoo.registry: module sports_federation_venues: creating or updating database tables 
+2026-11-16 12:17:04,325 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/security/ir.model.access.csv 
+2026-11-16 12:17:04,336 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/venue_views.xml 
+2026-11-16 12:17:04,416 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/round_views_inherit.xml 
+2026-11-16 12:17:04,440 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/tournament_views_inherit.xml 
+2026-11-16 12:17:04,472 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/match_views_inherit.xml 
+2026-11-16 12:17:04,520 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_venues/views/menu_views.xml 
+2026-11-16 12:17:04,540 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_venues loaded in 0.30s, 388 queries (+388 other) 
+2026-11-16 12:17:04,568 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_registration (50/72) 
+2026-11-16 12:17:04,704 32 INFO sf_rc_validation odoo.registry: module sports_federation_registration: creating or updating database tables 
+2026-11-16 12:17:04,794 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/security/security.xml 
+2026-11-16 12:17:04,799 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/security/ir.model.access.csv 
+2026-11-16 12:17:04,813 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/wizards/create_competition_wizard_views.xml 
+2026-11-16 12:17:04,837 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/wizards/team_selection_wizard_views.xml 
+2026-11-16 12:17:04,847 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/views/registration_views.xml 
+2026-11-16 12:17:04,867 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/views/menu.xml 
+2026-11-16 12:17:04,874 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_registration/views/participant_handoff.xml 
+2026-11-16 12:17:04,913 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_registration loaded in 0.35s, 269 queries (+269 other) 
+2026-11-16 12:17:04,915 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_format (53/72) 
+2026-11-16 12:17:04,948 32 INFO sf_rc_validation odoo.registry: module sports_federation_format: creating or updating database tables 
+2026-11-16 12:17:05,056 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/security/security.xml 
+2026-11-16 12:17:05,060 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/security/ir.model.access.csv 
+2026-11-16 12:17:05,077 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/format_views.xml 
+2026-11-16 12:17:05,106 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/format_template_views.xml 
+2026-11-16 12:17:05,126 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/stage_graph_views.xml 
+2026-11-16 12:17:05,154 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/fixture_match_views.xml 
+2026-11-16 12:17:05,185 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/division_format_views.xml 
+2026-11-16 12:17:05,209 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_format/views/menu.xml 
+2026-11-16 12:17:05,242 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_format loaded in 0.33s, 366 queries (+366 other) 
+2026-11-16 12:17:05,242 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_calendar (54/72) 
+2026-11-16 12:17:05,258 32 INFO sf_rc_validation odoo.registry: module sports_federation_calendar: creating or updating database tables 
+2026-11-16 12:17:05,350 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/security/security.xml 
+2026-11-16 12:17:05,355 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/security/ir.model.access.csv 
+2026-11-16 12:17:05,363 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/calendar_views.xml 
+2026-11-16 12:17:05,400 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/event_timezone_review.xml 
+2026-11-16 12:17:05,409 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/slot_defaults_views.xml 
+2026-11-16 12:17:05,422 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/wizards/slot_generation_wizard_views.xml 
+2026-11-16 12:17:05,433 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_calendar/views/menu.xml 
+2026-11-16 12:17:05,461 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_calendar loaded in 0.22s, 213 queries (+213 other) 
+2026-11-16 12:17:05,461 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_scheduling (55/72) 
+2026-11-16 12:17:05,483 32 INFO sf_rc_validation odoo.registry: module sports_federation_scheduling: creating or updating database tables 
+2026-11-16 12:17:05,593 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/security/security.xml 
+2026-11-16 12:17:05,597 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/security/ir.model.access.csv 
+2026-11-16 12:17:05,615 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/scheduling_views.xml 
+2026-11-16 12:17:05,650 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/submit_schedule_wizard_views.xml 
+2026-11-16 12:17:05,660 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/amend_schedule_wizard_views.xml 
+2026-11-16 12:17:05,670 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/fairness_views.xml 
+2026-11-16 12:17:05,694 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/simple_scheduling_views.xml 
+2026-11-16 12:17:05,710 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/competition_schedule_wizard_views.xml 
+2026-11-16 12:17:05,723 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/matchday_division_views.xml 
+2026-11-16 12:17:05,757 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/stage_game_day_views.xml 
+2026-11-16 12:17:05,799 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_scheduling/views/menu.xml 
+2026-11-16 12:17:05,831 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_scheduling loaded in 0.37s, 390 queries (+390 other) 
+2026-11-16 12:17:05,831 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_schedule_approval (56/72) 
+2026-11-16 12:17:05,854 32 INFO sf_rc_validation odoo.registry: module sports_federation_schedule_approval: creating or updating database tables 
+2026-11-16 12:17:05,951 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/security/security.xml 
+2026-11-16 12:17:05,955 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/security/ir.model.access.csv 
+2026-11-16 12:17:05,970 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/views/approval_views.xml 
+2026-11-16 12:17:06,051 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/wizards/publish_schedule_wizard_views.xml 
+2026-11-16 12:17:06,061 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/views/menu.xml 
+2026-11-16 12:17:06,076 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_schedule_approval/views/match_journey.xml 
+2026-11-16 12:17:06,150 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_schedule_approval loaded in 0.32s, 332 queries (+332 other) 
+2026-11-16 12:17:06,150 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_matchday (57/72) 
+2026-11-16 12:17:06,172 32 INFO sf_rc_validation odoo.registry: module sports_federation_matchday: creating or updating database tables 
+2026-11-16 12:17:06,276 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/security/security.xml 
+2026-11-16 12:17:06,281 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/security/ir.model.access.csv 
+2026-11-16 12:17:06,299 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/views/matchday_views.xml 
+2026-11-16 12:17:06,366 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/wizards/matchday_operation_wizard_views.xml 
+2026-11-16 12:17:06,399 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/wizards/matchday_restart_wizard_views.xml 
+2026-11-16 12:17:06,408 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/wizards/matchday_delete_wizard_views.xml 
+2026-11-16 12:17:06,418 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_matchday/views/menu.xml 
+2026-11-16 12:17:06,447 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_matchday loaded in 0.30s, 346 queries (+346 other) 
+2026-11-16 12:17:06,447 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_officiating (58/72) 
+2026-11-16 12:17:06,469 32 INFO sf_rc_validation odoo.registry: module sports_federation_officiating: creating or updating database tables 
+2026-11-16 12:17:06,554 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/security/ir.model.access.csv 
+2026-11-16 12:17:06,573 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/data/duty_deadline_cron.xml 
+2026-11-16 12:17:06,575 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_referee_views.xml 
+2026-11-16 12:17:06,609 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_referee_availability_views.xml 
+2026-11-16 12:17:06,633 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_referee_certification_views.xml 
+2026-11-16 12:17:06,655 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_match_referee_views.xml 
+2026-11-16 12:17:06,681 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_match_club_referee_duty_views.xml 
+2026-11-16 12:17:06,706 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_matchday_assign_wizard_views.xml 
+2026-11-16 12:17:06,717 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_match_views_inherit.xml 
+2026-11-16 12:17:06,761 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_rule_set_views_inherit.xml 
+2026-11-16 12:17:06,785 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/federation_reimbursement_request_views.xml 
+2026-11-16 12:17:06,817 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_officiating/views/menu_items.xml 
+2026-11-16 12:17:06,943 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_action_confirm_creates_assignment ... 
+2026-11-16 12:17:06,973 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_action_confirm_raises_if_not_nominated ... 
+2026-11-16 12:17:06,989 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_action_nominate_raises_for_wrong_club_player ... 
+2026-11-16 12:17:07,008 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_action_nominate_raises_if_not_open_or_rejected ... 
+2026-11-16 12:17:07,025 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_action_nominate_sets_player ... 
+2026-11-16 12:17:07,038 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_action_open_moves_to_open ... 
+2026-11-16 12:17:07,052 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_action_open_raises_if_not_draft ... 
+2026-11-16 12:17:07,069 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_create_duty_defaults_to_draft ... 
+2026-11-16 12:17:07,082 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyLifecycle.test_full_lifecycle_draft_to_confirmed ... 
+2026-11-16 12:17:07,216 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:07,295 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyRejectionPath.test_action_reject_moves_to_rejected ... 
+2026-11-16 12:17:07,308 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyRejectionPath.test_action_reject_raises_if_not_nominated ... 
+2026-11-16 12:17:07,326 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyRejectionPath.test_full_rejection_cycle_to_confirmed ... 
+2026-11-16 12:17:07,357 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyRejectionPath.test_renominate_after_rejection ... 
+2026-11-16 12:17:07,481 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:07,555 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyCancelEscapeHatch.test_cancel_from_nominated ... 
+2026-11-16 12:17:07,567 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyCancelEscapeHatch.test_cancel_from_open ... 
+2026-11-16 12:17:07,579 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyCancelEscapeHatch.test_cancel_raises_on_confirmed ... 
+2026-11-16 12:17:07,714 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:07,789 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyDeadline.test_is_deadline_overdue_false_for_future_match ... 
+2026-11-16 12:17:07,801 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyDeadline.test_is_deadline_overdue_false_when_confirmed ... 
+2026-11-16 12:17:07,832 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyDeadline.test_is_deadline_overdue_true_for_past_match ... 
+2026-11-16 12:17:07,849 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyDeadline.test_nomination_deadline_is_72h_before_match ... 
+2026-11-16 12:17:07,861 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyDeadline.test_overdue_flag_turns_on_when_the_deadline_passes ... 
+2026-11-16 12:17:07,893 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyDeadline.test_overdue_refresh_ignores_confirmed_and_not_yet_due_duties ... 
+2026-11-16 12:17:08,040 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:08,118 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyUniqueness.test_duplicate_duty_blocked ... 
+2026-11-16 12:17:08,247 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:08,352 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyMatchExtension.test_pending_count_decrements_on_confirm ... 
+2026-11-16 12:17:08,380 32 INFO sf_rc_validation odoo.addons.sports_federation_officiating.tests.test_club_referee_duty: Starting TestClubRefereeDutyMatchExtension.test_pending_count_increments_on_open ... 
+2026-11-16 12:17:08,499 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:08,499 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_officiating loaded in 2.05s (incl. 1.62s test), 514 queries (+986 test, +514 other) 
+2026-11-16 12:17:08,499 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_rosters (59/72) 
+2026-11-16 12:17:08,533 32 INFO sf_rc_validation odoo.registry: module sports_federation_rosters: creating or updating database tables 
+2026-11-16 12:17:08,689 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/security/ir.model.access.csv 
+2026-11-16 12:17:08,709 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/team_roster_views.xml 
+2026-11-16 12:17:08,751 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/match_sheet_views.xml 
+2026-11-16 12:17:08,781 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/gameday_lineup_wizard_views.xml 
+2026-11-16 12:17:08,828 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/player_availability_views.xml 
+2026-11-16 12:17:08,850 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/gameday_participation_views.xml 
+2026-11-16 12:17:08,906 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/season_registration_views_inherit.xml 
+2026-11-16 12:17:08,924 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/tournament_participant_views_inherit.xml 
+2026-11-16 12:17:08,942 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/team_views_inherit.xml 
+2026-11-16 12:17:08,969 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/player_views_inherit.xml 
+2026-11-16 12:17:08,992 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/match_views_inherit.xml 
+2026-11-16 12:17:09,025 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/menu_views.xml 
+2026-11-16 12:17:09,032 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/club_rank_views.xml 
+2026-11-16 12:17:09,099 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/views/season_player_registration_views.xml 
+2026-11-16 12:17:09,115 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_rosters/report/scoresheet_report.xml 
+2026-11-16 12:17:09,196 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_rosters loaded in 0.70s, 687 queries (+687 other) 
+2026-11-16 12:17:09,196 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_discipline (60/72) 
+2026-11-16 12:17:09,218 32 INFO sf_rc_validation odoo.registry: module sports_federation_discipline: creating or updating database tables 
+2026-11-16 12:17:09,288 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/security/discipline_security.xml 
+2026-11-16 12:17:09,313 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/security/ir.model.access.csv 
+2026-11-16 12:17:09,324 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/security/company_rules.xml 
+2026-11-16 12:17:09,333 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/data/ir_sequence.xml 
+2026-11-16 12:17:09,337 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/data/suspension_cron.xml 
+2026-11-16 12:17:09,357 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/incident_views.xml 
+2026-11-16 12:17:09,384 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/disciplinary_case_views.xml 
+2026-11-16 12:17:09,407 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/sanction_views.xml 
+2026-11-16 12:17:09,429 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/suspension_views.xml 
+2026-11-16 12:17:09,466 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/player_views_inherit.xml 
+2026-11-16 12:17:09,515 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/match_views_inherit.xml 
+2026-11-16 12:17:09,572 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_discipline/views/menu_views.xml 
+2026-11-16 12:17:09,609 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_discipline loaded in 0.41s, 418 queries (+418 other) 
+2026-11-16 12:17:09,609 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_portal (61/72) 
+2026-11-16 12:17:09,718 32 INFO sf_rc_validation odoo.registry: module sports_federation_portal: creating or updating database tables 
+2026-11-16 12:17:09,940 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/security/res_groups.xml 
+2026-11-16 12:17:09,963 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/security/ir.model.access.csv 
+2026-11-16 12:17:09,991 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/security/ir_rule.xml 
+2026-11-16 12:17:10,075 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/federation_club_role_type.xml 
+2026-11-16 12:17:10,088 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/operation_task_cron.xml 
+2026-11-16 12:17:10,090 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/journey_event_cron.xml 
+2026-11-16 12:17:10,092 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/data/representative_cron.xml 
+2026-11-16 12:17:10,094 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_role_type_views.xml 
+2026-11-16 12:17:10,127 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_representative_views.xml 
+2026-11-16 12:17:10,156 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_views.xml 
+2026-11-16 12:17:10,176 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_referee_views.xml 
+2026-11-16 12:17:10,223 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/res_partner_views.xml 
+2026-11-16 12:17:10,255 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/res_users_views.xml 
+2026-11-16 12:17:10,287 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_season_registration_views.xml 
+2026-11-16 12:17:10,341 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_match_sheet_views.xml 
+2026-11-16 12:17:10,369 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/federation_club_representative_portal_views.xml 
+2026-11-16 12:17:10,396 32 INFO sf_rc_validation odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [38, 39] 
+2026-11-16 12:17:10,402 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/qol_views.xml 
+2026-11-16 12:17:10,417 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/qol_search_templates.xml 
+2026-11-16 12:17:10,427 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_templates.xml 
+2026-11-16 12:17:10,527 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_parental_approval_templates.xml 
+2026-11-16 12:17:10,546 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/competition_templates.xml 
+2026-11-16 12:17:10,594 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_officiating_templates.xml 
+2026-11-16 12:17:10,608 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_roster_templates.xml 
+2026-11-16 12:17:10,677 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_result_templates.xml 
+2026-11-16 12:17:10,694 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/portal_referee_duty_templates.xml 
+2026-11-16 12:17:10,709 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/player_availability_templates.xml 
+2026-11-16 12:17:10,768 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/preparation_journey_templates.xml 
+2026-11-16 12:17:10,795 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/club_season_players_templates.xml 
+2026-11-16 12:17:10,819 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/operation_task_views.xml 
+2026-11-16 12:17:10,846 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/menu_items.xml 
+2026-11-16 12:17:10,856 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/journey_event_views.xml 
+2026-11-16 12:17:10,884 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/role_journey_templates.xml 
+2026-11-16 12:17:10,975 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_portal/views/club_rank_portal_templates.xml 
+2026-11-16 12:17:11,073 32 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_production_security_matrix: Starting TestProductionSecurityMatrix.test_mutating_portal_routes_declare_post_and_csrf ... 
+2026-11-16 12:17:11,076 32 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_production_security_matrix: Starting TestProductionSecurityMatrix.test_portal_privilege_requires_explicit_scope ... 
+2026-11-16 12:17:11,077 32 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_production_security_matrix: Starting TestProductionSecurityMatrix.test_qol_bulk_routes_require_manager_group ... 
+2026-11-16 12:17:11,242 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:11,243 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_portal loaded in 1.63s (incl. 0.17s test), 1663 queries (+11 test, +1663 other) 
+2026-11-16 12:17:11,243 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_setup_flow (62/72) 
+2026-11-16 12:17:11,284 32 INFO sf_rc_validation odoo.registry: module sports_federation_setup_flow: creating or updating database tables 
+2026-11-16 12:17:11,472 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/security/ir.model.access.csv 
+2026-11-16 12:17:11,491 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/data/matchday_automation_cron.xml 
+2026-11-16 12:17:11,512 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/competition_setup_views.xml 
+2026-11-16 12:17:11,544 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/gameday_setup_wizard_views.xml 
+2026-11-16 12:17:11,556 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/format_setup_wizard_views.xml 
+2026-11-16 12:17:11,567 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/division_setup_wizard_views.xml 
+2026-11-16 12:17:11,579 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/setup_consolidation_views.xml 
+2026-11-16 12:17:11,617 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/setup_journey_views.xml 
+2026-11-16 12:17:11,639 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/usability_views.xml 
+2026-11-16 12:17:11,695 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/practice_competition_views.xml 
+2026-11-16 12:17:11,752 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/publish_confirm_wizard_views.xml 
+2026-11-16 12:17:11,762 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_setup_flow/views/stage_builder_views.xml 
+2026-11-16 12:17:11,826 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_setup_flow loaded in 0.58s, 614 queries (+614 other) 
+2026-11-16 12:17:11,826 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_compliance (63/72) 
+2026-11-16 12:17:11,846 32 INFO sf_rc_validation odoo.registry: module sports_federation_compliance: creating or updating database tables 
+2026-11-16 12:17:11,912 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/security/ir.model.access.csv 
+2026-11-16 12:17:11,925 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/document_requirement_views.xml 
+2026-11-16 12:17:11,955 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/document_submission_views.xml 
+2026-11-16 12:17:11,982 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/compliance_check_views.xml 
+2026-11-16 12:17:12,009 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/compliance_archive_views.xml 
+2026-11-16 12:17:12,039 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/portal_compliance_templates.xml 
+2026-11-16 12:17:12,068 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_compliance/views/menu_views.xml 
+2026-11-16 12:17:12,298 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_check_detects_expired_document ... 
+2026-11-16 12:17:12,344 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_check_detects_missing_document ... 
+2026-11-16 12:17:12,365 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_check_detects_valid_approved_document ... 
+2026-11-16 12:17:12,400 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_check_single_target ... 
+2026-11-16 12:17:12,405 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_compliance_check_history_archives_status_changes ... 
+2026-11-16 12:17:12,445 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_create_requirement ... 
+2026-11-16 12:17:12,447 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_is_expired_helper ... 
+2026-11-16 12:17:12,464 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_prepare_submission_blocks_unowned_targets ... 
+2026-11-16 12:17:12,481 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_prepare_submission_uses_requesting_user ... 
+2026-11-16 12:17:12,514 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_submit_submission_creates_attachments_and_submits ... 
+2026-11-16 12:17:12,584 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_submit_submission_dedupes_duplicate_attachments ... 
+2026-11-16 12:17:12,650 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_submit_submission_rejects_attachment_that_fails_malware_scan ... 
+2026-11-16 12:17:12,670 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_submit_submission_rejects_disallowed_attachment_type ... 
+2026-11-16 12:17:12,695 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_submit_submission_rejects_oversized_attachment ... 
+2026-11-16 12:17:12,720 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_submit_submission_requires_attachment ... 
+2026-11-16 12:17:12,750 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_workspace_entries_follow_club_and_referee_scope ... 
+2026-11-16 12:17:12,770 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_portal_workspace_entry_lookup_resolves_club_detail_entry ... 
+2026-11-16 12:17:12,778 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_requirement_unique_code_target ... 
+2026-11-16 12:17:12,783 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_shared_target_field_resolver_is_consistent ... 
+2026-11-16 12:17:12,783 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_shared_target_record_resolution_sets_display ... 
+2026-11-16 12:17:12,801 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_submission_date_validation ... 
+2026-11-16 12:17:12,804 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_submission_reject ... 
+2026-11-16 12:17:12,849 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_submission_request_replacement ... 
+2026-11-16 12:17:12,903 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_submission_requires_single_target ... 
+2026-11-16 12:17:12,909 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_submission_target_matches_requirement_model ... 
+2026-11-16 12:17:12,923 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_submission_workflow ... 
+2026-11-16 12:17:12,954 32 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_compliance: Starting TestCompliance.test_target_entity_label_returns_correct_name ... 
+2026-11-16 12:17:13,095 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 2 checked, 2 removed 
+2026-11-16 12:17:13,095 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_compliance loaded in 1.27s (incl. 0.98s test), 324 queries (+1141 test, +324 other) 
+2026-11-16 12:17:13,095 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_finance_bridge (64/72) 
+2026-11-16 12:17:13,120 32 INFO sf_rc_validation odoo.registry: module sports_federation_finance_bridge: creating or updating database tables 
+2026-11-16 12:17:13,225 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/security/ir.model.access.csv 
+2026-11-16 12:17:13,236 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/security/company_rules.xml 
+2026-11-16 12:17:13,246 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/data/fee_type_data.xml 
+2026-11-16 12:17:13,249 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/fee_type_views.xml 
+2026-11-16 12:17:13,279 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/fee_schedule_views.xml 
+2026-11-16 12:17:13,302 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/finance_event_views.xml 
+2026-11-16 12:17:13,333 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/federation_match_finance_views.xml 
+2026-11-16 12:17:13,374 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/season_budget_views.xml 
+2026-11-16 12:17:13,403 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/player_season_registration_views.xml 
+2026-11-16 12:17:13,438 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_finance_bridge/views/menu_views.xml 
+2026-11-16 12:17:13,500 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_finance_bridge loaded in 0.41s, 466 queries (+466 other) 
+2026-11-16 12:17:13,500 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_public_site (65/72) 
+2026-11-16 12:17:13,538 32 INFO sf_rc_validation odoo.registry: module sports_federation_public_site: creating or updating database tables 
+2026-11-16 12:17:13,673 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/security/ir.model.access.csv 
+2026-11-16 12:17:13,680 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_templates.xml 
+2026-11-16 12:17:13,738 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_competition_templates.xml 
+2026-11-16 12:17:13,809 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/competition_edition_views_inherit.xml 
+2026-11-16 12:17:13,843 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_hub_templates.xml 
+2026-11-16 12:17:13,892 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_editorial_templates.xml 
+2026-11-16 12:17:13,953 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_clubs_players_templates.xml 
+2026-11-16 12:17:13,982 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/website_menu.xml 
+2026-11-16 12:17:13,989 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/season_views_inherit.xml 
+2026-11-16 12:17:14,009 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/tournament_views_inherit.xml 
+2026-11-16 12:17:14,035 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/team_views_inherit.xml 
+2026-11-16 12:17:14,072 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/standing_views_inherit.xml 
+2026-11-16 12:17:14,092 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_public_site/views/editorial_views.xml 
+2026-11-16 12:17:14,152 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_public_site loaded in 0.65s, 773 queries (+773 other) 
+2026-11-16 12:17:14,152 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_notifications (66/72) 
+2026-11-16 12:17:14,182 32 INFO sf_rc_validation odoo.registry: module sports_federation_notifications: creating or updating database tables 
+2026-11-16 12:17:14,325 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/security/ir.model.access.csv 
+2026-11-16 12:17:14,336 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/security/communication_rules.xml 
+2026-11-16 12:17:14,362 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/mail_templates.xml 
+2026-11-16 12:17:14,418 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/ir_cron.xml 
+2026-11-16 12:17:14,467 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/notification_log_views.xml 
+2026-11-16 12:17:14,493 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/menu_views.xml 
+2026-11-16 12:17:14,500 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/communication_views.xml 
+2026-11-16 12:17:14,562 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/communication_cron.xml 
+2026-11-16 12:17:14,589 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/views/communication_lifecycle_views.xml 
+2026-11-16 12:17:14,617 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/lifecycle_cron.xml 
+2026-11-16 12:17:14,631 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/communication_retention_data.xml 
+2026-11-16 12:17:14,634 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_notifications/data/notification_mail_retention.xml 
+2026-11-16 12:17:14,678 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_notifications loaded in 0.53s, 590 queries (+590 other) 
+2026-11-16 12:17:14,678 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_demo (67/72) 
+2026-11-16 12:17:14,729 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_demo loaded in 0.05s, 11 queries (+11 other) 
+2026-11-16 12:17:14,729 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_reporting (68/72) 
+2026-11-16 12:17:14,758 32 INFO sf_rc_validation odoo.registry: module sports_federation_reporting: creating or updating database tables 
+2026-11-16 12:17:14,905 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/security/ir.model.access.csv 
+2026-11-16 12:17:14,931 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/security/finance_company_rules.xml 
+2026-11-16 12:17:14,943 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/data/report_schedule_cron.xml 
+2026-11-16 12:17:14,946 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/data/report_snapshot_cron.xml 
+2026-11-16 12:17:14,948 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_participation_views.xml 
+2026-11-16 12:17:14,972 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_officiating_views.xml 
+2026-11-16 12:17:14,988 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_compliance_views.xml 
+2026-11-16 12:17:15,009 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_finance_views.xml 
+2026-11-16 12:17:15,025 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_operational_views.xml 
+2026-11-16 12:17:15,173 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/operational_dashboard_views.xml 
+2026-11-16 12:17:15,188 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_operator_checklist_views.xml 
+2026-11-16 12:17:15,207 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_planning_views.xml 
+2026-11-16 12:17:15,255 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_audit_event_views.xml 
+2026-11-16 12:17:15,291 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_snapshot_views.xml 
+2026-11-16 12:17:15,318 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_schedule_views.xml 
+2026-11-16 12:17:15,344 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_club_compliance_summary_views.xml 
+2026-11-16 12:17:15,362 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/report_officiating_coverage_views.xml 
+2026-11-16 12:17:15,380 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_reporting/views/menu_views.xml 
+2026-11-16 12:17:15,475 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_reporting loaded in 0.75s, 989 queries (+989 other) 
+2026-11-16 12:17:15,475 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_duty_coverage (69/72) 
+2026-11-16 12:17:15,502 32 INFO sf_rc_validation odoo.registry: module sports_federation_duty_coverage: creating or updating database tables 
+2026-11-16 12:17:15,610 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/security/ir.model.access.csv 
+2026-11-16 12:17:15,614 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/data/coverage_cron.xml 
+2026-11-16 12:17:15,617 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/views/coverage_views.xml 
+2026-11-16 12:17:15,747 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_duty_coverage/views/portal_templates.xml 
+2026-11-16 12:17:15,797 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_duty_coverage loaded in 0.32s, 336 queries (+336 other) 
+2026-11-16 12:17:15,797 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_live_workspace (70/72) 
+2026-11-16 12:17:15,832 32 INFO sf_rc_validation odoo.registry: module sports_federation_live_workspace: creating or updating database tables 
+2026-11-16 12:17:16,002 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/security/ir.model.access.csv 
+2026-11-16 12:17:16,019 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/security/rules.xml 
+2026-11-16 12:17:16,051 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/workspaces.xml 
+2026-11-16 12:17:16,154 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/mobile_matchday.xml 
+2026-11-16 12:17:16,194 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/season_board_views.xml 
+2026-11-16 12:17:16,214 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/court_device_views.xml 
+2026-11-16 12:17:16,323 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/court_device_portal.xml 
+2026-11-16 12:17:16,340 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/views/gameday_print_views.xml 
+2026-11-16 12:17:16,376 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_live_workspace/report/gameday_schedule_report.xml 
+2026-11-16 12:17:16,432 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_live_workspace loaded in 0.64s, 730 queries (+730 other) 
+2026-11-16 12:17:16,433 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_navigation (71/72) 
+2026-11-16 12:17:16,477 32 INFO sf_rc_validation odoo.modules.loading: loading sports_federation_navigation/views/navigation.xml 
+2026-11-16 12:17:16,822 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_navigation loaded in 0.39s, 849 queries (+849 other) 
+2026-11-16 12:17:16,823 32 INFO sf_rc_validation odoo.modules.loading: Loading module sports_federation_app (72/72) 
+2026-11-16 12:17:16,883 32 INFO sf_rc_validation odoo.modules.loading: Module sports_federation_app loaded in 0.06s, 11 queries (+11 other) 
+2026-11-16 12:17:16,883 32 INFO sf_rc_validation odoo.modules.loading: 72 modules loaded in 16.13s, 14384 queries (+16894 extra) 
+2026-11-16 12:17:17,261 32 INFO sf_rc_validation odoo.registry: verifying fields for every extended model 
+2026-11-16 12:17:17,972 32 INFO sf_rc_validation odoo.modules.loading: Modules loaded. 
+2026-11-16 12:17:17,985 32 INFO sf_rc_validation odoo.registry: Registry changed, signaling through the database 
+2026-11-16 12:17:17,986 32 INFO sf_rc_validation odoo.registry: Registry loaded in 19.404s 
+2026-11-16 12:17:17,986 32 INFO sf_rc_validation odoo.service.server: Starting post tests 
+2026-11-16 12:17:18,006 32 INFO sf_rc_validation odoo.addons.base.models.ir_qweb: Pregenerating assets bundles 
+2026-11-16 12:17:19,075 32 INFO sf_rc_validation odoo.addons.base.models.ir_qweb: JS Assets bundles generated in 1.0596842765808105 seconds 
+2026-11-16 12:17:19,557 32 INFO sf_rc_validation odoo.addons.base.models.ir_qweb: CSS Assets bundles generated in 0.48224902153015137 seconds 
+2026-11-16 12:17:19,671 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_late_fixture_can_be_added_to_revision_and_removed_again ... 
+2026-11-16 12:17:19,698 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_only_one_replacement_can_be_created ... 
+2026-11-16 12:17:19,728 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_open_matchday_cannot_be_amended ... 
+2026-11-16 12:17:19,733 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_published_schedule_creates_linked_replacement ... 
+2026-11-16 12:17:19,756 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_reason_is_required ... 
+2026-11-16 12:17:19,759 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_replacement_copies_assignments_without_mutating_source ... 
+2026-11-16 12:17:19,782 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_replacement_previews_unchanged_assignments ... 
+2026-11-16 12:17:19,805 32 INFO sf_rc_validation odoo.addons.sports_federation_scheduling.tests.test_schedule_amendment: Starting TestScheduleAmendment.test_revision_and_auto_planner_include_new_division_fixture ... 
+2026-11-16 12:17:19,881 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:20,255 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_approver_can_submit_allowed_review_decision ... 
+2026-11-16 12:17:20,291 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_approver_cannot_alter_immutable_evidence_afterward ... 
+2026-11-16 12:17:20,333 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_direct_writes_to_protected_fields_are_rejected ... 
+2026-11-16 12:17:20,367 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_manager_cannot_overwrite_finalized_decision ... 
+2026-11-16 12:17:20,438 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_planner_cannot_approve_own_review_when_independent_review_is_required ... 
+2026-11-16 12:17:20,471 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_schedule_planner_can_read_fixtures_without_mutating_them ... 
+2026-11-16 12:17:20,503 32 INFO sf_rc_validation odoo.addons.base.models.ir_model: Access Denied by ACLs for operation: write, uid: 153, model: federation.fixture 
+2026-11-16 12:17:20,506 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_streamlined_policy_allows_planner_to_approve_own_review ... 
+2026-11-16 12:17:20,642 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_streamlined_submission_opens_the_auto_published_schedule ... 
+2026-11-16 12:17:20,814 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_submitting_planner_can_withdraw_pending_review ... 
+2026-11-16 12:17:20,846 32 INFO sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_review_permissions: Starting TestScheduleReviewPermissions.test_unrelated_user_cannot_read_or_modify_review ... 
+2026-11-16 12:17:20,878 32 INFO sf_rc_validation odoo.addons.base.models.ir_model: Access Denied by ACLs for operation: read, uid: 156, model: federation.schedule.review 
+2026-11-16 12:17:20,883 32 INFO sf_rc_validation odoo.addons.base.models.ir_model: Access Denied by ACLs for operation: write, uid: 156, model: federation.schedule.review 
+2026-11-16 12:17:20,890 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 4 checked, 4 removed 
+2026-11-16 12:17:20,925 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge: Starting TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle ... 
+2026-11-16 12:17:21,266 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Chrome pid: 36 
+2026-11-16 12:17:21,266 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Chrome headless temporary user profile dir: /tmp/tmpm1fib500_chrome_odoo 
+2026-11-16 12:17:21,267 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Issuing json command http://127.0.0.1:37049/json/version 
+2026-11-16 12:17:21,268 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:37049', path='/json/version', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:21,314 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Browser version: Chrome/157.0.8103.78 
+2026-11-16 12:17:21,319 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Issuing json command http://127.0.0.1:37049/json 
+2026-11-16 12:17:21,319 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:37049', path='/json', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:21,340 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Websocket url found: ws://127.0.0.1:37049/devtools/page/55CA2358B06C7F295498B2594658E47F 
+2026-11-16 12:17:21,353 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Enable chrome headless console log notification 
+2026-11-16 12:17:21,365 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Chrome headless enable page notifications 
+2026-11-16 12:17:24,053 32 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
+2026-11-16 12:17:24,057 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Setting session cookie in browser 
+2026-11-16 12:17:24,058 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Open "http://127.0.0.1:8069/odoo/action-sports_federation_finance_bridge.action_federation_finance_event/174" in browser 
+2026-11-16 12:17:24,058 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Navigating to: "http://127.0.0.1:8069/odoo/action-sports_federation_finance_bridge.action_federation_finance_event/174" 
+2026-11-16 12:17:24,078 32 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-11-16 12:17:24,671 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:24] "GET /odoo/action-sports_federation_finance_bridge.action_federation_finance_event/174 HTTP/1.1" 200 - 141 0.048 0.547
+2026-11-16 12:17:24,673 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Navigation result: {'frameId': '55CA2358B06C7F295498B2594658E47F', 'loaderId': 'DFBC3584641E9E31CF5807B2D85BF1AE', 'isDownload': False} 
+2026-11-16 12:17:24,673 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Evaluate ready code "odoo.isTourReady('finance_bridge_browser_lifecycle')" 
+2026-11-16 12:17:24,704 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:24] "GET /web/assets/e1acd0d/web.assets_web.min.js HTTP/1.1" 200 - 2 0.001 0.007
+2026-11-16 12:17:24,708 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:24] "GET /web/assets/7229f34/web.assets_web.min.css HTTP/1.1" 200 - 2 0.001 0.007
+2026-11-16 12:17:24,739 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:24] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 15 0.017 0.021
+2026-11-16 12:17:24,759 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:24] "GET /web/webclient/load_menus HTTP/1.1" 200 - 9 0.007 0.050
+2026-11-16 12:17:24,764 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:24] "GET /web/assets/e7d1c81/web.assets_tests.min.js HTTP/1.1" 200 - 2 0.001 0.009
+2026-11-16 12:17:24,813 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:24] "GET /web/assets/55c6487/web.assets_web_print.min.css HTTP/1.1" 200 - 2 0.001 0.008
+2026-11-16 12:17:25,194 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:25] "GET /web/static/img/favicon.ico HTTP/1.1" 200 - 0 0.000 0.004
+2026-11-16 12:17:25,195 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:25] "GET /web/static/img/odoo-icon-192x192.png HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:27,161 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /web/webclient/translations?hash=&lang=en_US HTTP/1.1" 200 - 1 0.000 0.017
+2026-11-16 12:17:27,191 32 INFO sf_rc_validation odoo.addons.partner_autocomplete.models.res_company: Starting enrich of company My Company (1) 
+2026-11-16 12:17:27,198 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /web/dataset/call_kw/res.company/iap_enrich_auto#res.company.iap_enrich_auto HTTP/1.1" 200 - 8 0.010 0.012
+2026-11-16 12:17:27,224 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Generating a new asset bundle attachment /web/assets/ca3f650/bus.websocket_worker_assets.min.js (id:743) 
+2026-11-16 12:17:27,226 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /bus/websocket_worker_bundle?v=19.0-2 HTTP/1.1" 200 - 9 0.006 0.040
+2026-11-16 12:17:27,236 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:27,245 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /web/service-worker.js HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:27,257 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /mail/static/lib/idb-keyval/idb-keyval.js HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:27,281 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /odoo HTTP/1.1" 200 - 18 0.004 0.015
+2026-11-16 12:17:27,298 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /odoo/offline HTTP/1.1" 200 - 5 0.004 0.029
+2026-11-16 12:17:27,350 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: The ready code tooks too much time : 2.6765732765197754 
+2026-11-16 12:17:27,350 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Evaluate test code "odoo.startTour('finance_bridge_browser_lifecycle', {"stepDelay": 0, "keepWatchBrowser": false, "debug": false, "startUrl": "/odoo/action-sports_federation_finance_bridge.action_federation_finance_event/174", "delayToCheckUndeterminisms": 0})" 
+2026-11-16 12:17:27,402 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [1/14] Tour finance_bridge_browser_lifecycle → Step The finance event form is loaded (trigger: .o_form_view [name="name"]) 
+2026-11-16 12:17:27,404 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /mail/data HTTP/1.1" 200 - 26 0.031 0.020
+2026-11-16 12:17:27,408 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /web/static/lib/odoo_ui_icons/fonts/odoo_ui_icons.woff2 HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:27,410 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /web/static/src/libs/fontawesome/fonts/fontawesome-webfont.woff2?v=4.7.0 HTTP/1.1" 200 - 0 0.000 0.004
+2026-11-16 12:17:27,436 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /web/action/load HTTP/1.1" 200 - 11 0.021 0.052
+2026-11-16 12:17:27,453 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /web/image/res.partner/3/avatar_128?unique=1794830657000 HTTP/1.1" 200 - 13 0.006 0.081
+2026-11-16 12:17:27,462 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /web/image?model=res.users&field=avatar_128&id=2 HTTP/1.1" 200 - 7 0.002 0.092
+2026-11-16 12:17:27,464 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.028
+2026-11-16 12:17:27,498 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /web/dataset/call_kw/federation.finance.event/get_views#federation.finance.event.get_views HTTP/1.1" 200 - 24 0.011 0.040
+2026-11-16 12:17:27,523 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /web/dataset/call_kw/federation.finance.event/web_read#federation.finance.event.web_read HTTP/1.1" 200 - 9 0.003 0.006
+2026-11-16 12:17:27,763 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [2/14] Tour finance_bridge_browser_lifecycle → Step Confirm the draft finance event (trigger: button[name="action_confirm"]) 
+2026-11-16 12:17:27,786 32 INFO ? odoo.addons.bus.models.bus: Bus.loop listen imbus on db postgres 
+2026-11-16 12:17:27,823 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [3/14] Tour finance_bridge_browser_lifecycle → Step The event is confirmed and can be settled (trigger: button[name="action_settle"]) 
+2026-11-16 12:17:27,825 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /mail/data HTTP/1.1" 200 - 29 0.019 0.029
+2026-11-16 12:17:27,847 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /mail/thread/messages HTTP/1.1" 200 - 23 0.008 0.056
+2026-11-16 12:17:27,861 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /web/dataset/call_button/federation.finance.event/action_confirm#federation.finance.event.action_confirm HTTP/1.1" 200 - 12 0.005 0.031
+2026-11-16 12:17:27,920 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "GET /web/bundle/web.assets_emoji?lang=en_US HTTP/1.1" 200 - 1 0.000 0.003
+2026-11-16 12:17:27,945 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /mail/thread/messages HTTP/1.1" 200 - 4 0.001 0.005
+2026-11-16 12:17:27,986 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /mail/data HTTP/1.1" 200 - 37 0.015 0.030
+2026-11-16 12:17:27,997 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:27] "POST /web/dataset/call_kw/federation.finance.event/web_read#federation.finance.event.web_read HTTP/1.1" 200 - 5 0.004 0.052
+2026-11-16 12:17:28,017 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "GET /web/image/res.partner/2/avatar_128?unique=1794830657000 HTTP/1.1" 200 - 5 0.007 0.051
+2026-11-16 12:17:28,130 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [4/14] Tour finance_bridge_browser_lifecycle → Step Accept the settlement confirmation (trigger: .modal-dialog .btn-primary) 
+2026-11-16 12:17:28,196 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Generating a new asset bundle attachment /web/assets/1bcd000/web.assets_emoji.min.js (id:744) 
+2026-11-16 12:17:28,199 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "GET /web/assets/1bcd000/web.assets_emoji.min.js HTTP/1.1" 200 - 8 0.008 0.232
+2026-11-16 12:17:28,218 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [5/14] Tour finance_bridge_browser_lifecycle → Step The finance event reached the settled state (trigger: .o_statusbar_status button.active[data-value="settled"], .o_statusbar_status .o_arrow_button_current[data-value="settled"]) 
+2026-11-16 12:17:28,237 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "POST /mail/data HTTP/1.1" 200 - 18 0.017 0.109
+2026-11-16 12:17:28,271 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "POST /web/dataset/call_kw/discuss.channel/channel_fetched#discuss.channel.channel_fetched HTTP/1.1" 200 - 9 0.004 0.241
+2026-11-16 12:17:28,286 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "POST /web/dataset/call_button/federation.finance.event/action_settle#federation.finance.event.action_settle HTTP/1.1" 200 - 6 0.009 0.058
+2026-11-16 12:17:28,335 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "POST /web/dataset/call_kw/federation.finance.event/web_read#federation.finance.event.web_read HTTP/1.1" 200 - 5 0.001 0.009
+2026-11-16 12:17:28,340 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "POST /mail/thread/messages HTTP/1.1" 200 - 4 0.001 0.014
+2026-11-16 12:17:28,372 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "POST /mail/data HTTP/1.1" 200 - 18 0.005 0.011
+2026-11-16 12:17:28,380 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [6/14] Tour finance_bridge_browser_lifecycle → Step Open the fee type catalogue (trigger: body) 
+2026-11-16 12:17:28,466 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "GET /odoo/action-sports_federation_finance_bridge.action_federation_fee_type HTTP/1.1" 200 - 19 0.007 0.016
+2026-11-16 12:17:28,498 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "GET /web/webclient/load_menus HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:28,510 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 5 0.003 0.007
+2026-11-16 12:17:28,877 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:28] "GET /web/webclient/translations?hash=00e98877d653f0c68e08aff3bf0fe563cebdd6d5&lang=en_US HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:28,880 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [7/14] Tour finance_bridge_browser_lifecycle → Step Fee types are available (trigger: .o_action_manager [data-res-model="federation.fee.type"], .o_action_manager .o_list_view, .o_action_manager .o_pivot_view) 
+2026-11-16 12:17:28,927 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:29,014 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/image?model=res.users&field=avatar_128&id=2 HTTP/1.1" 304 - 7 0.003 0.011
+2026-11-16 12:17:29,042 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.030
+2026-11-16 12:17:29,057 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /mail/data HTTP/1.1" 200 - 16 0.007 0.026
+2026-11-16 12:17:29,066 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /web/action/load HTTP/1.1" 200 - 10 0.003 0.044
+2026-11-16 12:17:29,068 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /bus/has_missed_notifications HTTP/1.1" 200 - 1 0.000 0.020
+2026-11-16 12:17:29,094 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /web/dataset/call_kw/federation.fee.type/get_views#federation.fee.type.get_views HTTP/1.1" 200 - 17 0.007 0.012
+2026-11-16 12:17:29,118 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /web/dataset/call_kw/federation.fee.type/web_search_read#federation.fee.type.web_search_read HTTP/1.1" 200 - 7 0.003 0.006
+2026-11-16 12:17:29,201 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [8/14] Tour finance_bridge_browser_lifecycle → Step Open fee schedules (trigger: body) 
+2026-11-16 12:17:29,272 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /odoo/action-sports_federation_finance_bridge.action_federation_fee_schedule HTTP/1.1" 200 - 19 0.006 0.014
+2026-11-16 12:17:29,294 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/webclient/load_menus HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:29,372 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [9/14] Tour finance_bridge_browser_lifecycle → Step Fee schedules are available (trigger: .o_action_manager [data-res-model="federation.fee.schedule"], .o_action_manager .o_list_view, .o_action_manager .o_pivot_view) 
+2026-11-16 12:17:29,387 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 5 0.004 0.007
+2026-11-16 12:17:29,388 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/webclient/translations?hash=00e98877d653f0c68e08aff3bf0fe563cebdd6d5&lang=en_US HTTP/1.1" 200 - 0 0.000 0.011
+2026-11-16 12:17:29,396 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:29,485 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/image?model=res.users&field=avatar_128&id=2 HTTP/1.1" 304 - 7 0.007 0.013
+2026-11-16 12:17:29,486 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.010
+2026-11-16 12:17:29,497 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /web/action/load HTTP/1.1" 200 - 10 0.004 0.019
+2026-11-16 12:17:29,514 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /mail/data HTTP/1.1" 200 - 16 0.008 0.027
+2026-11-16 12:17:29,516 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /bus/has_missed_notifications HTTP/1.1" 200 - 1 0.000 0.021
+2026-11-16 12:17:29,534 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /web/dataset/call_kw/federation.fee.schedule/get_views#federation.fee.schedule.get_views HTTP/1.1" 200 - 17 0.007 0.021
+2026-11-16 12:17:29,552 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /web/dataset/call_kw/federation.fee.schedule/web_search_read#federation.fee.schedule.web_search_read HTTP/1.1" 200 - 5 0.002 0.004
+2026-11-16 12:17:29,600 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [10/14] Tour finance_bridge_browser_lifecycle → Step Open season budgets (trigger: body) 
+2026-11-16 12:17:29,672 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /odoo/action-sports_federation_finance_bridge.action_federation_season_budget HTTP/1.1" 200 - 19 0.008 0.013
+2026-11-16 12:17:29,709 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/webclient/load_menus HTTP/1.1" 200 - 0 0.000 0.004
+2026-11-16 12:17:29,802 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [11/14] Tour finance_bridge_browser_lifecycle → Step Season budgets are available (trigger: .o_action_manager [data-res-model="federation.season.budget"], .o_action_manager .o_list_view, .o_action_manager .o_pivot_view) 
+2026-11-16 12:17:29,813 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 5 0.006 0.008
+2026-11-16 12:17:29,815 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/webclient/translations?hash=00e98877d653f0c68e08aff3bf0fe563cebdd6d5&lang=en_US HTTP/1.1" 200 - 0 0.000 0.011
+2026-11-16 12:17:29,841 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:29,934 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /web/image?model=res.users&field=avatar_128&id=2 HTTP/1.1" 304 - 7 0.014 0.009
+2026-11-16 12:17:29,957 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /mail/data HTTP/1.1" 200 - 16 0.009 0.012
+2026-11-16 12:17:29,966 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "POST /web/action/load HTTP/1.1" 200 - 10 0.003 0.039
+2026-11-16 12:17:29,969 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:29] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.028
+2026-11-16 12:17:30,008 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /web/dataset/call_kw/federation.season.budget/get_views#federation.season.budget.get_views HTTP/1.1" 200 - 18 0.008 0.015
+2026-11-16 12:17:30,013 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /bus/has_missed_notifications HTTP/1.1" 200 - 1 0.000 0.023
+2026-11-16 12:17:30,042 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /web/dataset/call_kw/federation.season.budget/web_search_read#federation.season.budget.web_search_read HTTP/1.1" 200 - 9 0.003 0.011
+2026-11-16 12:17:30,088 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [12/14] Tour finance_bridge_browser_lifecycle → Step Return to finance events (trigger: body) 
+2026-11-16 12:17:30,166 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "GET /odoo/action-sports_federation_finance_bridge.action_federation_finance_event HTTP/1.1" 200 - 19 0.010 0.016
+2026-11-16 12:17:30,198 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "GET /web/webclient/load_menus HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:30,290 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [13/14] Tour finance_bridge_browser_lifecycle → Step Finance events remain available after settlement (trigger: .o_action_manager [data-res-model="federation.finance.event"], .o_action_manager .o_list_view, .o_action_manager .o_pivot_view) 
+2026-11-16 12:17:30,295 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 5 0.001 0.008
+2026-11-16 12:17:30,296 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "GET /web/webclient/translations?hash=00e98877d653f0c68e08aff3bf0fe563cebdd6d5&lang=en_US HTTP/1.1" 200 - 0 0.000 0.005
+2026-11-16 12:17:30,314 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:30,441 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "GET /web/image?model=res.users&field=avatar_128&id=2 HTTP/1.1" 304 - 7 0.007 0.044
+2026-11-16 12:17:30,462 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /web/action/load HTTP/1.1" 200 - 9 0.011 0.056
+2026-11-16 12:17:30,501 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /mail/data HTTP/1.1" 200 - 16 0.015 0.088
+2026-11-16 12:17:30,502 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.087
+2026-11-16 12:17:30,520 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /web/dataset/call_kw/federation.finance.event/get_views#federation.finance.event.get_views HTTP/1.1" 200 - 1 0.000 0.028
+2026-11-16 12:17:30,556 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /web/dataset/call_kw/federation.finance.event/web_search_read#federation.finance.event.web_search_read HTTP/1.1" 200 - 6 0.003 0.034
+2026-11-16 12:17:30,609 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: [14/14] Tour finance_bridge_browser_lifecycle → Step The settled browser-tour event is listed (trigger: .o_list_view .o_data_row:contains("Browser Finance Lifecycle")) 
+2026-11-16 12:17:30,640 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:30] "POST /bus/has_missed_notifications HTTP/1.1" 200 - 1 0.000 0.005
+2026-11-16 12:17:30,661 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: tour succeeded 
+2026-11-16 12:17:30,663 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: 
+
+╔═════════════════════════════════════════════════╗
+║ TOUR finance_bridge_browser_lifecycle SUCCEEDED ║
+╚═════════════════════════════════════════════════╝
+ 
+2026-11-16 12:17:30,801 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle.browser: heap 16201808 (allocated 17195008) 
+2026-11-16 12:17:30,809 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Closing chrome headless with pid 36 
+2026-11-16 12:17:30,810 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Closing websocket connection 
+2026-11-16 12:17:30,810 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Terminating chrome headless with pid 36 
+2026-11-16 12:17:31,427 32 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: Removing chrome user profile "/tmp/tmpm1fib500_chrome_odoo" 
+2026-11-16 12:17:31,446 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 2 checked, 2 removed 
+2026-11-16 12:17:31,475 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site: Starting TestBrowserPublicSite.test_public_site_browser_lifecycle ... 
+2026-11-16 12:17:31,688 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Chrome pid: 311 
+2026-11-16 12:17:31,688 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Chrome headless temporary user profile dir: /tmp/tmpzh0pneb8_chrome_odoo 
+2026-11-16 12:17:31,688 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Issuing json command http://127.0.0.1:42753/json/version 
+2026-11-16 12:17:31,689 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:42753', path='/json/version', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:31,703 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Browser version: Chrome/157.0.8103.78 
+2026-11-16 12:17:31,703 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Issuing json command http://127.0.0.1:42753/json 
+2026-11-16 12:17:31,704 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:42753', path='/json', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:31,707 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Websocket url found: ws://127.0.0.1:42753/devtools/page/7D66EC5114831D53EBBBF9B090AEB448 
+2026-11-16 12:17:31,713 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Enable chrome headless console log notification 
+2026-11-16 12:17:31,721 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Chrome headless enable page notifications 
+2026-11-16 12:17:34,217 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Setting session cookie in browser 
+2026-11-16 12:17:34,219 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Open "http://127.0.0.1:8069/competitions" in browser 
+2026-11-16 12:17:34,219 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Navigating to: "http://127.0.0.1:8069/competitions" 
+2026-11-16 12:17:34,239 32 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-11-16 12:17:34,672 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /competitions HTTP/1.1" 200 - 95 0.039 0.398
+2026-11-16 12:17:34,674 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Navigation result: {'frameId': '7D66EC5114831D53EBBBF9B090AEB448', 'loaderId': 'D667F7794811D80BCCB5100FC3502CD3', 'isDownload': False} 
+2026-11-16 12:17:34,674 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Evaluate ready code "odoo.isTourReady('public_site_browser_lifecycle')" 
+2026-11-16 12:17:34,700 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/static/src/libs/fontawesome/fonts/fontawesome-webfont.woff2?v=4.7.0 HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:34,705 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/785cd9d/web.assets_frontend.min.css, copying from /web/assets/785cd9d/web.assets_frontend.min.css 
+2026-11-16 12:17:34,738 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/assets/1/785cd9d/web.assets_frontend.min.css HTTP/1.1" 200 - 12 0.024 0.016
+2026-11-16 12:17:34,744 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/5a20860/web.assets_frontend_minimal.min.js, copying from /web/assets/5a20860/web.assets_frontend_minimal.min.js 
+2026-11-16 12:17:34,754 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/assets/1/5a20860/web.assets_frontend_minimal.min.js HTTP/1.1" 200 - 9 0.004 0.034
+2026-11-16 12:17:34,754 32 INFO sf_rc_validation odoo.tests.common: External chrome request during tests: Return empty file for https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i&display=swap 
+2026-11-16 12:17:34,755 32 INFO sf_rc_validation odoo.tests.common: External chrome request during tests: Return empty file for https://fonts.googleapis.com/css?family=Inter+Tight:300,300i,400,400i,500,500i,700,700i&display=swap 
+2026-11-16 12:17:34,763 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/f814048/web.__assets_tests_call__.min.js, copying from /web/assets/f814048/web.__assets_tests_call__.min.js 
+2026-11-16 12:17:34,770 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/assets/1/f814048/web.__assets_tests_call__.min.js HTTP/1.1" 200 - 9 0.003 0.012
+2026-11-16 12:17:34,837 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/static/lib/odoo_ui_icons/fonts/odoo_ui_icons.woff2 HTTP/1.1" 200 - 0 0.000 0.004
+2026-11-16 12:17:34,847 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/static/img/odoo_logo_tiny.png HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:34,858 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/image/website/1/logo/My%20Website?unique=1164f19 HTTP/1.1" 200 - 4 0.006 0.017
+2026-11-16 12:17:34,876 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/image/website/1/favicon?unique=1164f19 HTTP/1.1" 200 - 4 0.001 0.008
+2026-11-16 12:17:34,892 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/de44280/web.assets_frontend_lazy.min.js, copying from /web/assets/de44280/web.assets_frontend_lazy.min.js 
+2026-11-16 12:17:34,925 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:34] "GET /web/assets/1/de44280/web.assets_frontend_lazy.min.js HTTP/1.1" 200 - 9 0.014 0.044
+2026-11-16 12:17:35,126 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:35,127 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:35] "GET /my/journey-context HTTP/1.1" 303 - 1 0.000 0.003
+2026-11-16 12:17:35,208 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:35] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 24 0.018 0.057
+2026-11-16 12:17:36,930 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:36] "GET /website/translations?hash=&lang=en_US HTTP/1.1" 200 - 1 0.000 0.003
+2026-11-16 12:17:36,967 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: The ready code tooks too much time : 2.2909011840820312 
+2026-11-16 12:17:36,967 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Evaluate test code "odoo.startTour('public_site_browser_lifecycle', {"stepDelay": 0, "keepWatchBrowser": false, "debug": false, "startUrl": "/competitions", "delayToCheckUndeterminisms": 0})" 
+2026-11-16 12:17:36,971 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [1/27] Tour public_site_browser_lifecycle → Step The canonical competition index is active (trigger: body) 
+2026-11-16 12:17:37,023 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [2/27] Tour public_site_browser_lifecycle → Step The current competition is visible (trigger: .sf-competition-card a[href="/competitions/browser-public-competition"]) 
+2026-11-16 12:17:37,074 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [3/27] Tour public_site_browser_lifecycle → Step Search the competition index (trigger: #competition-search) 
+2026-11-16 12:17:37,135 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [4/27] Tour public_site_browser_lifecycle → Step Submit the competition search (trigger: form button[type="submit"], form button.btn-primary) 
+2026-11-16 12:17:37,216 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /competitions?search=Browser+Public+Competition&season_id= HTTP/1.1" 200 - 12 0.004 0.015
+2026-11-16 12:17:37,310 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:37,311 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.001
+2026-11-16 12:17:37,343 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [5/27] Tour public_site_browser_lifecycle → Step The filtered competition remains visible (trigger: .sf-competition-card a[href="/competitions/browser-public-competition"]) 
+2026-11-16 12:17:37,357 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.004 0.018
+2026-11-16 12:17:37,360 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.015
+2026-11-16 12:17:37,493 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /competitions/browser-public-competition HTTP/1.1" 200 - 31 0.019 0.065
+2026-11-16 12:17:37,584 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:37,584 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.001
+2026-11-16 12:17:37,594 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [6/27] Tour public_site_browser_lifecycle → Step The competition detail uses its canonical path (trigger: body) 
+2026-11-16 12:17:37,609 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.002 0.016
+2026-11-16 12:17:37,611 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.016
+2026-11-16 12:17:37,643 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [7/27] Tour public_site_browser_lifecycle → Step The competition overview renders its public heading (trigger: .sf-competition-hero h1) 
+2026-11-16 12:17:37,693 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [8/27] Tour public_site_browser_lifecycle → Step Open the public schedule (trigger: .sf-competition-nav a[href="/competitions/browser-public-competition/schedule"]) 
+2026-11-16 12:17:37,815 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /competitions/browser-public-competition/schedule HTTP/1.1" 200 - 24 0.017 0.042
+2026-11-16 12:17:37,885 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:37,885 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.002
+2026-11-16 12:17:37,893 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [9/27] Tour public_site_browser_lifecycle → Step The schedule route is available (trigger: body) 
+2026-11-16 12:17:37,909 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.005 0.014
+2026-11-16 12:17:37,910 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:37] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.015
+2026-11-16 12:17:37,941 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [10/27] Tour public_site_browser_lifecycle → Step The schedule navigation state is active (trigger: .sf-competition-nav a.active[href$="/schedule"]) 
+2026-11-16 12:17:37,992 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [11/27] Tour public_site_browser_lifecycle → Step Open the public results (trigger: .sf-competition-nav a[href="/competitions/browser-public-competition/results"]) 
+2026-11-16 12:17:38,119 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /competitions/browser-public-competition/results HTTP/1.1" 200 - 26 0.019 0.044
+2026-11-16 12:17:38,208 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:38,208 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.001
+2026-11-16 12:17:38,211 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [12/27] Tour public_site_browser_lifecycle → Step The results route is available (trigger: body) 
+2026-11-16 12:17:38,214 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:38,240 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.002 0.013
+2026-11-16 12:17:38,261 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [13/27] Tour public_site_browser_lifecycle → Step The results navigation state is active (trigger: .sf-competition-nav a.active[href$="/results"]) 
+2026-11-16 12:17:38,311 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [14/27] Tour public_site_browser_lifecycle → Step Open the public standings (trigger: .sf-competition-nav a[href="/competitions/browser-public-competition/standings"]) 
+2026-11-16 12:17:38,436 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /competitions/browser-public-competition/standings HTTP/1.1" 200 - 26 0.016 0.047
+2026-11-16 12:17:38,489 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:38,490 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.001
+2026-11-16 12:17:38,505 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [15/27] Tour public_site_browser_lifecycle → Step The standings route is available (trigger: body) 
+2026-11-16 12:17:38,519 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.005 0.017
+2026-11-16 12:17:38,521 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.014
+2026-11-16 12:17:38,549 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [16/27] Tour public_site_browser_lifecycle → Step The standings navigation state is active (trigger: .sf-competition-nav a.active[href$="/standings"]) 
+2026-11-16 12:17:38,599 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [17/27] Tour public_site_browser_lifecycle → Step Exercise the retired tournament index alias (trigger: body) 
+2026-11-16 12:17:38,676 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /competitions HTTP/1.1" 200 - 12 0.003 0.015
+2026-11-16 12:17:38,745 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:38,745 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.006
+2026-11-16 12:17:38,752 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [18/27] Tour public_site_browser_lifecycle → Step The retired tournament index redirects to competitions (trigger: body) 
+2026-11-16 12:17:38,758 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:38,779 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.002 0.012
+2026-11-16 12:17:38,802 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [19/27] Tour public_site_browser_lifecycle → Step Open the public competition archive (trigger: body) 
+2026-11-16 12:17:38,876 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /competitions/archive HTTP/1.1" 200 - 9 0.002 0.013
+2026-11-16 12:17:38,972 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:38,972 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.001
+2026-11-16 12:17:38,983 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [20/27] Tour public_site_browser_lifecycle → Step The competition archive is available (trigger: body) 
+2026-11-16 12:17:38,997 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.004 0.017
+2026-11-16 12:17:38,998 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:38] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.016
+2026-11-16 12:17:39,032 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [21/27] Tour public_site_browser_lifecycle → Step The archive page renders an archive heading (trigger: main h1) 
+2026-11-16 12:17:39,082 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [22/27] Tour public_site_browser_lifecycle → Step Open the public club directory (trigger: body) 
+2026-11-16 12:17:39,203 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /clubs HTTP/1.1" 200 - 23 0.015 0.047
+2026-11-16 12:17:39,276 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:39,276 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.001
+2026-11-16 12:17:39,287 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [23/27] Tour public_site_browser_lifecycle → Step The public club directory is available (trigger: body) 
+2026-11-16 12:17:39,306 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.006 0.020
+2026-11-16 12:17:39,308 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.017
+2026-11-16 12:17:39,333 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [24/27] Tour public_site_browser_lifecycle → Step The club directory renders successfully (trigger: main, #wrapwrap) 
+2026-11-16 12:17:39,383 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [25/27] Tour public_site_browser_lifecycle → Step Open the public player directory (trigger: body) 
+2026-11-16 12:17:39,512 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /players HTTP/1.1" 200 - 23 0.019 0.050
+2026-11-16 12:17:39,578 32 INFO sf_rc_validation odoo.http: Session expired 
+2026-11-16 12:17:39,578 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /my/journey-context HTTP/1.1" 303 - 0 0.000 0.001
+2026-11-16 12:17:39,593 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [26/27] Tour public_site_browser_lifecycle → Step The public player directory is available (trigger: body) 
+2026-11-16 12:17:39,602 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /web/login?redirect=/my/journey-context? HTTP/1.1" 200 - 6 0.005 0.015
+2026-11-16 12:17:39,605 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:39] "GET /website/translations?hash=5e99848f90fa67792c17379f95fcc4978e7a372d&lang=en_US HTTP/1.1" 200 - 0 0.000 0.009
+2026-11-16 12:17:39,637 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: [27/27] Tour public_site_browser_lifecycle → Step The player directory renders successfully (trigger: main, #wrapwrap) 
+2026-11-16 12:17:39,688 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: tour succeeded 
+2026-11-16 12:17:39,689 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: 
+
+╔══════════════════════════════════════════════╗
+║ TOUR public_site_browser_lifecycle SUCCEEDED ║
+╚══════════════════════════════════════════════╝
+ 
+2026-11-16 12:17:39,811 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle.browser: heap 15279196 (allocated 16252928) 
+2026-11-16 12:17:39,812 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Closing chrome headless with pid 311 
+2026-11-16 12:17:39,816 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Closing websocket connection 
+2026-11-16 12:17:39,817 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Terminating chrome headless with pid 311 
+2026-11-16 12:17:40,131 32 INFO sf_rc_validation odoo.addons.sports_federation_public_site.tests.test_browser_public_site.TestBrowserPublicSite.test_public_site_browser_lifecycle: Removing chrome user profile "/tmp/tmpzh0pneb8_chrome_odoo" 
+2026-11-16 12:17:40,145 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:40,255 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: Starting TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour ... 
+2026-11-16 12:17:40,478 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Chrome pid: 546 
+2026-11-16 12:17:40,478 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Chrome headless temporary user profile dir: /tmp/tmpt_a96r_q_chrome_odoo 
+2026-11-16 12:17:40,478 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Issuing json command http://127.0.0.1:34213/json/version 
+2026-11-16 12:17:40,479 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:34213', path='/json/version', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:40,594 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Browser version: Chrome/157.0.8103.78 
+2026-11-16 12:17:40,594 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Issuing json command http://127.0.0.1:34213/json 
+2026-11-16 12:17:40,595 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:34213', path='/json', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:40,632 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Websocket url found: ws://127.0.0.1:34213/devtools/page/45838E66DD600C725CFDDA58F959F914 
+2026-11-16 12:17:40,663 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Enable chrome headless console log notification 
+2026-11-16 12:17:40,674 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Chrome headless enable page notifications 
+2026-11-16 12:17:43,143 32 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:browser.lifecycle.operator@example.invalid from n/a 
+2026-11-16 12:17:43,152 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Setting session cookie in browser 
+2026-11-16 12:17:43,156 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Open "http://127.0.0.1:8069/odoo/action-sports_federation_setup_flow.action_competition_setup_home" in browser 
+2026-11-16 12:17:43,156 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Navigating to: "http://127.0.0.1:8069/odoo/action-sports_federation_setup_flow.action_competition_setup_home" 
+2026-11-16 12:17:43,170 32 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-11-16 12:17:43,708 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:43] "GET /odoo/action-sports_federation_setup_flow.action_competition_setup_home HTTP/1.1" 200 - 133 0.041 0.499
+2026-11-16 12:17:43,710 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Navigation result: {'frameId': '45838E66DD600C725CFDDA58F959F914', 'loaderId': '517FC10C8BB50B2E8C087D12AD7F1760', 'isDownload': False} 
+2026-11-16 12:17:43,710 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Evaluate ready code "odoo.isTourReady('full_competition_lifecycle')" 
+2026-11-16 12:17:43,767 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:43] "GET /web/assets/e1acd0d/web.assets_web.min.js HTTP/1.1" 200 - 2 0.001 0.010
+2026-11-16 12:17:43,782 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:43] "GET /web/assets/7229f34/web.assets_web.min.css HTTP/1.1" 200 - 2 0.002 0.021
+2026-11-16 12:17:43,839 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:43] "GET /web/webclient/load_menus HTTP/1.1" 200 - 17 0.035 0.043
+2026-11-16 12:17:43,852 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:43] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 7 0.006 0.083
+2026-11-16 12:17:43,866 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:43] "GET /web/assets/e7d1c81/web.assets_tests.min.js HTTP/1.1" 200 - 2 0.003 0.005
+2026-11-16 12:17:43,899 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:43] "GET /web/assets/55c6487/web.assets_web_print.min.css HTTP/1.1" 200 - 2 0.001 0.003
+2026-11-16 12:17:44,315 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:44] "GET /web/static/img/odoo-icon-192x192.png HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:44,316 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:44] "GET /web/static/img/favicon.ico HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:46,571 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /web/webclient/translations?hash=&lang=en_US HTTP/1.1" 200 - 1 0.000 0.005
+2026-11-16 12:17:46,652 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Generating a new asset bundle attachment /web/assets/ca3f650/bus.websocket_worker_assets.min.js (id:754) 
+2026-11-16 12:17:46,654 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /bus/websocket_worker_bundle?v=19.0-2 HTTP/1.1" 200 - 6 0.007 0.027
+2026-11-16 12:17:46,669 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:46,678 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /web/service-worker.js HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:46,692 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /mail/static/lib/idb-keyval/idb-keyval.js HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:46,722 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /odoo HTTP/1.1" 200 - 18 0.007 0.016
+2026-11-16 12:17:46,736 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /odoo/offline HTTP/1.1" 200 - 5 0.003 0.031
+2026-11-16 12:17:46,801 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /web/image?model=res.users&field=avatar_128&id=157 HTTP/1.1" 200 - 14 0.008 0.014
+2026-11-16 12:17:46,809 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: The ready code tooks too much time : 3.0985963344573975 
+2026-11-16 12:17:46,809 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Evaluate test code "odoo.startTour('full_competition_lifecycle', {"stepDelay": 0, "keepWatchBrowser": false, "debug": false, "startUrl": "/odoo/action-sports_federation_setup_flow.action_competition_setup_home", "delayToCheckUndeterminisms": 0})" 
+2026-11-16 12:17:46,818 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [1/9] Tour full_competition_lifecycle → Step Open the canonical competition workspace (trigger: body) 
+2026-11-16 12:17:46,823 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /web/static/src/libs/fontawesome/fonts/fontawesome-webfont.woff2?v=4.7.0 HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:46,827 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /web/static/lib/odoo_ui_icons/fonts/odoo_ui_icons.woff2 HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:46,835 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "POST /web/action/load HTTP/1.1" 200 - 10 0.026 0.024
+2026-11-16 12:17:46,861 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /web/image/res.partner/165/avatar_128?unique=1794831460000 HTTP/1.1" 200 - 6 0.008 0.068
+2026-11-16 12:17:46,906 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "POST /mail/data HTTP/1.1" 200 - 26 0.024 0.058
+2026-11-16 12:17:46,909 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.069
+2026-11-16 12:17:46,964 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:46] "POST /web/dataset/call_kw/federation.competition.edition/get_views#federation.competition.edition.get_views HTTP/1.1" 200 - 38 0.018 0.089
+2026-11-16 12:17:47,001 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "POST /web/dataset/call_kw/federation.competition.edition/web_search_read#federation.competition.edition.web_search_read HTTP/1.1" 200 - 18 0.007 0.011
+2026-11-16 12:17:47,206 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "GET /odoo/action-sports_federation_setup_flow.action_competition_setup_home HTTP/1.1" 200 - 18 0.006 0.014
+2026-11-16 12:17:47,253 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 5 0.001 0.006
+2026-11-16 12:17:47,259 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "GET /web/webclient/load_menus HTTP/1.1" 200 - 0 0.000 0.013
+2026-11-16 12:17:47,654 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "GET /web/webclient/translations?hash=00e98877d653f0c68e08aff3bf0fe563cebdd6d5&lang=en_US HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:47,656 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [2/9] Tour full_competition_lifecycle → Step Competition rows expose the resumable workspace (trigger: .o_list_renderer button[name='action_open_competition_planner']) 
+2026-11-16 12:17:47,667 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "GET /bus/websocket_worker_bundle?v=19.0-2 HTTP/1.1" 304 - 2 0.001 0.003
+2026-11-16 12:17:47,683 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:47,774 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "GET /web/image?model=res.users&field=avatar_128&id=157 HTTP/1.1" 304 - 7 0.013 0.010
+2026-11-16 12:17:47,787 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "POST /web/dataset/call_kw/federation.competition.edition/get_views#federation.competition.edition.get_views HTTP/1.1" 200 - 1 0.001 0.025
+2026-11-16 12:17:47,790 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.022
+2026-11-16 12:17:47,842 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "POST /mail/data HTTP/1.1" 200 - 16 0.023 0.050
+2026-11-16 12:17:47,855 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "POST /web/dataset/call_kw/federation.competition.edition/web_search_read#federation.competition.edition.web_search_read HTTP/1.1" 200 - 15 0.005 0.025
+2026-11-16 12:17:47,922 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [3/9] Tour full_competition_lifecycle → Step Resume without choosing a technical module (trigger: .o_list_renderer button[name='action_open_competition_planner']) 
+2026-11-16 12:17:47,980 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [4/9] Tour full_competition_lifecycle → Step The simplified competition workspace is ready (trigger: .o_competition_planner [data-planner-primary-action='true']) 
+2026-11-16 12:17:47,983 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:47] "POST /web/dataset/call_button/federation.competition.edition/action_open_competition_planner#federation.competition.edition.action_open_competition_planner HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:48,014 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "POST /web/dataset/call_kw/federation.competition.edition/get_competition_planner_data#federation.competition.edition.get_competition_planner_data HTTP/1.1" 200 - 13 0.003 0.006
+2026-11-16 12:17:48,022 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "POST /web/dataset/call_kw/federation.competition.edition/get_planner_matchday_readiness#federation.competition.edition.get_planner_matchday_readiness HTTP/1.1" 200 - 1 0.000 0.002
+2026-11-16 12:17:48,045 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [5/9] Tour full_competition_lifecycle → Step Unified readiness covers planning and operations (trigger: .o_competition_planner [data-planner-unified-readiness='true']) 
+2026-11-16 12:17:48,096 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [6/9] Tour full_competition_lifecycle → Step Exactly one next action is promoted (trigger: .o_competition_planner [data-planner-primary-projection='true']) 
+2026-11-16 12:17:48,148 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [7/9] Tour full_competition_lifecycle → Step Open the public competition index (trigger: body) 
+2026-11-16 12:17:48,167 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "POST /mail/data HTTP/1.1" 200 - 36 0.010 0.027
+2026-11-16 12:17:48,217 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "POST /web/dataset/call_kw/discuss.channel/channel_fetched#discuss.channel.channel_fetched HTTP/1.1" 200 - 11 0.004 0.030
+2026-11-16 12:17:48,601 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /competitions HTTP/1.1" 200 - 76 0.034 0.359
+2026-11-16 12:17:48,629 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/785cd9d/web.assets_frontend.min.css, copying from /web/assets/785cd9d/web.assets_frontend.min.css 
+2026-11-16 12:17:48,658 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /web/assets/1/785cd9d/web.assets_frontend.min.css HTTP/1.1" 200 - 9 0.020 0.014
+2026-11-16 12:17:48,667 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/5a20860/web.assets_frontend_minimal.min.js, copying from /web/assets/5a20860/web.assets_frontend_minimal.min.js 
+2026-11-16 12:17:48,673 32 INFO sf_rc_validation odoo.tests.common: External chrome request during tests: Return empty file for https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i&display=swap 
+2026-11-16 12:17:48,673 32 INFO sf_rc_validation odoo.tests.common: External chrome request during tests: Return empty file for https://fonts.googleapis.com/css?family=Inter+Tight:300,300i,400,400i,500,500i,700,700i&display=swap 
+2026-11-16 12:17:48,682 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /web/assets/1/5a20860/web.assets_frontend_minimal.min.js HTTP/1.1" 200 - 9 0.011 0.047
+2026-11-16 12:17:48,696 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/f814048/web.__assets_tests_call__.min.js, copying from /web/assets/f814048/web.__assets_tests_call__.min.js 
+2026-11-16 12:17:48,710 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /web/assets/1/f814048/web.__assets_tests_call__.min.js HTTP/1.1" 200 - 9 0.010 0.025
+2026-11-16 12:17:48,755 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /web/static/img/odoo_logo_tiny.png HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:48,760 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /web/image/website/1/logo/My%20Website?unique=1164f19 HTTP/1.1" 200 - 4 0.003 0.007
+2026-11-16 12:17:48,789 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Found a similar attachment for /web/assets/1/de44280/web.assets_frontend_lazy.min.js, copying from /web/assets/de44280/web.assets_frontend_lazy.min.js 
+2026-11-16 12:17:48,803 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /web/assets/1/de44280/web.assets_frontend_lazy.min.js HTTP/1.1" 200 - 9 0.004 0.018
+2026-11-16 12:17:48,809 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /web/image/website/1/favicon?unique=1164f19 HTTP/1.1" 200 - 4 0.002 0.024
+2026-11-16 12:17:48,967 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:48] "GET /my/journey-context HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:49,088 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:49] "GET /website/translations?hash=&lang=en_US HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:49,095 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [8/9] Tour full_competition_lifecycle → Step The public competition index renders successfully (trigger: main, #wrapwrap) 
+2026-11-16 12:17:49,147 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: [9/9] Tour full_competition_lifecycle → Step The canonical competition route remains active (trigger: main h1, #wrapwrap h1) 
+2026-11-16 12:17:49,198 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: tour succeeded 
+2026-11-16 12:17:49,198 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: 
+
+╔═══════════════════════════════════════════╗
+║ TOUR full_competition_lifecycle SUCCEEDED ║
+╚═══════════════════════════════════════════╝
+ 
+2026-11-16 12:17:49,352 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour.browser: heap 19963324 (allocated 20602880) 
+2026-11-16 12:17:49,359 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Closing chrome headless with pid 546 
+2026-11-16 12:17:49,361 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Closing websocket connection 
+2026-11-16 12:17:49,362 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Terminating chrome headless with pid 546 
+2026-11-16 12:17:49,828 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: Removing chrome user profile "/tmp/tmpt_a96r_q_chrome_odoo" 
+2026-11-16 12:17:49,888 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: Starting TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour ... 
+2026-11-16 12:17:50,103 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Chrome pid: 786 
+2026-11-16 12:17:50,103 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Chrome headless temporary user profile dir: /tmp/tmp2s09g_ot_chrome_odoo 
+2026-11-16 12:17:50,103 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Issuing json command http://127.0.0.1:39867/json/version 
+2026-11-16 12:17:50,104 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:39867', path='/json/version', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:50,166 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Browser version: Chrome/157.0.8103.78 
+2026-11-16 12:17:50,167 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Issuing json command http://127.0.0.1:39867/json 
+2026-11-16 12:17:50,167 32 INFO sf_rc_validation odoo.tests.common.requests: request SplitResult(scheme='http', netloc='127.0.0.1:39867', path='/json', query='', fragment='') with timeout 3 increased to 10s during tests 
+2026-11-16 12:17:50,194 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Websocket url found: ws://127.0.0.1:39867/devtools/page/AABC237F99B1EB5BBA1A56E0A5B9D98B 
+2026-11-16 12:17:50,211 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Enable chrome headless console log notification 
+2026-11-16 12:17:50,215 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Chrome headless enable page notifications 
+2026-11-16 12:17:54,084 32 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:browser.lifecycle.operator@example.invalid from n/a 
+2026-11-16 12:17:54,104 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Setting session cookie in browser 
+2026-11-16 12:17:54,105 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Open "http://127.0.0.1:8069/odoo/action-sports_federation_setup_flow.action_competition_setup_home" in browser 
+2026-11-16 12:17:54,106 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Navigating to: "http://127.0.0.1:8069/odoo/action-sports_federation_setup_flow.action_competition_setup_home" 
+2026-11-16 12:17:54,123 32 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-11-16 12:17:54,675 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:54] "GET /odoo/action-sports_federation_setup_flow.action_competition_setup_home HTTP/1.1" 200 - 142 0.044 0.510
+2026-11-16 12:17:54,677 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Navigation result: {'frameId': 'AABC237F99B1EB5BBA1A56E0A5B9D98B', 'loaderId': '461C8E687F0F4832A491ECB1AA4E861D', 'isDownload': False} 
+2026-11-16 12:17:54,677 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Evaluate ready code "odoo.isTourReady('keyboard_competition_setup')" 
+2026-11-16 12:17:54,727 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:54] "GET /web/assets/e1acd0d/web.assets_web.min.js HTTP/1.1" 200 - 2 0.001 0.005
+2026-11-16 12:17:54,757 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:54] "GET /web/manifest.webmanifest HTTP/1.1" 200 - 15 0.013 0.018
+2026-11-16 12:17:54,780 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:54] "GET /web/webclient/load_menus HTTP/1.1" 200 - 9 0.009 0.047
+2026-11-16 12:17:54,790 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:54] "GET /web/assets/7229f34/web.assets_web.min.css HTTP/1.1" 200 - 2 0.001 0.064
+2026-11-16 12:17:54,819 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:54] "GET /web/assets/e7d1c81/web.assets_tests.min.js HTTP/1.1" 200 - 2 0.001 0.008
+2026-11-16 12:17:54,879 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:54] "GET /web/assets/55c6487/web.assets_web_print.min.css HTTP/1.1" 200 - 2 0.001 0.010
+2026-11-16 12:17:55,240 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:55] "GET /web/static/img/favicon.ico HTTP/1.1" 200 - 0 0.000 0.001
+2026-11-16 12:17:55,242 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:55] "GET /web/static/img/odoo-icon-192x192.png HTTP/1.1" 200 - 0 0.000 0.003
+2026-11-16 12:17:56,395 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /web/webclient/translations?hash=&lang=en_US HTTP/1.1" 200 - 1 0.000 0.003
+2026-11-16 12:17:56,421 32 INFO sf_rc_validation odoo.addons.base.models.assetsbundle: Generating a new asset bundle attachment /web/assets/ca3f650/bus.websocket_worker_assets.min.js (id:759) 
+2026-11-16 12:17:56,423 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /bus/websocket_worker_bundle?v=19.0-2 HTTP/1.1" 200 - 9 0.003 0.013
+2026-11-16 12:17:56,438 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour.browser: Owl is running in 'dev' mode. 
+2026-11-16 12:17:56,451 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /web/service-worker.js HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:56,475 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /mail/static/lib/idb-keyval/idb-keyval.js HTTP/1.1" 200 - 0 0.000 0.003
+2026-11-16 12:17:56,517 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /odoo HTTP/1.1" 200 - 18 0.011 0.025
+2026-11-16 12:17:56,532 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /odoo/offline HTTP/1.1" 200 - 5 0.003 0.041
+2026-11-16 12:17:56,620 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "POST /web/action/load HTTP/1.1" 200 - 10 0.013 0.013
+2026-11-16 12:17:56,623 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Evaluate test code "odoo.startTour('keyboard_competition_setup', {"stepDelay": 0, "keepWatchBrowser": false, "debug": false, "startUrl": "/odoo/action-sports_federation_setup_flow.action_competition_setup_home", "delayToCheckUndeterminisms": 0})" 
+2026-11-16 12:17:56,628 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /web/static/src/libs/fontawesome/fonts/fontawesome-webfont.woff2?v=4.7.0 HTTP/1.1" 200 - 0 0.000 0.002
+2026-11-16 12:17:56,641 32 INFO ? werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /web/static/lib/odoo_ui_icons/fonts/odoo_ui_icons.woff2 HTTP/1.1" 200 - 0 0.000 0.013
+2026-11-16 12:17:56,653 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour.browser: [1/3] Tour keyboard_competition_setup → Step Focus the competition setup control (trigger: body) 
+2026-11-16 12:17:56,661 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /web/image/res.partner/165/avatar_128?unique=1794831460000 HTTP/1.1" 200 - 13 0.017 0.047
+2026-11-16 12:17:56,674 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /web/image?model=res.users&field=avatar_128&id=157 HTTP/1.1" 200 - 7 0.003 0.074
+2026-11-16 12:17:56,702 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "POST /mail/data HTTP/1.1" 200 - 26 0.012 0.050
+2026-11-16 12:17:56,705 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour.browser: [2/3] Tour keyboard_competition_setup → Step Activate the focused competition setup control with the keyboard (trigger: body) 
+2026-11-16 12:17:56,752 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "POST /web/dataset/call_kw/federation.competition.edition/get_views#federation.competition.edition.get_views HTTP/1.1" 200 - 39 0.014 0.086
+2026-11-16 12:17:56,754 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "GET /websocket?version=19.0-2 HTTP/1.1" 101 - 0 0.000 0.089
+2026-11-16 12:17:56,757 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour.browser: [3/3] Tour keyboard_competition_setup → Step Verify that focus remains available after keyboard activation (trigger: body) 
+2026-11-16 12:17:56,784 32 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [16/Nov/2026 12:17:56] "POST /web/dataset/call_kw/federation.competition.edition/web_search_read#federation.competition.edition.web_search_read HTTP/1.1" 200 - 18 0.004 0.008
+2026-11-16 12:17:56,856 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour.browser: tour succeeded 
+2026-11-16 12:17:56,858 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour.browser: 
+
+╔═══════════════════════════════════════════╗
+║ TOUR keyboard_competition_setup SUCCEEDED ║
+╚═══════════════════════════════════════════╝
+ 
+2026-11-16 12:17:56,947 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour.browser: heap 15206124 (allocated 16670720) 
+2026-11-16 12:17:56,953 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Closing chrome headless with pid 786 
+2026-11-16 12:17:56,954 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Closing websocket connection 
+2026-11-16 12:17:56,955 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Terminating chrome headless with pid 786 
+2026-11-16 12:17:57,272 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: Removing chrome user profile "/tmp/tmp2s09g_ot_chrome_odoo" 
+2026-11-16 12:17:57,289 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 2 checked, 2 removed 
+2026-11-16 12:17:57,290 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_full_lifecycle_tour_uses_the_canonical_resumable_workspace ... 
+2026-11-16 12:17:57,291 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_keyboard_setup_tour_uses_keyboard_activation_and_focus_assertions ... 
+2026-11-16 12:17:57,291 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_actions_target_the_canonical_models ... 
+2026-11-16 12:17:57,300 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_browser_assets_are_present ... 
+2026-11-16 12:17:57,301 32 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_security_roles_are_installed ... 
+2026-11-16 12:17:57,307 32 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.service.server: 27 post-tests in 39.32s, 4552 queries 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_compliance: 29 tests 0.98s 1141 queries 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_demo: 11 tests 17.16s 1145 queries 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_finance_bridge: 3 tests 10.55s 944 queries 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_governance: 20 tests 0.32s 372 queries 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_officiating: 37 tests 1.61s 986 queries 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_portal: 5 tests 0.17s 11 queries 
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_public_site: 3 tests 8.70s 451 queries 
+2026-11-16 12:17:57,309 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_schedule_approval: 12 tests 1.01s 1413 queries 
+2026-11-16 12:17:57,309 32 INFO sf_rc_validation odoo.tests.stats: sports_federation_scheduling: 10 tests 0.32s 369 queries 
+2026-11-16 12:17:57,309 32 INFO sf_rc_validation odoo.tests.result: 0 failed, 0 error(s) of 100 tests when loading database 'sf_rc_validation' 
+2026-11-16 12:17:57,309 32 INFO sf_rc_validation odoo.service.server: Initiating shutdown 
+2026-11-16 12:17:57,309 32 INFO sf_rc_validation odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-11-16 12:17:57,773 32 INFO sf_rc_validation odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 3 connections  
+Odoo registry integrity check passed.
+[RC:focus] Odoo completed successfully.
+2026-11-16 12:17:57,308 32 INFO sf_rc_validation odoo.service.server: 27 post-tests in 39.32s, 4552 queries 
+2026-11-16 12:17:57,309 32 INFO sf_rc_validation odoo.tests.result: 0 failed, 0 error(s) of 100 tests when loading database 'sf_rc_validation' 

@@ -17,7 +17,7 @@ def _get_parental_approval_reasons(player, team, reference_date, tournament=Fals
         and not player._has_verified_parental_approval(reference_date)
     ):
         return [
-            _(
+            player.env._(
                 "Players under 16 need a verified parental approval linked to "
                 "their player account before participating in an adult league."
             )
@@ -179,6 +179,11 @@ class FederationTeamRosterLine(models.Model):
         "player_id.parental_approval_ids.valid_until",
         "license_id",
         "license_id.state",
+        "player_id.license_ids.state",
+        "player_id.license_ids.club_id",
+        "player_id.license_ids.season_id",
+        "player_id.license_ids.issue_date",
+        "player_id.license_ids.expiry_date",
         "license_id.issue_date",
         "license_id.expiry_date",
         "license_id.season_id",

@@ -7,3 +7,5 @@ from . import federation_reimbursement_request
 from . import federation_rule_set
 from . import schedule_publication_duties
 from . import matchday_readiness
+
+from . import club_duty_planning

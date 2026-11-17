@@ -68,7 +68,7 @@ ORM/HTTP tests, browser runs, concurrency scenarios and novice sessions still
 have to run on staging. The [acceptance suites](release/acceptance/README.md)
 list the scenarios and gates for each area: competition lifecycle, role
 journeys, duty coverage, communications, mobile match day, visual scheduling,
-member lifecycle, workspace UX and platform hardening.
+workspace UX and platform hardening.
 
 ### Security, recovery and operations
 
@@ -93,9 +93,8 @@ decision before it is closed.
 
 | Area | Gap |
 | --- | --- |
-| Retention periods | Retention, legal hold and erasure are implemented for participant inbox items and member evidence, but no period is configured. The federation must approve the periods and set them ([data retention](reference/data-retention.md#configurable-retention-for-personal-data)); until then nothing is deleted. |
+| Retention periods | Retention, legal hold and erasure are implemented for participant inbox items, but no period is configured. The federation must approve the periods and set them ([data retention](reference/data-retention.md#configurable-retention-for-personal-data)); until then nothing is deleted. |
 | Schedule validation | Referee availability, double-booking, certification and club-duty overlap, and venue opening, court suitability and playing-area constraints are not yet all part of schedule validation; approval and publication should block when required officiating or venue checks fail. Transaction tests are needed before parity with the removed planner is claimed. |
-| Member services (optional) | Identity backfill for historical records, licence renewal integration and full lifecycle reporting remain open; historical duplicates are not resolved until the legacy inventory is reviewed. |
 | Payments (optional accounting) | Payment-provider configuration, sandbox end-to-end integration, automatic settlement and the full failed/partial/refund/cancellation lifecycle are not runtime-qualified. |
 | Communications | External provider delivery receipts and webhooks are not implemented; `sent` means accepted by the outbound mail server. Suspension issuance still uses a direct-email fallback instead of a dedicated template. |
 | Mobile match day | No cold-start offline application: reloading while fully offline is not supported. Court editing requires a browser with Web Locks. |
@@ -109,6 +108,9 @@ decision before it is closed.
 - Live push updates on the match-day operations board (it polls today).
 - Journey abandonment and time instrumentation beyond the current journey
   events, and role-specific onboarding guides.
+- Use by other federations and other sports. The direction, a sport-neutral
+  data model and the migration path are recorded in
+  [multi-sport direction](architecture/multi-sport-direction.md).
 
 ## Approval criteria
 

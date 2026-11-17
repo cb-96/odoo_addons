@@ -310,7 +310,7 @@
                             </div>
                         </t>
                     </div>
-                    <div t-if="not tournaments" class="alert alert-info mt-4">No tournaments match the current filters. Try widening the season or state filters to discover more events.</div>
+                    <div t-if="not tournaments" class="alert alert-info mt-4" role="status">No tournaments match the current filters. Try widening the season or state filters to discover more events.</div>
                     <t t-call="website.pager" t-if="pager">
                         <t t-set="pager" t-value="pager"/>
                     </t>

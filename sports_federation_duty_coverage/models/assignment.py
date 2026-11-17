@@ -208,7 +208,7 @@ class Assignment(models.Model):
                 matches = a.env["federation.match"].search(
                     [
                         ("state", "!=", "cancelled"),
-                        ("id", "!=", a.match_id.id),
+                        ("id", "not in", a.match_id.ids),
                         "|",
                         ("home_team_id", "in", teams.ids),
                         ("away_team_id", "in", teams.ids),
@@ -328,7 +328,7 @@ class Assignment(models.Model):
                     ("referee_id", "=", a.referee_id.id),
                     ("role", "=", a.role),
                     ("state", "!=", "cancelled"),
-                    ("id", "!=", a.id),
+                    ("id", "not in", a.ids),
                 ]
             ):
                 raise ValidationError(
@@ -364,7 +364,7 @@ class Assignment(models.Model):
                         ("referee_id", "=", a.referee_id.id),
                         ("role", "=", a.role),
                         ("state", "!=", "cancelled"),
-                        ("id", "!=", a.id),
+                        ("id", "not in", a.ids),
                     ]
                 ):
                     raise ValidationError(
