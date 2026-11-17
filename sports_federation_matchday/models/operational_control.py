@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 from odoo import _, fields, models
 from odoo.exceptions import ValidationError
 
@@ -34,6 +37,57 @@ class FederationMatchOperationalState(models.Model):
     operational_deviation_ids = fields.One2many(
         "federation.matchday.deviation", "match_id", readonly=True
     )
+
+    def _schedule_change_impact(self, deviation_type, new_slot=False, delay_minutes=0):
+        self.ensure_one()
+        old_slot = self.operational_slot_id or self.published_slot_id
+        target_slot = new_slot or old_slot
+        Receipt = self.env.get("federation.communication.receipt")
+        communications = (
+            Receipt.sudo().search_count(
+                [("target_model", "=", self._name), ("target_res_id", "=", self.id)]
+            )
+            if Receipt is not None
+            else 0
+        )
+        impact = {
+            "match_id": self.id,
+            "deviation_type": deviation_type,
+            "old_slot_id": old_slot.id if old_slot else False,
+            "new_slot_id": target_slot.id if target_slot else False,
+            "delay_minutes": int(delay_minutes or 0),
+            "team_ids": [self.home_team_id.id, self.away_team_id.id],
+            "official_ids": (
+                self.referee_assignment_ids.filtered(
+                    lambda item: item.state != "cancelled"
+                ).ids
+                if "referee_assignment_ids" in self._fields
+                else []
+            ),
+            "duty_ids": (
+                self.club_referee_duty_ids.filtered(
+                    lambda item: item.state != "rejected"
+                ).ids
+                if "club_referee_duty_ids" in self._fields
+                else []
+            ),
+            "roster_ids": (
+                self.match_sheet_ids.ids if "match_sheet_ids" in self._fields else []
+            ),
+            "communication_count": communications,
+            "public_calendar_changes": bool(self.schedule_publication_id),
+            "result_state": getattr(self, "result_state", False),
+            "requires_reconfirmation": deviation_type
+            in ("move", "delay", "postpone", "cancel"),
+        }
+        impact["signature"] = hashlib.sha256(
+            json.dumps(impact, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        return impact
+
+    def _apply_change_reconfirmation(self, reason):
+        """Owning addons extend this hook to invalidate stale acceptance/access."""
+        return True
 
 
 class FederationMatchdayDeviation(models.Model):
@@ -98,6 +152,8 @@ class FederationMatchdayDeviation(models.Model):
         readonly=True,
         ondelete="restrict",
     )
+    impact_snapshot = fields.Json(readonly=True)
+    impact_signature = fields.Char(readonly=True)
 
     def write(self, vals):
         raise ValidationError(_("Operational deviation evidence is immutable."))

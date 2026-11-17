@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="registration_window_capacity_form" model="ir.ui.view">
+        <field name="name">federation.registration.window.capacity.form</field>
+        <field name="model">federation.registration.window</field>
+        <field name="inherit_id" ref="sports_federation_registration.registration_window_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_offer_next" type="object" string="Offer next place"
+                        invisible="state == 'finalized' or waitlist_count == 0"
+                        groups="sports_federation_base.group_federation_manager"/>
+            </xpath>
+            <xpath expr="//field[@name='date_close']" position="after">
+                <field name="team_capacity"/>
+                <field name="offer_valid_hours"/>
+                <field name="approved_count" readonly="1"/>
+                <field name="reserved_count" readonly="1"/>
+                <field name="waitlist_count" readonly="1"/>
+            </xpath>
+            <xpath expr="//field[@name='entry_ids']/list/field[@name='state']" position="after">
+                <field name="waitlist_sequence" optional="show"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Reserved offers">
+                    <field name="offer_ids" readonly="1">
+                        <list>
+                            <field name="team_id"/>
+                            <field name="state"/>
+                            <field name="offered_on"/>
+                            <field name="expires_on"/>
+                            <field name="accepted_on"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+
+    <record id="registration_offer_form" model="ir.ui.view">
+        <field name="name">federation.registration.offer.form</field>
+        <field name="model">federation.registration.offer</field>
+        <field name="arch" type="xml">
+            <form string="Reserved Registration Place">
+                <header>
+                    <button name="action_accept" type="object" string="Accept place" class="btn-primary" invisible="state != 'offered'"/>
+                    <button name="action_release" type="object" string="Release place" invisible="state != 'offered'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="entry_id"/>
+                        <field name="team_id"/>
+                        <field name="offered_on"/>
+                        <field name="expires_on"/>
+                        <field name="accepted_on"/>
+                        <field name="released_on"/>
+                        <field name="release_reason"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

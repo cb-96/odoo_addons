@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_club_officiating_capacity_list" model="ir.ui.view">
+        <field name="name">federation.club.officiating.capacity.list</field>
+        <field name="model">federation.club.officiating.capacity</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="season_id"/>
+                <field name="club_id"/>
+                <field name="max_simultaneous"/>
+                <field name="preparation_minutes"/>
+                <field name="rest_minutes"/>
+                <field name="travel_minutes"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_club_officiating_capacity_form" model="ir.ui.view">
+        <field name="name">federation.club.officiating.capacity.form</field>
+        <field name="model">federation.club.officiating.capacity</field>
+        <field name="arch" type="xml">
+            <form string="Club Officiating Capacity">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="season_id"/>
+                            <field name="club_id"/>
+                            <field name="max_simultaneous"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Buffers">
+                            <field name="preparation_minutes"/>
+                            <field name="rest_minutes"/>
+                            <field name="travel_minutes"/>
+                        </group>
+                    </group>
+                    <group string="Qualified roles">
+                        <field name="qualify_head"/>
+                        <field name="qualify_assistant"/>
+                        <field name="qualify_fourth"/>
+                        <field name="qualify_table"/>
+                    </group>
+                    <field name="notes"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_club_officiating_capacity" model="ir.actions.act_window">
+        <field name="name">Club Officiating Capacity</field>
+        <field name="res_model">federation.club.officiating.capacity</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_club_officiating_capacity"
+              name="Club Capacity"
+              parent="sports_federation_officiating.menu_federation_officiating"
+              action="action_club_officiating_capacity"
+              groups="sports_federation_base.group_federation_manager"
+              sequence="35"/>
+
+    <record id="view_schedule_form_capacity_inherit" model="ir.ui.view">
+        <field name="name">federation.schedule.form.club.duty.capacity</field>
+        <field name="model">federation.schedule</field>
+        <field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Duty Pins" invisible="state not in ('draft','changes_requested')">
+                    <field name="club_duty_pin_ids">
+                        <list editable="bottom">
+                            <field name="fixture_id" domain="[('id','in',parent.available_fixture_ids)]"/>
+                            <field name="club_id"/>
+                            <field name="reason"/>
+                            <field name="pinned_by_id" readonly="1"/>
+                            <field name="pinned_on" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

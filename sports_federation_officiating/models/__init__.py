@@ -9,3 +9,6 @@ from . import schedule_publication_duties
 from . import matchday_readiness
 
 from . import club_duty_planning
+
+from . import officiating_capacity
+from . import schedule_validator

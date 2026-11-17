@@ -1509,3 +1509,17 @@ has run, since deleted mail content cannot be recovered by reverting Python.
 The marker backfill and index creation alone do not delete or replay messages.
 Do not restore the former permissive log rule as a routine security rollback;
 keep the recipient restriction or disable legacy log access until corrected.
+
+## 2026-11-17 connected workflow roadmap
+
+Upgrade the changed addons together: `sports_federation_officiating`,
+`sports_federation_matchday`, `sports_federation_result_control`,
+`sports_federation_registration`, `sports_federation_rosters`,
+`sports_federation_finance_bridge`, `sports_federation_discipline` and
+`sports_federation_tournament`. New capacity, pin, wait-list offer, payment
+settlement, appeal and wizard models require a module upgrade. Review
+[roadmap acceptance](roadmap-acceptance.md) before release. Historical
+qualification evidence for another commit is not a substitute for an
+exact-candidate upgrade and restored-database rehearsal.
+
+Formatting follow-up for the connected roadmap changes does not alter the schema; the module upgrade and dry-run requirements above remain unchanged.

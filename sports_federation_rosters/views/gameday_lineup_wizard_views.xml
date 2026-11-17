@@ -15,6 +15,7 @@
             <field name="available_team_ids" invisible="1"/>
             <field name="team_id" options="{'no_create': True}"/>
             <field name="roster_id" options="{'no_create': True}"/>
+            <field name="previous_lineup_id" options="{'no_create': True}" invisible="not previous_lineup_id"/>
             <field name="gameday_roster_limit" invisible="not gameday_roster_limit"/>
             <field name="match_participant_limit" invisible="not match_participant_limit"/>
           </group>

@@ -1,6 +1,6 @@
 {
     "name": "Competition Registration",
-    "version": "19.0.1.5.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Role-separated registration desk and finalized participant sets",
     "author": "Sports Federation",
@@ -14,6 +14,8 @@
         "views/registration_views.xml",
         "views/menu.xml",
         "views/participant_handoff.xml",
+        "views/waitlist_views.xml",
+        "data/waitlist_cron.xml",
     ],
     "installable": True,
     "application": False,

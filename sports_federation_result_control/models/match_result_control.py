@@ -496,6 +496,15 @@ class FederationMatchResultControl(models.Model):
     def action_correct_result(self):
         """Correct contested or approved results atomically."""
         with self.env.cr.savepoint():
+            self._assert_result_correction_safe()
+            expected = self.env.context.get("correction_impact_signature")
+            if expected and any(
+                match._result_correction_impact()["signature"] != expected
+                for match in self
+            ):
+                raise ValidationError(
+                    _("The correction impact changed. Review it again.")
+                )
             self._lock_result_transition()
             previous_states = {match.id: match.result_state for match in self}
             result = self._result_transition(

@@ -10,3 +10,5 @@ from . import federation_match_bracket
 from . import federation_season_registration_inherit
 from . import federation_season_inherit
 from . import division_boundary
+
+from . import season_closure

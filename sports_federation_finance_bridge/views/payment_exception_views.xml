@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="finance_event_payment_exception_form" model="ir.ui.view">
+    <field name="name">federation.finance.event.payment.exception.form</field>
+    <field name="model">federation.finance.event</field>
+    <field name="inherit_id" ref="sports_federation_finance_bridge.view_federation_finance_event_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='state']" position="after">
+        <field name="payment_exception_state" readonly="1"/>
+        <field name="paid_amount" readonly="1"/>
+        <field name="refunded_amount" readonly="1"/>
+        <field name="balance_amount" readonly="1"/>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Payments and refunds">
+          <field name="settlement_ids">
+            <list editable="bottom">
+              <field name="occurred_on"/>
+              <field name="amount"/>
+              <field name="state"/>
+              <field name="provider"/>
+              <field name="provider_reference"/>
+              <field name="failure_reason"/>
+              <field name="reconciled"/>
+            </list>
+          </field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="finance_settlement_form" model="ir.ui.view">
+    <field name="name">federation.finance.settlement.form</field>
+    <field name="model">federation.finance.settlement</field>
+    <field name="arch" type="xml">
+      <form string="Payment or Refund Evidence">
+        <header>
+          <button name="action_succeed" type="object" string="Mark successful" class="btn-primary" invisible="state != 'pending'"/>
+          <button name="action_fail" type="object" string="Mark failed" invisible="state != 'pending'"/>
+          <button name="action_cancel" type="object" string="Cancel" invisible="state not in ('pending','failed')"/>
+          <button name="action_refund" type="object" string="Record refund" invisible="state != 'succeeded'"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <group>
+            <field name="event_id"/>
+            <field name="amount"/>
+            <field name="currency_id"/>
+            <field name="provider"/>
+            <field name="provider_reference"/>
+            <field name="failure_reason" required="state == 'failed'"/>
+            <field name="refund_of_id"/>
+            <field name="reconciled" readonly="1"/>
+            <field name="reconciliation_reference" readonly="1"/>
+          </group>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+</odoo>

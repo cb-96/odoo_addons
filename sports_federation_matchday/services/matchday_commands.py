@@ -3,10 +3,6 @@ from datetime import timedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
-from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
-    with_published_planning_token,
-)
-
 
 class FederationMatchdayCommands(models.AbstractModel):
     _name = "federation.matchday.commands"
@@ -52,6 +48,14 @@ class FederationMatchdayCommands(models.AbstractModel):
         ].digest_snapshot(publication.assignment_snapshot):
             raise ValidationError(
                 _("The published schedule snapshot failed its integrity check.")
+            )
+        readiness = self.env["federation.matchday.readiness"].evaluate(matchday)
+        if not readiness["can_run"]:
+            problems = "\n".join(
+                "- %s" % blocker["problem"] for blocker in readiness["blockers"]
+            )
+            raise ValidationError(
+                _("This game day is published but not ready to open:\n%s") % problems
             )
         session = (
             self.env["federation.matchday.session"]
@@ -211,6 +215,7 @@ class FederationMatchdayCommands(models.AbstractModel):
         reason,
         new_slot_id=False,
         delay_minutes=0,
+        expected_impact_signature=False,
     ):
         with self.env.cr.savepoint():
             return self._record_schedule_deviation(
@@ -220,6 +225,7 @@ class FederationMatchdayCommands(models.AbstractModel):
                 reason,
                 new_slot_id,
                 delay_minutes,
+                expected_impact_signature,
             )
 
     @api.model
@@ -231,6 +237,7 @@ class FederationMatchdayCommands(models.AbstractModel):
         reason,
         new_slot_id=False,
         delay_minutes=0,
+        expected_impact_signature=False,
     ):
         matchday = self._resolve(matchday_id)
         self._require_open(matchday)
@@ -308,11 +315,24 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "date_scheduled": False,
                 "state": "cancelled",
             }
+        impact = match._schedule_change_impact(
+            deviation_type,
+            new_slot=new_slot,
+            delay_minutes=delay_minutes,
+        )
+        if (
+            expected_impact_signature
+            and impact["signature"] != expected_impact_signature
+        ):
+            raise ValidationError(
+                _(
+                    "The affected teams, officials or downstream records changed. "
+                    "Review the impact again."
+                )
+            )
         operational_status = values.pop("operational_status")
-        # Deviations change the kickoff and location of a published match.
-        # They are audited match-day commands, so they carry the planning token.
         result = self.env["federation.workflow.transition"].execute(
-            with_published_planning_token(match.sudo()),
+            match.sudo(),
             operational_status,
             {"as_published", "moved", "delayed", "postponed", "cancelled"},
             values=values,
@@ -322,6 +342,8 @@ class FederationMatchdayCommands(models.AbstractModel):
             event_type="matchday_match_deviated",
             description=_("Operational match schedule changed."),
         )
+        if impact["requires_reconfirmation"]:
+            match._apply_change_reconfirmation(reason)
         deviation = (
             self.env["federation.matchday.deviation"]
             .sudo()
@@ -337,6 +359,8 @@ class FederationMatchdayCommands(models.AbstractModel):
                     "delay_minutes": int(delay_minutes or 0),
                     "reason": reason,
                     "actor_id": self.env.user.id,
+                    "impact_snapshot": impact,
+                    "impact_signature": impact["signature"],
                 }
             )
         )
@@ -375,6 +399,32 @@ class FederationMatchdayCommands(models.AbstractModel):
             }
         )
         return result
+
+    @api.model
+    def preview_schedule_deviation(
+        self,
+        matchday_id,
+        match_id,
+        deviation_type,
+        new_slot_id=False,
+        delay_minutes=0,
+    ):
+        matchday = self._resolve(matchday_id)
+        self._require_open(matchday)
+        match = self.env["federation.match"].browse(int(match_id)).exists()
+        if (
+            not match
+            or match.schedule_publication_id != matchday.current_publication_id
+        ):
+            raise ValidationError(_("The match is outside the live publication."))
+        new_slot = self.env["federation.schedule.slot"]
+        if new_slot_id:
+            new_slot = new_slot.browse(int(new_slot_id)).exists()
+            if not new_slot or new_slot.matchday_id != matchday:
+                raise ValidationError(_("The proposed slot is outside this match day."))
+        return match._schedule_change_impact(
+            deviation_type, new_slot=new_slot, delay_minutes=delay_minutes
+        )
 
     @api.model
     def _unresolved_placeholders(self, matchday):

@@ -62,3 +62,13 @@ The database tests cover no premature duties, publication idempotency, stale
 previews, slot changes, zero requirements, missing clubs and preserved officials.
 Also exercise the UI end to end with a production-like restored database and rerun
 release qualification on the resulting commit before deployment.
+
+## Capacity, qualifications and manual pins
+
+The reviewed allocator is shared by schedule validation and publication. A
+club's season policy declares simultaneous headcount, qualified roles and
+preparation, rest and travel buffers. A fixture may be pinned to one club with
+a reason; recalculation preserves the pin and explains any capacity or
+qualification conflict. Reviews show both role count and duty minutes. Current
+published schedules use the same preview but create only missing duties and do
+not alter match times.

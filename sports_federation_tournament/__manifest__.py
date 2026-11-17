@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Tournament",
-    "version": "19.0.1.7.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Tournaments, stages, groups, participants, and matches",
     "description": """
@@ -27,6 +27,7 @@ with rule-set support and workflow state management.
         "views/federation_season_views_inherit.xml",
         "views/menu_items.xml",
         "views/division_boundary.xml",
+        "views/season_closure_views.xml",
     ],
     "demo": [],
     "installable": True,

@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Discipline",
-    "version": "19.0.1.4.1",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Incidents, cases, sanctions, and suspensions management",
     "description": """
@@ -30,6 +30,7 @@
         "views/player_views_inherit.xml",
         "views/match_views_inherit.xml",
         "views/menu_views.xml",
+        "views/appeal_views.xml",
     ],
     "demo": [],
     "application": False,

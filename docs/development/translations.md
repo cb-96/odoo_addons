@@ -23,7 +23,7 @@ change per language.
 
 | Piece | Where | Role |
 | --- | --- | --- |
-| Language registry | [`i18n/languages.json`](../../i18n/languages.json) | The only list of languages, their Odoo codes and status. Also groups modules by audience for progress reports. |
+| Language registry | `i18n/languages.json` | The only list of languages, their Odoo codes and status. Also groups modules by audience for progress reports. |
 | Templates | `<module>/i18n/<module>.pot` | Every translatable text of a module, exported by Odoo itself. |
 | Language files | `<module>/i18n/<code>.po` | One per language, for example `nl.po`. Odoo loads `nl.po` for every Dutch variant (`nl_BE`, `nl_NL`); an optional `nl_BE.po` only overrides Belgian differences. |
 | Glossary | `i18n/glossary/` | Fixed terms (roster, line-up, game day…) with a definition, translated once per language and shown to translators in Weblate. |

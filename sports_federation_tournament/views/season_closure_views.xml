@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="season_closure_form" model="ir.ui.view">
+    <field name="name">federation.season.closure.form</field>
+    <field name="model">federation.season</field>
+    <field name="inherit_id" ref="sports_federation_base.view_federation_season_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_open_next_season_copy" type="object" string="Copy next-season setup"
+                invisible="state not in ('open','closed')"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="Closure checklist" invisible="state == 'draft'">
+          <field name="closure_blocker_count" readonly="1"/>
+          <field name="closure_checklist_html" widget="html" readonly="1"/>
+          <p>Next-season copying includes configuration only. Registrations, approvals, participants, matches, results, payments and decisions are never copied.</p>
+        </group>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="next_season_copy_wizard_form" model="ir.ui.view">
+    <field name="name">federation.next.season.copy.wizard.form</field>
+    <field name="model">federation.next.season.copy.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Copy Next-Season Configuration">
+        <group>
+          <field name="source_season_id"/>
+          <field name="name"/>
+          <field name="code"/>
+          <field name="date_start"/>
+          <field name="date_end"/>
+          <field name="copy_divisions"/>
+        </group>
+        <div class="alert alert-info" role="status">Only reusable configuration is copied. Approval and operational evidence stay in the source season.</div>
+        <footer>
+          <button name="action_copy" type="object" string="Create draft season" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

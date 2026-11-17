@@ -27,7 +27,7 @@
                         groups="sports_federation_result_control.group_result_validator"/>
                 <button name="action_raise_dispute_request_exception" string="Raise Dispute / Request Exception" type="object" class="btn-warning"
                         invisible="result_state not in ('submitted', 'verified', 'approved')"/>
-                <button name="action_correct_result" string="Correct Result" type="object"
+                <button name="action_open_correction_impact" string="Preview Correction" type="object"
                         invisible="result_state not in ('contested', 'approved')"/>
                 <button name="action_reset_result_to_draft" string="Reset to Draft" type="object"
                         invisible="result_state == 'draft'"/>
@@ -137,6 +137,31 @@
                     </field>
                 </page>
             </xpath>
+        </field>
+    </record>
+
+    <record id="view_result_correction_wizard_form" model="ir.ui.view">
+        <field name="name">federation.result.correction.wizard.form</field>
+        <field name="model">federation.result.correction.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Result Correction Impact">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        Review every downstream consequence. Started dependent matches block automatic participant replacement.
+                    </div>
+                    <group>
+                        <field name="match_id"/>
+                        <field name="reason"/>
+                        <!-- Technical relay binds confirmation to the exact impact preview. -->
+                        <field name="impact_signature" invisible="1"/>
+                    </group>
+                    <field name="impact_html" widget="html" readonly="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Apply correction" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
         </field>
     </record>
 

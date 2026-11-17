@@ -1,5 +1,6 @@
 """Review club responsibilities against draft slots, without notifying clubs."""
 
+from datetime import datetime
 from html import escape
 
 from odoo import _, api, fields, models
@@ -50,7 +51,105 @@ class ScheduleClubDutyPlan(models.Model):
             raise AccessError(_("Only federation managers may plan club duties."))
         self.check_access("write")
 
+    def _live_duty_publication(self):
+        self.ensure_one()
+        publication = self.matchday_id.current_publication_id
+        if (
+            self.state != "published"
+            or not publication
+            or publication.state != "live"
+            or publication.schedule_id != self
+        ):
+            raise UserError(
+                _(
+                    "This is not the current published schedule. Open the match "
+                    "day's current schedule to plan club duties."
+                )
+            )
+        return publication
+
+    def _reviewable_duty_schedules(self):
+        self._check_duty_planner()
+        if not self or len(set(self.mapped("state"))) != 1:
+            raise UserError(
+                _(
+                    "Select draft schedules or current published schedules, "
+                    "not a mixture."
+                )
+            )
+        for schedule in self:
+            if schedule.state == "published":
+                schedule._live_duty_publication()
+            elif schedule.state != "draft":
+                raise UserError(
+                    _(
+                        "Club duties can be planned on draft or current published "
+                        "schedules only."
+                    )
+                )
+
+    def _live_duty_geometry(self):
+        publication = self._live_duty_publication()
+        matches = self.env["federation.match"].search(
+            [
+                ("schedule_publication_id", "=", publication.id),
+                ("logical_fixture_id", "!=", False),
+                ("state", "!=", "cancelled"),
+            ],
+            order="id",
+        )
+        if not matches:
+            raise UserError(
+                _("The current publication contains no assignable matches.")
+            )
+        rows = []
+        for match in matches:
+            fixture = match.logical_fixture_id
+            slot = match.operational_slot_id or match.published_slot_id
+            if (
+                not slot
+                or not slot.start_datetime
+                or not slot.end_datetime
+                or slot.end_datetime <= slot.start_datetime
+            ):
+                raise UserError(
+                    _(
+                        "Every published match needs a valid time slot before "
+                        "club-duty planning."
+                    )
+                )
+            rule = match._get_effective_officiating_rule_set()
+            rows.append(
+                {
+                    "assignment": match.id,
+                    "match": match.id,
+                    "publication": publication.id,
+                    "fixture": fixture.id,
+                    "start": str(slot.start_datetime),
+                    "end": str(slot.end_datetime),
+                    "slot": slot.id,
+                    "teams": [fixture.home_team_id.id, fixture.away_team_id.id],
+                    "resolved": bool(
+                        fixture.home_team_id.club_id and fixture.away_team_id.club_id
+                    ),
+                    "opponents": sorted(
+                        (
+                            fixture.home_team_id.club_id | fixture.away_team_id.club_id
+                        ).ids
+                    ),
+                    "rule": rule.id,
+                    "required": rule.referee_required_count if rule else 0,
+                }
+            )
+        return rows
+
     def _duty_geometry(self):
+        self.ensure_one()
+        if self.state == "published":
+            return self._live_duty_geometry()
+        return self._draft_duty_geometry()
+
+    def _draft_duty_geometry(self):
         self.ensure_one()
         rows = []
         for assignment in self.assignment_ids.sorted("id"):
@@ -80,7 +179,14 @@ class ScheduleClubDutyPlan(models.Model):
         return rows
 
     def _duty_fingerprint(self, policy):
-        return fingerprint({"geometry": self._duty_geometry(), "policy": policy})
+        return fingerprint(
+            {
+                "geometry": self._draft_duty_geometry(),
+                "policy": policy,
+                "capacities": self._club_duty_capacity_policy(),
+                "pins": self._club_duty_pins(),
+            }
+        )
 
     @api.depends(
         "club_duty_policy",
@@ -91,7 +197,10 @@ class ScheduleClubDutyPlan(models.Model):
         "assignment_ids.fixture_id.home_team_id.club_id",
         "assignment_ids.fixture_id.away_team_id.club_id",
         "assignment_ids.fixture_id.division_id.rule_set_id.referee_required_count",
-        "assignment_ids.fixture_id.division_id.competition_id.rule_set_id.referee_required_count",
+        "assignment_ids.fixture_id.division_id.competition_id.rule_set_id."
+        "referee_required_count",
+        "club_duty_pin_ids.club_id",
+        "club_duty_pin_ids.fixture_id",
     )
     def _compute_club_duty_review(self):
         for schedule in self:
@@ -110,6 +219,10 @@ class ScheduleClubDutyPlan(models.Model):
                 ("state", "!=", "cancelled"),
             ]
         )
+        if self.state == "published":
+            matches = matches.filtered(
+                lambda match: match.id in [row["match"] for row in geometry]
+            )
         all_duties = self.env["federation.match.club.referee.duty"].search(
             [("match_id", "in", matches.ids)]
         )
@@ -121,7 +234,8 @@ class ScheduleClubDutyPlan(models.Model):
         if not policy["preserve"] and (duties or officials):
             issues.append(
                 _(
-                    "Existing duties or officials must be preserved; use Resolve / replace to change them."
+                    "Existing duties or officials must be preserved; use Resolve / "
+                    "replace to change them."
                 )
             )
         rows = []
@@ -159,14 +273,25 @@ class ScheduleClubDutyPlan(models.Model):
                 ):
                     issues.append(
                         _(
-                            "Existing club duty conflicts with fixture %s; resolve it before applying."
+                            "Existing club duty conflicts with fixture %s; resolve it "
+                            "before applying."
                         )
                         % row["fixture"]
                     )
             rows.append(
                 dict(row, roles=roles, existing_clubs=[d.club_id.id for d in relevant])
             )
-        proposal = allocate(rows, policy["avoid"], policy["fallback"])
+        for row in rows:
+            start = datetime.fromisoformat(row["start"])
+            end = datetime.fromisoformat(row["end"])
+            row["duration_minutes"] = max(0, int((end - start).total_seconds() // 60))
+        proposal = allocate(
+            rows,
+            policy["avoid"],
+            policy["fallback"],
+            capacities=self._club_duty_capacity_policy(),
+            pins=self._club_duty_pins(),
+        )
         for row in proposal["rows"]:
             if all_duties.filtered(
                 lambda duty: duty.state == "rejected"
@@ -176,10 +301,14 @@ class ScheduleClubDutyPlan(models.Model):
             ):
                 issues.append(
                     _(
-                        "A rejected duty conflicts with this allocation. Use Resolve / replace first."
+                        "A rejected duty conflicts with this allocation. Use Resolve / "
+                        "replace first."
                     )
                 )
         proposal["issues"] += issues
+        proposal.setdefault("issue_details", []).extend(
+            {"code": "preserved_conflict", "message": issue} for issue in issues
+        )
         proposal["signature"] = self._duty_fingerprint(policy)
         # Acceptance/nomination changes also invalidate an open review dialog.
         proposal["preserved"] = [
@@ -191,6 +320,7 @@ class ScheduleClubDutyPlan(models.Model):
         proposal["review_signature"] = fingerprint(
             {
                 "signature": proposal["signature"],
+                "geometry": geometry,
                 "duties": [
                     (d.id, d.state, d.club_id.id, d.role, d.nominated_player_id.id)
                     for d in all_duties
@@ -203,13 +333,7 @@ class ScheduleClubDutyPlan(models.Model):
         return proposal
 
     def action_review_club_duties(self):
-        self._check_duty_planner()
-        if any(schedule.state not in ("draft",) for schedule in self):
-            raise UserError(
-                _(
-                    "Review club duties on a draft schedule. Create an amendment for a published schedule."
-                )
-            )
+        self._reviewable_duty_schedules()
         wizard = self.env["federation.schedule.club.duty.review"].create(
             {"schedule_ids": [fields.Command.set(self.ids)]}
         )
@@ -223,7 +347,7 @@ class ScheduleClubDutyPlan(models.Model):
                     "preserve_existing": policy["preserve"],
                 }
             )
-        self.filtered(lambda s: not s.club_duty_policy).write(
+        self.filtered(lambda s: s.state == "draft" and not s.club_duty_policy).write(
             {"club_duty_policy": wizard._policy(), "club_duty_signature": False}
         )
         return wizard.action_preview()
@@ -247,6 +371,17 @@ class ClubDutyReview(models.TransientModel):
     preview = fields.Json(readonly=True)
     preview_html = fields.Html(readonly=True, sanitize=True)
     issue_count = fields.Integer(readonly=True)
+    published_mode = fields.Boolean(compute="_compute_published_mode")
+
+    @api.depends("schedule_ids.state")
+    def _compute_published_mode(self):
+        for wizard in self:
+            wizard.published_mode = bool(
+                wizard.schedule_ids
+                and all(
+                    schedule.state == "published" for schedule in wizard.schedule_ids
+                )
+            )
 
     def _policy(self):
         self.ensure_one()
@@ -262,9 +397,7 @@ class ClubDutyReview(models.TransientModel):
         }
 
     def _current(self):
-        self.schedule_ids._check_duty_planner()
-        if not self.schedule_ids or any(s.state != "draft" for s in self.schedule_ids):
-            raise UserError(_("Select draft schedules only."))
+        self.schedule_ids._reviewable_duty_schedules()
         policy = self._policy()
         return {str(s.id): s._duty_proposal(policy) for s in self.schedule_ids}
 
@@ -276,8 +409,9 @@ class ClubDutyReview(models.TransientModel):
             proposal = preview[str(schedule.id)]
             issues += len(proposal["issues"])
             html.append(
-                '<h4>%s</h4><table class="table"><tr><th>Fixture</th><th>Time</th><th>Club</th><th>Roles</th><th>Fallback</th></tr>'
-                % escape(schedule.display_name)
+                '<h4>%s</h4><table class="table"><tr><th>Fixture</th>'
+                "<th>Time</th><th>Club</th><th>Roles</th>"
+                "<th>Fallback</th></tr>" % escape(schedule.display_name)
             )
             for row in proposal["rows"]:
                 fixture = self.env["federation.fixture"].browse(row["fixture"])
@@ -318,8 +452,7 @@ class ClubDutyReview(models.TransientModel):
                     )
                 )
             html.append(
-                "</table><p>%s</p><ul>"
-                % _("Workload totals (including existing club duties)")
+                "</table><p>%s</p><ul>" % _("Workload totals (roles and duty minutes)")
             )
             for club_id, count in sorted(proposal["load"].items()):
                 html.append(
@@ -330,7 +463,13 @@ class ClubDutyReview(models.TransientModel):
                             .browse(int(club_id))
                             .display_name
                         ),
-                        count,
+                        _("%(roles)s roles / %(minutes)s minutes")
+                        % {
+                            "roles": count,
+                            "minutes": proposal.get("minute_load", {}).get(
+                                str(club_id), 0
+                            ),
+                        },
                     )
                 )
             html.append("</ul>")
@@ -338,7 +477,8 @@ class ClubDutyReview(models.TransientModel):
                 html.append(
                     "<p>%s</p>"
                     % _(
-                        "No new club duties: the rule set requires none, or existing officials cover the roles."
+                        "No new club duties: the rule set requires none, or existing "
+                        "officials cover the roles."
                     )
                 )
             html.extend(
@@ -358,11 +498,20 @@ class ClubDutyReview(models.TransientModel):
 
     def action_apply(self):
         self.ensure_one()
+        # Serialize competing allocation dialogs for the same match day.
+        self.schedule_ids._reviewable_duty_schedules()
+        self.env.cr.execute(
+            "SELECT id FROM federation_matchday "
+            "WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+            [sorted(self.schedule_ids.mapped("matchday_id").ids)],
+        )
+        self.env.invalidate_all()
         current = self._current()
         if not self.preview or current != self.preview:
             raise UserError(
                 _(
-                    "Schedule, policy or assignments changed. Refresh the preview before applying."
+                    "Schedule, policy or assignments changed. Refresh the preview "
+                    "before applying."
                 )
             )
         if any(proposal["issues"] for proposal in current.values()):
@@ -371,6 +520,9 @@ class ClubDutyReview(models.TransientModel):
             )
         for schedule in self.schedule_ids:
             proposal = current[str(schedule.id)]
+            if schedule.state == "published":
+                self._apply_live_duties(schedule, proposal)
+                continue
             schedule.write(
                 {
                     "club_duty_policy": self._policy(),
@@ -384,6 +536,43 @@ class ClubDutyReview(models.TransientModel):
             "view_mode": "list,form",
             "domain": [("id", "in", self.schedule_ids.ids)],
         }
+
+    def _apply_live_duties(self, schedule, proposal):
+        """Add only reviewed missing roles; never alter the published schedule."""
+        schedule._live_duty_publication()
+        Duty = self.env["federation.match.club.referee.duty"]
+        values = [
+            {
+                "match_id": row["match"],
+                "club_id": row["club"],
+                "role": role,
+                "allocation_snapshot": row,
+            }
+            for row in proposal["rows"]
+            for role in row["roles"]
+        ]
+        created = Duty.create(values) if values else Duty.browse([])
+        created.action_open()
+        for duty in created:
+            duty.message_post(
+                body=_(
+                    "Club duty allocated after review of the current published "
+                    "schedule."
+                )
+            )
+
+
+class MatchdayClubDutyPlanning(models.Model):
+    _inherit = "federation.matchday"
+
+    def action_plan_current_club_duties(self):
+        self.ensure_one()
+        publication = self.current_publication_id
+        if not publication or publication.state != "live":
+            raise UserError(
+                _("Publish a schedule first, or use Review club duties on its draft.")
+            )
+        return publication.schedule_id.action_review_club_duties()
 
 
 class CompetitionScheduleClubDuties(models.TransientModel):
@@ -471,7 +660,8 @@ class PlannedPublicationClubDuties(models.AbstractModel):
             ):
                 raise UserError(
                     _(
-                        "Club-duty plan is stale. Review the draft amendment before publishing."
+                        "Club-duty plan is stale. Review the draft amendment before "
+                        "publishing."
                     )
                 )
             existing = self.env["federation.match.club.referee.duty"].search(
@@ -500,16 +690,28 @@ class PlannedPublicationClubDuties(models.AbstractModel):
 class PlannedDutyScheduleReview(models.Model):
     _inherit = "federation.match.club.referee.duty"
 
+    allocation_snapshot = fields.Json(readonly=True, copy=False)
+
     planning_review_required = fields.Boolean(
         compute="_compute_planning_review_required"
     )
 
+    def write(self, values):
+        if "allocation_snapshot" in values and self:
+            raise ValidationError(
+                _("The reviewed club-duty allocation snapshot is immutable.")
+            )
+        return super().write(values)
+
     @api.depends(
+        "allocation_snapshot",
         "match_id.schedule_publication_id.schedule_id.club_duty_plan",
         "match_id.operational_slot_id.start_datetime",
         "match_id.operational_slot_id.end_datetime",
         "match_id.published_slot_id.start_datetime",
         "match_id.published_slot_id.end_datetime",
+        "match_id.logical_fixture_id.home_team_id",
+        "match_id.logical_fixture_id.away_team_id",
         "match_id.logical_fixture_id.home_team_id.club_id",
         "match_id.logical_fixture_id.away_team_id.club_id",
         "club_id",
@@ -527,6 +729,8 @@ class PlannedDutyScheduleReview(models.Model):
                 and row["club"] == duty.club_id.id
                 and duty.role in row["roles"]
             ]
+            if duty.allocation_snapshot:
+                rows = [duty.allocation_snapshot]
             opponents = sorted(
                 (
                     match.logical_fixture_id.home_team_id.club_id
@@ -539,6 +743,17 @@ class PlannedDutyScheduleReview(models.Model):
                     row["start"] != str(slot.start_datetime)
                     or row["end"] != str(slot.end_datetime)
                     or row["opponents"] != opponents
+                    or row.get(
+                        "teams",
+                        [
+                            match.logical_fixture_id.home_team_id.id,
+                            match.logical_fixture_id.away_team_id.id,
+                        ],
+                    )
+                    != [
+                        match.logical_fixture_id.home_team_id.id,
+                        match.logical_fixture_id.away_team_id.id,
+                    ]
                     for row in rows
                 )
             )

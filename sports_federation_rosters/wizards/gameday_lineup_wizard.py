@@ -23,6 +23,12 @@ class FederationGamedayLineupWizard(models.TransientModel):
     line_ids = fields.One2many(
         "federation.gameday.lineup.wizard.line", "wizard_id", string="Players"
     )
+    previous_lineup_id = fields.Many2one(
+        "federation.match.sheet",
+        readonly=True,
+        string="Reused declaration",
+        help="Declaration fields are copied; approval and eligibility evidence are not.",
+    )
     readiness_message = fields.Text(compute="_compute_readiness_message")
     gameday_roster_limit = fields.Integer(compute="_compute_readiness_message")
     match_participant_limit = fields.Integer(compute="_compute_readiness_message")
@@ -51,6 +57,8 @@ class FederationGamedayLineupWizard(models.TransientModel):
                 roster, commands = self._lineup_defaults(matchday, team)
                 values["roster_id"] = roster.id
                 values["line_ids"] = commands
+                previous = self._previous_lineup(matchday, team)
+                values["previous_lineup_id"] = previous.id
         return values
 
     @api.model
@@ -71,6 +79,21 @@ class FederationGamedayLineupWizard(models.TransientModel):
             | matchday.published_match_ids.mapped("away_team_id")
         ).sorted(lambda team: (team.name or "", team.id))
 
+    @api.model
+    def _previous_lineup(self, matchday, team):
+        if not matchday.date:
+            return self.env["federation.match.sheet"]
+        return self.env["federation.match.sheet"].search(
+            [
+                ("team_id", "=", team.id),
+                ("line_ids", "!=", False),
+                ("match_scheduled_date", "<", matchday.date),
+                ("state", "in", ("submitted", "approved", "locked")),
+            ],
+            order="match_scheduled_date desc,id desc",
+            limit=1,
+        )
+
     @api.depends("matchday_id", "matchday_id.published_match_ids")
     def _compute_available_team_ids(self):
         for wizard in self:
@@ -88,6 +111,10 @@ class FederationGamedayLineupWizard(models.TransientModel):
             source = sheets.filtered(
                 lambda sheet: sheet.roster_id and sheet.roster_id.status == "active"
             )[:1]
+        if not source:
+            previous = self._previous_lineup(matchday, team)
+            if previous.roster_id.status == "active":
+                source = previous
         roster = source.roster_id if source else self.env["federation.team.roster"]
         if not roster:
             roster = self.env["federation.team.roster"].search(
@@ -137,6 +164,7 @@ class FederationGamedayLineupWizard(models.TransientModel):
         self.roster_id, line_commands = self._lineup_defaults(
             self.matchday_id, self.team_id
         )
+        self.previous_lineup_id = self._previous_lineup(self.matchday_id, self.team_id)
         self.line_ids = [fields.Command.clear(), *line_commands]
 
     @api.model
@@ -170,6 +198,28 @@ class FederationGamedayLineupWizard(models.TransientModel):
                 issues.append(_("Each player can appear only once."))
             if len(wizard.line_ids.filtered("is_captain")) > 1:
                 issues.append(_("Select no more than one captain."))
+            reference_date = wizard.matchday_id.date
+            if reference_date and wizard.roster_id:
+                ineligible = wizard.line_ids.filtered(
+                    lambda line: not line.player_id.license_ids.filtered(
+                        lambda license: license.state == "active"
+                        and license.season_id == wizard.matchday_id.edition_id.season_id
+                        and license.club_id == wizard.team_id.club_id
+                        and license.issue_date <= reference_date <= license.expiry_date
+                    )
+                )
+                if ineligible:
+                    issues.append(
+                        _(
+                            "Renew or register future-date eligibility before %(date)s: %(players)s."
+                        )
+                        % {
+                            "date": reference_date,
+                            "players": ", ".join(
+                                ineligible.mapped("player_id.display_name")
+                            ),
+                        }
+                    )
             if issues:
                 wizard.readiness_message = "\n".join(issues)
             elif match_limit and count > match_limit:

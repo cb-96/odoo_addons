@@ -1,3 +1,5 @@
+from html import escape
+
 from odoo import _, fields, models
 from odoo.exceptions import ValidationError
 
@@ -68,6 +70,53 @@ class FederationMatchdayDeviationWizard(models.TransientModel):
     )
     delay_minutes = fields.Integer(default=0)
     reason = fields.Text(required=True)
+    impact_preview = fields.Json(readonly=True)
+    impact_signature = fields.Char(readonly=True)
+    impact_html = fields.Html(readonly=True, sanitize=True)
+
+    def _impact(self):
+        self.ensure_one()
+        return self.env["federation.matchday.commands"].preview_schedule_deviation(
+            self.matchday_id.id,
+            self.match_id.id,
+            self.deviation_type,
+            new_slot_id=self.new_slot_id.id if self.new_slot_id else False,
+            delay_minutes=self.delay_minutes,
+        )
+
+    def action_preview(self):
+        self.ensure_one()
+        impact = self._impact()
+        labels = [
+            (_("Teams affected"), len(impact["team_ids"])),
+            (_("Officials requiring reconfirmation"), len(impact["official_ids"])),
+            (_("Club duties requiring review"), len(impact["duty_ids"])),
+            (_("Line-ups requiring revalidation"), len(impact["roster_ids"])),
+            (_("Existing communications"), impact["communication_count"]),
+            (
+                _("Public calendar changes"),
+                _("Yes") if impact["public_calendar_changes"] else _("No"),
+            ),
+        ]
+        html = "<ul>%s</ul>" % "".join(
+            "<li><strong>%s:</strong> %s</li>"
+            % (escape(str(label)), escape(str(value)))
+            for label, value in labels
+        )
+        self.write(
+            {
+                "impact_preview": impact,
+                "impact_signature": impact["signature"],
+                "impact_html": html,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "new",
+        }
 
     def action_apply(self):
         self.ensure_one()
@@ -75,6 +124,13 @@ class FederationMatchdayDeviationWizard(models.TransientModel):
             raise ValidationError(_("Select the new slot for a moved match."))
         if self.deviation_type == "delay" and self.delay_minutes <= 0:
             raise ValidationError(_("Enter a positive delay in minutes."))
+        if (
+            not self.impact_signature
+            or self._impact()["signature"] != self.impact_signature
+        ):
+            raise ValidationError(
+                _("Review the current change impact before applying.")
+            )
         self.env["federation.matchday.commands"].record_schedule_deviation(
             self.matchday_id.id,
             self.match_id.id,
@@ -82,6 +138,7 @@ class FederationMatchdayDeviationWizard(models.TransientModel):
             reason=self.reason,
             new_slot_id=self.new_slot_id.id if self.new_slot_id else False,
             delay_minutes=self.delay_minutes,
+            expected_impact_signature=self.impact_signature,
         )
         return {"type": "ir.actions.act_window_close"}
 

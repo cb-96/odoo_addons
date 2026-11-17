@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="disciplinary_appeal_list" model="ir.ui.view">
+    <field name="name">federation.disciplinary.appeal.list</field>
+    <field name="model">federation.disciplinary.appeal</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="case_id"/>
+        <field name="appellant_id"/>
+        <field name="deadline"/>
+        <field name="reviewer_id"/>
+        <field name="state"/>
+        <field name="sanction_effect"/>
+      </list>
+    </field>
+  </record>
+  <record id="disciplinary_appeal_form" model="ir.ui.view">
+    <field name="name">federation.disciplinary.appeal.form</field>
+    <field name="model">federation.disciplinary.appeal</field>
+    <field name="arch" type="xml">
+      <form string="Disciplinary Appeal">
+        <header>
+          <button name="action_submit" type="object" string="Submit" class="btn-primary" invisible="state != 'draft'"/>
+          <button name="action_start_review" type="object" string="Start review" invisible="state != 'submitted'" groups="sports_federation_discipline.group_federation_discipline_manager"/>
+          <button name="action_open_decision" type="object" string="Record decision" class="btn-primary" invisible="state != 'under_review'" groups="sports_federation_discipline.group_federation_discipline_manager"/>
+          <button name="action_withdraw" type="object" string="Withdraw" invisible="state not in ('draft','submitted')"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <group>
+            <field name="case_id"/>
+            <field name="appellant_id"/>
+            <field name="deadline"/>
+            <field name="reviewer_id" readonly="1"/>
+          </group>
+          <field name="grounds" readonly="state not in ('draft',)"/>
+          <field name="evidence_attachment_ids" widget="many2many_binary" readonly="state not in ('draft',)"/>
+          <group string="Decision" invisible="state not in ('upheld','dismissed')">
+            <field name="decision"/>
+            <field name="sanction_effect"/>
+            <field name="effect_note"/>
+            <field name="decided_on"/>
+          </group>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+  <record id="disciplinary_appeal_decision_wizard_form" model="ir.ui.view">
+    <field name="name">federation.disciplinary.appeal.decision.wizard.form</field>
+    <field name="model">federation.disciplinary.appeal.decision.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Appeal Decision">
+        <group>
+          <field name="appeal_id"/>
+          <field name="upheld"/>
+          <field name="decision"/>
+          <field name="sanction_effect"/>
+          <field name="effect_note"/>
+        </group>
+        <footer>
+          <button name="action_apply" type="object" string="Record decision" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+  <record id="disciplinary_appeal_action" model="ir.actions.act_window">
+    <field name="name">Appeals</field>
+    <field name="res_model">federation.disciplinary.appeal</field>
+    <field name="view_mode">list,form</field>
+  </record>
+  <menuitem id="menu_disciplinary_appeals" name="Appeals"
+            parent="sports_federation_discipline.menu_federation_discipline"
+            action="disciplinary_appeal_action" sequence="45"/>
+</odoo>

@@ -152,3 +152,5 @@ python3 ci/check_workflow_state_contracts.py
 ## Local CI automation
 
 - [Local full CI and bounded repair](operations/local-ci-repair.md)
+
+- [Connected workflow roadmap acceptance](operations/roadmap-acceptance.md)
