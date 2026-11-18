@@ -1,6 +1,6 @@
 # Plan club duties with a gameday schedule
 
-Upgrade `sports_federation_scheduling` to `19.0.3.11.0` and `sports_federation_officiating` to `19.0.3.1.0` after deploying this change.
+Upgrade `sports_federation_scheduling` to `19.0.3.11.0` and `sports_federation_officiating` to `19.0.3.3.0` after deploying this change.
 Existing schedules without an explicit club-duty plan retain their rule-set-driven
 publication behaviour. No production records are removed or automatically reassigned.
 
@@ -35,9 +35,10 @@ Use **Review club duties** on the draft schedule to resume.
   notifies clubs. Published duties are not presented as rollback-safe planning.
 - Avoiding clubs playing concurrently is enabled by default. Playing-club fallback
   is disabled by default and must be explicitly enabled; fallback is visible.
-- One selected club supplies all missing roles for a fixture. Workload counts roles,
-  not just matches. The allocator does not model the number of officials a club
-  can supply concurrently; individual eligibility and availability remain separate.
+- One selected club supplies all missing roles for a fixture. Workload counts roles
+  and duty minutes. Simultaneous capacity, qualified roles and buffers come from the
+  club's season capacity policy; individual eligibility and availability remain
+  separate.
 - Existing duties and named assignments are preserved. Disabling preservation does
   not authorise destructive replacement: use Resolve / replace for existing records.
 - Changes to draft slots, teams, rule requirements or coverage invalidate the review.
@@ -79,3 +80,27 @@ a reason; recalculation preserves the pin and explains any capacity or
 qualification conflict. Reviews show both role count and duty minutes. Current
 published schedules use the same preview but create only missing duties and do
 not alter match times.
+
+## Season-fair allocation
+
+Give a club's capacity policy a **Season Target Minutes** value to state the
+duty minutes that club should carry over the season. When a club in the season
+has a target, the review refines the feasible allocation toward the targets:
+
+- The season ledger counts the minutes of every club duty that is not rejected
+  on matches published from schedules of the same season, using each match's
+  operational slot, or its published slot.
+- Only clubs with a target receive moved duties. Pins, opponents, qualified
+  roles, simultaneous capacity with preparation, rest and travel buffers, and
+  the playing-club policy stay hard constraints. A move or swap is kept only
+  when it lowers fallback duties first, then the squared deviation from the
+  targets, then the number of changed fixtures, so results are reproducible.
+- The review shows, per club, the season so far, the minutes planned now, the
+  projection, the target and the deviation. Governed club-duty runs keep the
+  same balance in their summary.
+- Changing a target marks reviewed draft plans for review again; publication
+  is refused until they are reviewed. An open review must be refreshed before
+  it can be applied when the ledger changed in the meantime.
+- Balancing runs only on an allocation without blocking issues.
+- A capacity policy without any qualified role qualifies the club for no role.
+  A club without a capacity policy remains unrestricted.

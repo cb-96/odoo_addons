@@ -11,3 +11,4 @@ from . import test_auto_club_duty_assignment
 
 from . import test_club_duty_planning
 from . import test_duty_fairness
+from . import test_club_duty_season_fairness

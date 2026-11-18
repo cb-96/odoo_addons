@@ -36,6 +36,39 @@ passed unless they ran.
 
 ## Entries
 
+### Season-fair club-duty allocation in the review workflow
+
+Affected modules: `sports_federation_officiating` 19.0.3.1.0 → 19.0.3.3.0
+(19.0.3.2.0 only registered the season-target model extension)
+
+**Data changes**: no schema change and no migration script. The existing
+`federation.club.officiating.capacity.season_target_minutes` field (default 0)
+is added to the capacity list and form. When a club in a season has a target,
+the club-duty review fingerprint includes the season targets, so reviewed draft
+plans in that season must be reviewed again before publication. A capacity
+policy whose qualified roles are all cleared now qualifies the club for no role;
+it was treated as unrestricted before.
+
+**Behaviour to verify**: set season targets for two clubs and review club duties
+on a draft schedule: the review shows the season balance and moves duties from
+the over-target club to the under-target club without breaking pins, opponents,
+qualifications, capacity buffers or the playing-club policy. Prepare and apply a
+governed club-duty run and check that its summary holds the same balance.
+Change a target and check that the reviewed draft is marked for review and that
+publication is refused until it is reviewed again. Seasons without targets
+behave as before.
+
+**Dry-run evidence**: none recorded with this change. Run
+`python3 ci/test_club_duty_season_balance.py`,
+`python3 ci/test_capacity_aware_duty_allocation.py`,
+`python3 ci/check_test_discovery.py` and
+`bash ./ci/run_tests.sh --module sports_federation_officiating`, and record the
+results with the deployment.
+
+**Rollback**: code-only rollback followed by an officiating module update. No
+data needs reversing. Draft plans reviewed with targets must be reviewed again
+after a rollback because their fingerprint changes back.
+
 ### Persisted, stale-safe schedule and club-duty planning runs
 
 Affected modules: `sports_federation_scheduling` 19.0.3.10.1 → 19.0.3.11.0;

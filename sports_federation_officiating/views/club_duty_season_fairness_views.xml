@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_club_officiating_capacity_list_season_target" model="ir.ui.view">
+        <field name="name">federation.club.officiating.capacity.list.season.target</field>
+        <field name="model">federation.club.officiating.capacity</field>
+        <field name="inherit_id" ref="view_club_officiating_capacity_list"/>
+        <field name="arch" type="xml">
+            <field name="max_simultaneous" position="after">
+                <field name="season_target_minutes" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_club_officiating_capacity_form_season_target" model="ir.ui.view">
+        <field name="name">federation.club.officiating.capacity.form.season.target</field>
+        <field name="model">federation.club.officiating.capacity</field>
+        <field name="inherit_id" ref="view_club_officiating_capacity_form"/>
+        <field name="arch" type="xml">
+            <field name="max_simultaneous" position="after">
+                <field name="season_target_minutes"/>
+            </field>
+        </field>
+    </record>
+</odoo>

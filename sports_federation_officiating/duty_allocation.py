@@ -14,6 +14,7 @@ def _policy(capacities, club):
     return {
         "maximum": max(0, int(value.get("max_simultaneous", 999999))),
         "roles": set(roles or ()),
+        "restricted": roles is not None,
         "preparation": max(0, int(value.get("preparation_minutes", 0))),
         "rest": max(0, int(value.get("rest_minutes", 0))),
         "travel": max(0, int(value.get("travel_minutes", 0))),
@@ -87,7 +88,9 @@ def allocate(
                 continue
             policy = _policy(capacities, club)
             missing = (
-                sorted(set(row["roles"]) - policy["roles"]) if policy["roles"] else []
+                sorted(set(row["roles"]) - policy["roles"])
+                if policy["restricted"]
+                else []
             )
             if missing:
                 rejected[club] = "missing qualifications for %s" % ", ".join(missing)
