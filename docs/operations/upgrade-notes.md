@@ -1,7 +1,7 @@
 # Upgrade notes
 
 Owner: Federation Platform Team
-Last reviewed: 2026-11-14
+Last reviewed: 2026-11-18
 Review cadence: Every release
 
 Upgrade-sensitive changes, newest first. Each entry records the affected
@@ -35,6 +35,39 @@ Do not describe work that is not in the code, and do not mark runtime checks as
 passed unless they ran.
 
 ## Entries
+
+### Persisted, stale-safe schedule and club-duty planning runs
+
+Affected modules: `sports_federation_scheduling` 19.0.3.10.1 → 19.0.3.11.0;
+`sports_federation_officiating` 19.0.3.0.0 → 19.0.3.1.0
+
+**Data changes**: upgrading scheduling creates `federation.schedule.plan.run`
+with its schedule relation, type/state, JSON configuration/proposal/snapshot,
+signatures, revisions and actor timestamps. Existing schedules and assignments
+are not backfilled or changed. Officiating adds the `club_duty` run type; no
+additional table is created.
+
+**Behaviour to verify**: a schedule planner prepares a schedule-placement run,
+applies it, and rolls it back before later edits; changed slot geometry rejects a
+stale run. A Federation Manager prepares and applies a draft club-duty run;
+capacity, pin or geometry changes reject it, and rollback restores the prior
+draft plan. Schedule planners cannot read club-duty runs. Current published
+club-duty review continues to create only missing open duties and is not exposed
+as rollback-safe.
+
+**Dry-run evidence**: source compilation, XML parsing, access/addon integrity,
+focused pure allocation/fingerprint tests and patch checks can run without Odoo.
+Run `bash ./ci/run_tests.sh --module sports_federation_scheduling` and
+`bash ./ci/run_tests.sh --module sports_federation_officiating` in the full Odoo
+stack, then exercise both form flows in a browser; those runtime results must be
+recorded by the deployer.
+
+**Rollback**: before any run is applied, a code rollback removes only the new
+model and views after uninstalling/upgrading the affected addons as appropriate.
+After runs exist, retain an upgrade backup: code rollback drops access to their
+audit records. Applied schedule and duty changes are ordinary business records
+and must first be reversed with the run's guarded **Roll back** command, or the
+database must be restored if later edits make that command stale.
 
 ### Cleanup of retired addons left in the database
 

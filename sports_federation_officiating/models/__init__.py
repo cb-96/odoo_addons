@@ -12,3 +12,5 @@ from . import club_duty_planning
 
 from . import officiating_capacity
 from . import schedule_validator
+
+from . import schedule_plan_run

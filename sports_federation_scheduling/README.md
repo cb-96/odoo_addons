@@ -54,6 +54,22 @@ matches remain without a court and time, it explains that hard rules are never
 broken to place them and that they can be placed by hand, because the automatic
 search is heuristic rather than proof that no placement exists.
 
+### Governed planning runs
+
+**Create planning run** persists the concrete fairness-solver proposal in
+`federation.schedule.plan.run`. The run records the schedule revision, fixture
+and slot geometry, assignments, configuration, proposal digest, actor and time.
+**Apply** delegates to the existing `federation.schedule.auto.wizard`; it refuses
+when the revision, fixtures, slots, assignments or deterministic proposal changed.
+**Roll back** is available only while the applied schedule still matches the
+recorded post-apply signature. It restores the exact pre-run assignment and
+fairness snapshot through the schedule command's optimistic revision guard.
+
+Schedule planners can access schedule-placement runs for editions where their
+business role permits the command. Federation managers can inspect all runs.
+Club-duty runs are added by `sports_federation_officiating` and remain hidden
+from ordinary schedule planners.
+
 
 ## Operator handoff to independent review
 

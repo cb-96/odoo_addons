@@ -1,7 +1,7 @@
 # Workflow: Officiating
 
 Owner: Federation Competition Operations
-Last reviewed: 2026-11-06
+Last reviewed: 2026-11-18
 Review cadence: Every release
 
 End-to-end lifecycle for managing referees — from certification registration
@@ -36,6 +36,32 @@ than begin from officiating lists.
 | `federation.referee` | Master referee record with contact info and certification level |
 | `federation.referee.certification` | Dated certification for a specific officiating level |
 | `federation.match.referee` | Assignment of one referee to one match in a specific role |
+| `federation.match.club.referee.duty` | Club responsibility for one officiating role on a match |
+| `federation.club.officiating.capacity` | Season capacity, role qualifications and time buffers for one club |
+| `federation.schedule.club.duty.pin` | Reviewed fixture-to-club pin on a working schedule |
+| `federation.schedule.plan.run` | Persisted schedule or draft club-duty proposal with stale-input evidence |
+
+## Draft club-duty planning
+
+Federation Managers plan club responsibilities against the concrete
+`federation.schedule.assignment` rows and their `federation.schedule.slot`
+windows. The review wizard is `federation.schedule.club.duty.review`; it calls
+the officiating allocator with the schedule's club-capacity policies and manual
+pins, preserves existing duties and named officials, and stores the reviewed
+policy, plan and signature on `federation.schedule`.
+
+**Create governed duty run** persists that same review result before it changes
+the schedule. Apply is refused if schedule geometry, team clubs, role rules,
+capacity policies, pins, existing duties or officials changed. Rollback restores
+the prior draft policy and plan only while the applied signature still matches.
+This path is deliberately limited to draft schedules.
+
+For a current live publication, **Plan club duties** remains the existing
+immediate workflow. Apply creates only missing open
+`federation.match.club.referee.duty` rows and notifies clubs; it never changes
+match times or silently replaces accepted or nominated coverage. Because that
+action has external workflow effects, it is not presented as a rollback-safe
+planning run.
 
 ## Step-by-Step Flow
 

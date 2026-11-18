@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="schedule_plan_run_list" model="ir.ui.view">
+    <field name="name">federation.schedule.plan.run.list</field>
+    <field name="model">federation.schedule.plan.run</field>
+    <field name="arch" type="xml">
+      <list create="0" decoration-success="state == 'applied'" decoration-muted="state == 'rolled_back'">
+        <field name="name"/>
+        <field name="schedule_id"/>
+        <field name="plan_type"/>
+        <field name="source_revision"/>
+        <field name="result_revision"/>
+        <field name="state" widget="badge"/>
+        <field name="prepared_on"/>
+        <field name="applied_on"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="schedule_plan_run_form" model="ir.ui.view">
+    <field name="name">federation.schedule.plan.run.form</field>
+    <field name="model">federation.schedule.plan.run</field>
+    <field name="arch" type="xml">
+      <form string="Planning Run" create="0">
+        <header>
+          <button name="action_prepare" type="object" string="Prepare" class="btn-primary" invisible="state != 'draft'"/>
+          <button name="action_apply" type="object" string="Apply" class="btn-primary" invisible="state != 'ready'"/>
+          <button name="action_rollback" type="object" string="Roll back" confirm="Roll back this run only if no later planning changes were made?" invisible="state != 'applied'"/>
+          <field name="state" widget="statusbar" statusbar_visible="draft,ready,applied,rolled_back"/>
+        </header>
+        <sheet>
+          <group>
+            <group>
+              <field name="name" readonly="state != 'draft'"/>
+              <field name="schedule_id" readonly="state != 'draft'"/>
+              <field name="plan_type" readonly="state != 'draft'"/>
+            </group>
+            <group>
+              <field name="source_revision" readonly="1"/>
+              <field name="result_revision" readonly="1"/>
+              <field name="prepared_by_id" readonly="1"/>
+              <field name="prepared_on" readonly="1"/>
+              <field name="applied_by_id" readonly="1" invisible="not applied_by_id"/>
+              <field name="applied_on" readonly="1" invisible="not applied_on"/>
+              <field name="rolled_back_by_id" readonly="1" invisible="not rolled_back_by_id"/>
+              <field name="rolled_back_on" readonly="1" invisible="not rolled_back_on"/>
+            </group>
+          </group>
+          <notebook>
+            <page string="Configuration">
+              <field name="configuration" readonly="state != 'draft'"/>
+            </page>
+            <page string="Summary">
+              <field name="summary" readonly="1"/>
+            </page>
+            <page string="Proposal" groups="sports_federation_base.group_federation_advanced_operator">
+              <field name="proposal" readonly="1"/>
+            </page>
+            <page string="Evidence" groups="sports_federation_base.group_federation_advanced_operator">
+              <group>
+                <field name="source_signature" readonly="1"/>
+                <field name="proposal_signature" readonly="1"/>
+                <field name="applied_signature" readonly="1"/>
+              </group>
+              <field name="before_snapshot" readonly="1"/>
+            </page>
+          </notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_schedule_plan_runs" model="ir.actions.act_window">
+    <field name="name">Planning Runs</field>
+    <field name="res_model">federation.schedule.plan.run</field>
+    <field name="view_mode">list,form</field>
+  </record>
+
+  <record id="schedule_form_plan_runs" model="ir.ui.view">
+    <field name="name">federation.schedule.form.plan.runs</field>
+    <field name="model">federation.schedule</field>
+    <field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_create_schedule_plan_run" type="object" string="Create planning run" invisible="state not in ('draft', 'changes_requested')" groups="sports_federation_scheduling.group_schedule_planner,sports_federation_base.group_federation_manager"/>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Planning Runs" name="planning_runs">
+          <button name="action_open_planning_runs" type="object" string="Open planning runs" class="btn-secondary"/>
+          <field name="planning_run_ids" readonly="1">
+            <list>
+              <field name="name"/>
+              <field name="plan_type"/>
+              <field name="source_revision"/>
+              <field name="result_revision"/>
+              <field name="state" widget="badge"/>
+            </list>
+          </field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>

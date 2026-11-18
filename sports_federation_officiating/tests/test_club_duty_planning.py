@@ -101,3 +101,54 @@ class TestClubDutyPlanning(TestAutoClubDutyAssignment):
         )
         with self.assertRaises(UserError):
             wizard.action_apply()
+
+    def test_governed_run_applies_and_rolls_back_draft_plan(self):
+        schedule = self.matches[0].schedule_publication_id.schedule_id
+        run = self.env["federation.schedule.plan.run"].create(
+            {
+                "schedule_id": schedule.id,
+                "plan_type": "club_duty",
+                "configuration": {
+                    "officials_per_match": 2,
+                    "avoid_playing": True,
+                    "allow_fallback": True,
+                    "preserve_existing": True,
+                },
+            }
+        )
+
+        run.action_prepare()
+        self.assertEqual(run.state, "ready")
+        self.assertTrue(run.proposal["rows"])
+
+        run.action_apply()
+        self.assertEqual(run.state, "applied")
+        self.assertTrue(schedule.club_duty_plan)
+
+        run.action_rollback()
+        self.assertEqual(run.state, "rolled_back")
+        self.assertFalse(schedule.club_duty_policy)
+        self.assertFalse(schedule.club_duty_plan)
+        self.assertFalse(schedule.club_duty_signature)
+
+    def test_governed_run_rejects_changed_duty_geometry(self):
+        schedule = self.matches[0].schedule_publication_id.schedule_id
+        run = self.env["federation.schedule.plan.run"].create(
+            {
+                "schedule_id": schedule.id,
+                "plan_type": "club_duty",
+                "configuration": {
+                    "officials_per_match": 2,
+                    "allow_fallback": True,
+                },
+            }
+        )
+        run.action_prepare()
+        slot = schedule.assignment_ids[0].slot_id
+        slot.end_datetime = fields.Datetime.add(slot.end_datetime, minutes=5)
+
+        with self.assertRaises(UserError):
+            run.action_apply()
+
+        self.assertEqual(run.state, "ready")
+        self.assertFalse(schedule.club_duty_plan)

@@ -18,6 +18,7 @@
     <field name="arch" type="xml">
       <xpath expr="//header" position="inside">
         <button name="action_review_club_duties" type="object" string="Plan club duties" invisible="state not in ('draft', 'published')" groups="sports_federation_base.group_federation_manager"/>
+        <button name="action_create_club_duty_plan_run" type="object" string="Create governed duty run" invisible="state != 'draft'" groups="sports_federation_base.group_federation_manager"/>
       </xpath>
       <xpath expr="//sheet" position="inside">
         <group string="Club-duty planning" groups="sports_federation_base.group_federation_manager">

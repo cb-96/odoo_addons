@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Officiating",
-    "version": "19.0.3.0.0",
+    "version": "19.0.3.1.0",
     "category": "Sports",
     "summary": "Referee management and match assignments",
     "description": "Referee management, certifications, and match assignment workflows.",

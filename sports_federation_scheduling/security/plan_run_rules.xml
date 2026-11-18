@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="rule_schedule_plan_run_planner" model="ir.rule">
+    <field name="name">Schedule planners see schedule placement runs</field>
+    <field name="model_id" ref="model_federation_schedule_plan_run"/>
+    <field name="domain_force">[('plan_type', '=', 'schedule')]</field>
+    <field name="groups" eval="[(4, ref('sports_federation_scheduling.group_schedule_planner'))]"/>
+  </record>
+  <record id="rule_schedule_plan_run_manager" model="ir.rule">
+    <field name="name">Federation managers see all planning runs</field>
+    <field name="model_id" ref="model_federation_schedule_plan_run"/>
+    <field name="domain_force">[(1, '=', 1)]</field>
+    <field name="groups" eval="[(4, ref('sports_federation_base.group_federation_manager'))]"/>
+  </record>
+</odoo>

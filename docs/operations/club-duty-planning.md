@@ -1,6 +1,6 @@
 # Plan club duties with a gameday schedule
 
-Upgrade `sports_federation_officiating` to `19.0.2.2.0` after deploying this change.
+Upgrade `sports_federation_scheduling` to `19.0.3.11.0` and `sports_federation_officiating` to `19.0.3.1.0` after deploying this change.
 Existing schedules without an explicit club-duty plan retain their rule-set-driven
 publication behaviour. No production records are removed or automatically reassigned.
 
@@ -26,6 +26,13 @@ Use **Review club duties** on the draft schedule to resume.
 ## Safety and limitations
 
 - Allocation never selects either opponent's club.
+- **Create governed duty run** is the persisted draft-only path. It stores the
+  exact proposal from `federation.schedule.club.duty.review`, rejects changed
+  schedule geometry, capacity, pins, existing duties or officials, and can
+  restore the previous draft policy and plan while no later change intervened.
+- On a current published schedule, **Plan club duties** remains the intentionally
+  immediate additive workflow: applying creates only missing open duties and
+  notifies clubs. Published duties are not presented as rollback-safe planning.
 - Avoiding clubs playing concurrently is enabled by default. Playing-club fallback
   is disabled by default and must be explicitly enabled; fallback is visible.
 - One selected club supplies all missing roles for a fixture. Workload counts roles,

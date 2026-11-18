@@ -1,6 +1,6 @@
 {
     "name": "Competition Scheduling",
-    "version": "19.0.3.10.1",
+    "version": "19.0.3.11.0",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
@@ -13,7 +13,9 @@
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
+        "security/plan_run_rules.xml",
         "views/scheduling_views.xml",
+        "views/schedule_plan_run_views.xml",
         "views/submit_schedule_wizard_views.xml",
         "views/amend_schedule_wizard_views.xml",
         "views/fairness_views.xml",
