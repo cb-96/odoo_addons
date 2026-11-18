@@ -1,6 +1,6 @@
 # Plan club duties with a gameday schedule
 
-Upgrade `sports_federation_scheduling` to `19.0.3.11.0` and `sports_federation_officiating` to `19.0.3.3.0` after deploying this change.
+Upgrade `sports_federation_scheduling` to `19.0.3.11.0` and `sports_federation_officiating` to `19.0.3.4.0` after deploying this change.
 Existing schedules without an explicit club-duty plan retain their rule-set-driven
 publication behaviour. No production records are removed or automatically reassigned.
 
@@ -32,7 +32,8 @@ Use **Review club duties** on the draft schedule to resume.
   restore the previous draft policy and plan while no later change intervened.
 - On a current published schedule, **Plan club duties** remains the intentionally
   immediate additive workflow: applying creates only missing open duties and
-  notifies clubs. Published duties are not presented as rollback-safe planning.
+  notifies clubs. Each application is recorded as a live allocation that can be
+  rolled back as described below.
 - Avoiding clubs playing concurrently is enabled by default. Playing-club fallback
   is disabled by default and must be explicitly enabled; fallback is visible.
 - One selected club supplies all missing roles for a fixture. Workload counts roles
@@ -104,3 +105,49 @@ has a target, the review refines the feasible allocation toward the targets:
 - Balancing runs only on an allocation without blocking issues.
 - A capacity policy without any qualified role qualifies the club for no role.
   A club without a capacity policy remains unrestricted.
+
+## Planning policies
+
+**Officiating > Duty Planning Policies** holds versioned club-duty policies: one
+per season, plus an optional default for seasons without their own. A policy sets
+the review defaults (officials per match, avoidance, fallback, preservation) and
+the optimizer. Drafts are editable; **Activate** retires the season's active
+version and numbers the new one; active and retired versions are read-only and
+**New version** copies them into a linked draft.
+
+Reviews and governed club-duty runs start from the active policy. The policy
+version is part of the review fingerprint: activating another version marks
+reviewed draft plans for review again, and publication is refused until they are
+reviewed. Without any active policy, reviews behave as before.
+
+## Exact optimizer
+
+A policy can choose **Exact optimizer (OR-Tools CP-SAT)**. After the built-in
+local search balances the season targets, CP-SAT searches the same constraints for
+a plan with fewer fallback duties, then a smaller squared deviation, then fewer
+changed fixtures. It runs with one worker, a fixed seed and a deterministic
+effort budget, so preview, apply and publication give the same plan. Its plan is
+used only when it is strictly better; the review states which method produced the
+balance and whether it is proven optimal.
+
+OR-Tools is optional. Install it in the Odoo environment (`pip install ortools`)
+to use the exact optimizer; without it, the review says so and keeps the local
+search result.
+
+## Preserved duties and suggested fixes
+
+Existing club duties count against the club's simultaneous capacity, including
+its buffers, in both the allocator and the balancing step. Every blocking issue in
+the review lists suggested fixes, such as raising a club's capacity, qualifying
+more clubs for a role, allowing fallback, moving the fixture, changing a pin or
+assigning a federation referee.
+
+## Live allocations and rollback
+
+Applying a review on a current published schedule records a live allocation with
+the duties it created, the publication and the policy version. **Officiating >
+Live Duty Allocations** and the schedule's **Planning history** tab list them.
+**Roll back** removes the created duties while the match day still has the same
+publication and every created duty is still open and unnominated; otherwise it
+lists what blocks it. Clubs that were already notified are not informed of the
+removal automatically.

@@ -90,6 +90,7 @@ class FederationScheduleSeasonFairDuties(models.Model):
             allow_fallback=bool(policy.get("fallback", False)),
             season_minutes=self._club_duty_season_load(),
             targets=targets,
+            fixed_rows=allocation.get("preserved") or [],
         )
         load = dict(allocation.get("load") or {})
         minute_load = dict(allocation.get("minute_load") or {})

@@ -56,6 +56,10 @@ def allocate(
     for row in rows:
         for club in row["existing_clubs"]:
             load[club] = load.get(club, 0) + 1
+            # A preserved duty occupies one role of the club's simultaneous capacity.
+            assignments.setdefault(club, []).append(
+                {"start": row["start"], "end": row["end"], "roles": [None]}
+            )
     result, issues, details = [], [], []
     for row in sorted(rows, key=lambda item: (item["start"], item["assignment"])):
         if not row["roles"]:

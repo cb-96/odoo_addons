@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_club_duty_policy_list" model="ir.ui.view">
+        <field name="name">federation.club.duty.policy.list</field>
+        <field name="model">federation.club.duty.policy</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="season_id"/>
+                <field name="name"/>
+                <field name="version"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-muted="state == 'retired'"/>
+                <field name="solver"/>
+                <field name="activated_on"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_club_duty_policy_form" model="ir.ui.view">
+        <field name="name">federation.club.duty.policy.form</field>
+        <field name="model">federation.club.duty.policy</field>
+        <field name="arch" type="xml">
+            <form string="Club-Duty Planning Policy">
+                <header>
+                    <button name="action_activate" type="object" string="Activate" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_new_version" type="object" string="New version" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,retired"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert" invisible="state == 'draft'">
+                        Active and retired versions are read-only. Use New version to change the policy.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name" readonly="state != 'draft'"/>
+                            <field name="season_id" readonly="state != 'draft'"/>
+                            <field name="version"/>
+                            <field name="previous_id"/>
+                        </group>
+                        <group string="Allocation">
+                            <field name="officials_per_match" readonly="state != 'draft'"/>
+                            <field name="avoid_playing" readonly="state != 'draft'"/>
+                            <field name="allow_fallback" readonly="state != 'draft'"/>
+                            <field name="preserve_existing" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Optimizer">
+                            <field name="solver" readonly="state != 'draft'"/>
+                            <field name="solver_effort" readonly="state != 'draft'" invisible="solver != 'exact'"/>
+                            <field name="exact_solver_available"/>
+                        </group>
+                        <group string="Activation">
+                            <field name="activated_by_id"/>
+                            <field name="activated_on"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert" invisible="solver != 'exact' or exact_solver_available">
+                        OR-Tools is not installed on this server. Reviews use the built-in local search until it is installed.
+                    </div>
+                    <field name="notes" placeholder="Why this version exists"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_club_duty_policy_search" model="ir.ui.view">
+        <field name="name">federation.club.duty.policy.search</field>
+        <field name="model">federation.club.duty.policy</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="season_id"/>
+                <filter name="active_versions" string="Active" domain="[('state', '=', 'active')]"/>
+                <filter name="draft_versions" string="Draft" domain="[('state', '=', 'draft')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_club_duty_policy" model="ir.actions.act_window">
+        <field name="name">Club-Duty Planning Policies</field>
+        <field name="res_model">federation.club.duty.policy</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active_versions': 1}</field>
+    </record>
+
+    <menuitem id="menu_club_duty_policy"
+              name="Duty Planning Policies"
+              parent="sports_federation_officiating.menu_federation_officiating"
+              action="action_club_duty_policy"
+              groups="sports_federation_base.group_federation_manager"
+              sequence="36"/>
+</odoo>

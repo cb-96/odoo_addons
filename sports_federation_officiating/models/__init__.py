@@ -16,3 +16,5 @@ from . import schedule_validator
 from . import schedule_plan_run
 from . import officiating_capacity_fairness
 from . import club_duty_season_fairness
+from . import club_duty_policy
+from . import club_duty_planning_governance

@@ -92,13 +92,16 @@ def rebalance_season(
     allow_fallback=False,
     season_minutes=None,
     targets=None,
+    fixed_rows=None,
 ):
     """Return ``(rows, report)`` with duties moved toward season targets.
 
     ``rows`` are the rows returned by ``allocate``; their order is kept.
     ``geometry`` holds every fixture of the reviewed schedule and decides which
     clubs play concurrently. ``season_minutes`` and ``targets`` are keyed by club
-    id, as an integer or a string.
+    id, as an integer or a string. ``fixed_rows`` are preserved duties: they stay
+    with their club, which is given by their ``club`` key, and occupy its
+    simultaneous capacity.
     """
     targets = {
         str(club): int(minutes)
@@ -109,6 +112,7 @@ def rebalance_season(
         str(club): int(minutes) for club, minutes in (season_minutes or {}).items()
     }
     rows = [dict(row) for row in rows]
+    fixed = [dict(row) for row in (fixed_rows or ())]
     if not targets:
         return rows, {"engaged": False, "reason": "no_targets"}
     original = [row["club"] for row in rows]
@@ -129,6 +133,7 @@ def rebalance_season(
 
     def feasible(club, state):
         mine = [rows[index] for index, owner in enumerate(state) if owner == club]
+        mine += [row for row in fixed if row["club"] == club]
         return within_capacity(club, mine, capacities)
 
     def planned(state):
@@ -193,6 +198,7 @@ def rebalance_season(
             club=state[index],
             fallback=state[index] in playing[index],
             rebalanced=state[index] != original[index],
+            allocated_club=original[index],
         )
         for index, row in enumerate(rows)
     ]

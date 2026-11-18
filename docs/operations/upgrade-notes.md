@@ -36,6 +36,42 @@ passed unless they ran.
 
 ## Entries
 
+### Club-duty planning policies, exact optimizer and live allocation rollback
+
+Affected modules: `sports_federation_officiating` 19.0.3.3.0 → 19.0.3.4.0
+
+**Data changes**: new tables `federation_club_duty_policy`,
+`federation_club_duty_live_run` and the relation table
+`federation_club_duty_live_run_duty_rel`, their access rights (policies readable
+by federation users; both editable by federation managers; live runs cannot be
+deleted), two menus and a **Planning history** page on the schedule form. No
+migration script and no backfill: without an active policy, reviews and runs
+behave as before, and duties applied before the upgrade have no live run.
+Preserved club duties now count against simultaneous capacity, so a review that
+previously over-committed a club now reports a capacity conflict.
+
+**Behaviour to verify**: create and activate a season policy; check that the
+review starts from its options, that activating a second version retires the
+first, and that a reviewed draft then needs review before publication. With
+OR-Tools installed, choose the exact optimizer and check the review's optimizer
+line; without it, check the warning. Provoke a capacity conflict and check the
+suggested fixes. On a current published schedule, apply a review, roll the live
+allocation back, and check that rollback is refused once a club nominates.
+
+**Dry-run evidence**: none recorded with this change. Run
+`python3 ci/test_club_duty_planning_governance.py`,
+`python3 ci/test_club_duty_season_balance.py`,
+`python3 ci/test_capacity_aware_duty_allocation.py`,
+`python3 ci/check_test_discovery.py`, `python3 ci/check_access_csv_integrity.py`,
+`python3 ci/check_workflow_state_contracts.py` and
+`bash ./ci/run_tests.sh --module sports_federation_officiating`, and record the
+results with the deployment.
+
+**Rollback**: roll back live allocations that must be undone first, then
+restore the pre-upgrade database or roll back the code and update the module;
+the new tables are left unused. Draft plans reviewed under a policy must be
+reviewed again after a code rollback because their fingerprint changes back.
+
 ### Season-fair club-duty allocation in the review workflow
 
 Affected modules: `sports_federation_officiating` 19.0.3.1.0 → 19.0.3.3.0
