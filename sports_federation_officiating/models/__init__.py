@@ -14,3 +14,4 @@ from . import officiating_capacity
 from . import schedule_validator
 
 from . import schedule_plan_run
+from . import officiating_capacity_fairness
