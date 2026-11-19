@@ -55,7 +55,9 @@ def score_state(rows, state, playing, original, season, targets, avoid_playing):
         for key, target in targets.items()
     )
     fallback = sum(
-        1 for index, club in enumerate(state) if avoid_playing and club in playing[index]
+        1
+        for index, club in enumerate(state)
+        if avoid_playing and club in playing[index]
     )
     changed = sum(1 for index, club in enumerate(state) if club != original[index])
     return (fallback, deviation, changed), totals
@@ -172,7 +174,9 @@ def solve_season(
         model.Add(
             deviation
             == base
-            + sum(role_minutes(rows[index]) * choice[index, club] for index in reachable)
+            + sum(
+                role_minutes(rows[index]) * choice[index, club] for index in reachable
+            )
         )
         bound = max(abs(base), abs(high))
         square = model.NewIntVar(0, bound * bound, "square_%s" % key)

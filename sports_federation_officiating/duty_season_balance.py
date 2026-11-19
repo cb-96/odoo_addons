@@ -154,9 +154,7 @@ def rebalance_season(
             for index, club in enumerate(state)
             if avoid_playing and club in playing[index]
         )
-        changed = sum(
-            1 for index, club in enumerate(state) if club != original[index]
-        )
+        changed = sum(1 for index, club in enumerate(state) if club != original[index])
         return (fallback, deviation, changed)
 
     def candidates(state):

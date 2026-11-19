@@ -34,7 +34,11 @@ class FederationScheduleDutyFairness(models.Model):
         rows = self.env["federation.club.officiating.capacity"].search(
             [("season_id", "=", self.edition_id.season_id.id), ("active", "=", True)]
         )
-        return {r.club_id.id: r.season_target_minutes for r in rows if r.season_target_minutes}
+        return {
+            r.club_id.id: r.season_target_minutes
+            for r in rows
+            if r.season_target_minutes
+        }
 
     def _club_duty_fairness_rebalance(self, allocation):
         """Refine an ``allocate`` result toward quadratic season fairness.

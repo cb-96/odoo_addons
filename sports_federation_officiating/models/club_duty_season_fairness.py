@@ -104,7 +104,9 @@ class FederationScheduleSeasonFairDuties(models.Model):
             ):
                 totals[source] = totals.get(source, 0) - amount
                 totals[target] = totals.get(target, 0) + amount
-        allocation.update(rows=rows, load=load, minute_load=minute_load, fairness=report)
+        allocation.update(
+            rows=rows, load=load, minute_load=minute_load, fairness=report
+        )
         return allocation
 
 

@@ -37,7 +37,9 @@ class TestClubDutyPlanningGovernance(TransactionCase):
         self.assertEqual((second.state, second.version), ("active", 2))
         self.assertEqual(first.state, "retired")
         self.assertEqual(second.previous_id, first)
-        self.assertEqual(self.Policy._active_for_season(self.env["federation.season"]), second)
+        self.assertEqual(
+            self.Policy._active_for_season(self.env["federation.season"]), second
+        )
 
     def test_active_version_is_read_only(self):
         policy = self._draft()
@@ -97,7 +99,9 @@ class TestClubDutyPlanningGovernance(TransactionCase):
             "code": "capacity_conflict",
             "rejected": {3: "simultaneous capacity 1 would be exceeded"},
         }
-        codes = duty_explanations.suggestions(detail, {"avoid": True, "fallback": False})
+        codes = duty_explanations.suggestions(
+            detail, {"avoid": True, "fallback": False}
+        )
         self.assertEqual(
             codes,
             [

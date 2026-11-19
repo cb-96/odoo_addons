@@ -237,7 +237,9 @@ class FederationScheduleGovernedClubDuties(models.Model):
                 totals[target] = totals.get(target, 0) + amount
         report["objective_before"] = fairness.get("objective_before")
         report["fallback_before"] = fairness.get("fallback_before")
-        allocation.update(rows=rows, load=load, minute_load=minute_load, fairness=report)
+        allocation.update(
+            rows=rows, load=load, minute_load=minute_load, fairness=report
+        )
         return allocation
 
     def action_create_club_duty_plan_run(self):
@@ -287,7 +289,9 @@ class ClubDutyReviewGovernance(models.TransientModel):
 
     def _suggestion_text(self, code):
         texts = {
-            "resolve_participants": _("Resolve both participating teams of the fixture."),
+            "resolve_participants": _(
+                "Resolve both participating teams of the fixture."
+            ),
             "change_pin": _("Change or remove the pin on this fixture."),
             "raise_capacity": _(
                 "Raise a club's simultaneous capacity on its capacity policy."
@@ -316,7 +320,9 @@ class ClubDutyReviewGovernance(models.TransientModel):
             return ""
         if fairness.get("solver") == "exact":
             if fairness.get("proven_optimal"):
-                return _("Balanced with the exact optimizer; the plan is proven optimal.")
+                return _(
+                    "Balanced with the exact optimizer; the plan is proven optimal."
+                )
             return _("Balanced with the exact optimizer within its effort budget.")
         notes = {
             "exact_unavailable": _(
@@ -354,7 +360,8 @@ class ClubDutyReviewGovernance(models.TransientModel):
                 "<li>%s</li>" % escape(self._suggestion_text(code)) for code in codes
             )
             items.append(
-                "<li>%s<ul>%s</ul></li>" % (escape(str(detail.get("message") or "")), fixes)
+                "<li>%s<ul>%s</ul></li>"
+                % (escape(str(detail.get("message") or "")), fixes)
             )
         if items:
             title = _("Suggested fixes: %s") % schedule.display_name

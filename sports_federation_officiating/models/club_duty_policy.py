@@ -71,9 +71,7 @@ class FederationClubDutyPolicy(models.Model):
         help="Deterministic CP-SAT work budget. The same inputs give the same "
         "plan on every server.",
     )
-    exact_solver_available = fields.Boolean(
-        compute="_compute_exact_solver_available"
-    )
+    exact_solver_available = fields.Boolean(compute="_compute_exact_solver_available")
     previous_id = fields.Many2one(
         "federation.club.duty.policy",
         string="Previous version",

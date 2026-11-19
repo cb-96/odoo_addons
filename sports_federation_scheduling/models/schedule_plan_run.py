@@ -3,7 +3,6 @@ from odoo.exceptions import UserError, ValidationError
 
 from ..planning_fingerprint import fingerprint
 
-
 _FAIRNESS_FIELDS = (
     "fairness_same_club_weight",
     "fairness_rest_weight",
@@ -160,9 +159,7 @@ class FederationSchedulePlanRun(models.Model):
     def _schedule_solver_configuration(self):
         values = self._normalized_schedule_configuration()
         return {
-            key: values[key]
-            for key in values
-            if key != "replace_automatic_assignments"
+            key: values[key] for key in values if key != "replace_automatic_assignments"
         }
 
     def _schedule_input_snapshot(self):
