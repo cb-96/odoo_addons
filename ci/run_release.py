@@ -69,6 +69,14 @@ def external(path, root=ROOT):
     return value
 
 
+def release_evidence(path, root=ROOT):
+    value = Path(path).expanduser().resolve()
+    artifacts = (root.resolve() / "artifacts" / "release").resolve()
+    if value == artifacts or artifacts in value.parents:
+        return value
+    return external(value, root)
+
+
 def invoke(argv, env, root=ROOT):
     """One execution boundary: argv (no shell), repository cwd, inherited streams."""
     print("[release] " + " ".join(str(arg) for arg in argv), flush=True)
@@ -142,10 +150,10 @@ def run(args, env=None, execute=invoke, get_revision=revision, root=ROOT):
         raise ValueError("Backup directory does not exist: %s" % backup)
     sha = get_revision(root)
     temp = Path(env.get("TMPDIR", "/tmp"))
-    evidence = external(
+    evidence = release_evidence(
         args.evidence_dir
         or env.get("RELEASE_BASELINE_EVIDENCE_DIR")
-        or temp / "sports-federation-release-baseline" / sha,
+        or root / "artifacts" / "release" / "baseline" / sha,
         root,
     )
     env["RELEASE_BASELINE_EVIDENCE_DIR"] = str(evidence)

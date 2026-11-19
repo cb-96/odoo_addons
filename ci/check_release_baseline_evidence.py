@@ -16,10 +16,10 @@ def find_violations(root: Path = ROOT) -> list[str]:
         return ["release baseline script is missing"]
     source = script.read_text()
     violations = []
-    if "sports-federation-release-baseline" not in source:
-        violations.append("default release evidence is not outside the repository")
+    if "artifacts/release/baseline" not in source:
+        violations.append("default release evidence is not under artifacts/release/baseline")
     if "Evidence directory must be outside the repository" not in source:
-        violations.append("in-repository release evidence is not rejected")
+        violations.append("release evidence outside artifacts/release is not rejected")
     if "classify_release_failure.py" not in source:
         violations.append("failed lanes are not classified from their logs")
     if not classifier.is_file():

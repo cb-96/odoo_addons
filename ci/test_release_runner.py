@@ -63,6 +63,10 @@ class TestReleaseRunner(unittest.TestCase):
             ],
         )
         self.assertIn("NOT performed", output.getvalue())
+        self.assertEqual(
+            self.calls[-1][1]["RELEASE_BASELINE_EVIDENCE_DIR"],
+            str(self.root / "artifacts/release/baseline/sha"),
+        )
 
     def test_readiness_validates_commit_and_browser_logs(self):
         self.run_profile("readiness", "--evidence-dir", str(self.evidence))
@@ -171,6 +175,14 @@ class TestReleaseRunner(unittest.TestCase):
                 "candidate", "--evidence-dir", str(self.root / "artifacts")
             )
         self.assertEqual(self.calls, [])
+
+    def test_release_artifacts_evidence_is_allowed(self):
+        evidence = self.root / "artifacts/release/baseline/candidate-sha"
+        self.assertEqual(runner.release_evidence(evidence, self.root), evidence)
+
+    def test_other_repository_evidence_is_rejected(self):
+        with self.assertRaises(ValueError):
+            runner.release_evidence(self.root / "artifacts/other", self.root)
 
     def test_symlink_into_repository_is_rejected(self):
         link = Path(self.temp.name) / "evidence-link"

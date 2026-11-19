@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 set -uo pipefail
+umask 077
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
 candidate_sha="$(git rev-parse HEAD)"
-default_evidence_dir="${TMPDIR:-/tmp}/sports-federation-release-baseline/$candidate_sha"
+default_evidence_dir="$repo_root/artifacts/release/baseline/$candidate_sha"
 evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-$default_evidence_dir}"
 evidence_dir="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$evidence_dir")"
 case "$evidence_dir/" in
+  "$repo_root/artifacts/release/"*) ;;
   "$repo_root"/*)
     echo "Evidence directory must be outside the repository: $evidence_dir" >&2
     exit 2

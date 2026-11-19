@@ -125,7 +125,11 @@ gates. The runner forwards argument arrays without shell interpolation and
 preserves backend failure codes. It does not invent a combined passing verdict
 from missing evidence or a skipped rehearsal.
 
-Evidence defaults are outside the repository and shared across the profile's
+Candidate, readiness, qualification and direct baseline runs write their
+commit-bound lane logs and evidence to `artifacts/release/baseline/<commit>/`.
+That ignored directory is created with private permissions; an explicit
+`--evidence-dir` or `RELEASE_BASELINE_EVIDENCE_DIR` outside the repository is
+still supported. The same evidence directory is shared across a profile's
 commands. Candidate/readiness migration requests now require rollback owner and
 trigger as well as the backup; an incomplete request fails before baseline work.
 Existing qualification environment variables remain supported. RC environment

@@ -74,8 +74,9 @@ lanes, then removes it.
 ## Evidence
 
 The baseline writes one `lane-<name>.json` record and one log digest per lane
-to `${TMPDIR:-/tmp}/sports-federation-release-baseline/<commit>/` (override with
-`RELEASE_BASELINE_EVIDENCE_DIR`, outside the repository). The migration
+to `artifacts/release/baseline/<commit>/` with private directory permissions.
+Override with `RELEASE_BASELINE_EVIDENCE_DIR` or `--evidence-dir`; custom paths
+outside the repository remain supported. The migration
 rehearsal writes to `artifacts/release/migration/` by default (override with
 `MIGRATION_EVIDENCE_DIR`).
 
