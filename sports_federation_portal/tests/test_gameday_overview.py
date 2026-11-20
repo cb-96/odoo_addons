@@ -143,10 +143,42 @@ class TestGamedayOverview(TransactionCase):
         self.assertNotIn(self.closed_season.id, current)
 
     def test_closing_a_season_closes_its_active_rosters(self):
-        self.assertEqual(self.roster.status, "active")
-        self.tournament.action_cancel()
-        self.season.action_close()
-        self.assertEqual(self.roster.status, "closed")
+        season = self.env["federation.season"].create(
+            {
+                "name": "Roster Closure Season",
+                "code": "OVS-ROSTER-CLOSE",
+                "date_start": self.today - timedelta(days=100),
+                "date_end": self.today + timedelta(days=100),
+                "state": "open",
+            }
+        )
+        roster = self.env["federation.team.roster"].create(
+            {
+                "name": "Roster Closed With Season",
+                "team_id": self.team.id,
+                "season_id": season.id,
+                "rule_set_id": self.rule_set.id,
+            }
+        )
+        create_registered_roster_lines(
+            self.env["federation.team.roster.line"],
+            {"roster_id": roster.id, "player_id": self.roster_line.player_id.id},
+        )
+        roster.action_activate()
+
+        # Roster activation can create a season finance obligation. Keep this
+        # test focused on roster closure by closing those unrelated obligations
+        # through their own lifecycle before exercising the season checklist.
+        Finance = self.env.get("federation.finance.event")
+        if Finance is not None:
+            events = Finance.search([("season_id", "=", season.id)])
+            for event in events:
+                if event.state != "settled":
+                    event.action_cancel()
+
+        season.action_close()
+
+        self.assertEqual(roster.status, "closed")
 
     def test_cancelling_a_season_closes_its_active_rosters(self):
         self.season.action_cancel()

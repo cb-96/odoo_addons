@@ -35,6 +35,16 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 "season_id": season.id,
             }
         )
+        rule_set_values = {
+            "name": "Operations Without Officials",
+            "code": "OPS-NO-OFFICIALS",
+        }
+        RuleSet = cls.env["federation.rule.set"]
+        if "referee_required_count" in RuleSet._fields:
+            rule_set_values["referee_required_count"] = 0
+        if "club_duties_on_publication" in RuleSet._fields:
+            rule_set_values["club_duties_on_publication"] = False
+        cls.rule_set = RuleSet.create(rule_set_values)
         cls.division = cls.env["federation.tournament"].create(
             {
                 "name": "Operations Division",
@@ -42,6 +52,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 "competition_id": competition.id,
                 "season_id": season.id,
                 "date_start": "2026-10-01",
+                "rule_set_id": cls.rule_set.id,
             }
         )
         participants = cls.env["federation.participant.set"].create(

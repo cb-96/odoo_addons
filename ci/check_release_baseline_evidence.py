@@ -20,8 +20,40 @@ def find_violations(root: Path = ROOT) -> list[str]:
         violations.append("default release evidence is not under artifacts/release/baseline")
     if "Evidence directory must be outside the repository" not in source:
         violations.append("release evidence outside artifacts/release is not rejected")
+    preflight_gate = source.find("if (( preflight_blocked )); then")
+    run_lane = source.find('run_lane "$lane"')
+    if (
+        "preflight_blocked=0" not in source
+        or "record_skipped_lane" not in source
+        or preflight_gate < 0
+        or run_lane < preflight_gate
+        or "continue" not in source[preflight_gate:run_lane]
+    ):
+        violations.append("failed preflight does not block the remaining lanes")
+    preparation_failure = source.find("if (( prepare_exit_code != 0 )); then")
+    if (
+        '"scripts/ci/run_rc_validation.sh prepare-upgrade"' not in source
+        or preparation_failure < 0
+        or run_lane < preparation_failure
+        or "continue" not in source[preparation_failure:run_lane]
+    ):
+        violations.append("upgrade does not record preparation failure before execution")
+    if (
+        "upgrade_database_blocked=0" not in source
+        or '[[ "$lane" == "full" ]] && (( upgrade_database_blocked ))' not in source
+        or 'record_skipped_lane "$lane" "upgrade database preparation failed; full lane is unavailable"'
+        not in source
+        or "upgrade_database_blocked=1" not in source[preparation_failure:]
+    ):
+        violations.append("full lane is not skipped when upgrade database preparation fails")
     if "classify_release_failure.py" not in source:
         violations.append("failed lanes are not classified from their logs")
+    if (
+        "database_for_lane()" not in source
+        or "upgrade|full)" not in source
+        or source.count('database_for_lane "$lane"') < 2
+    ):
+        violations.append("upgrade and full lane evidence do not use the upgrade database")
     if not classifier.is_file():
         violations.append("release failure classifier is missing")
     return violations

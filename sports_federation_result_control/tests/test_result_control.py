@@ -257,6 +257,16 @@ class TestResultControl(TransactionCase):
         with self.assertRaises(ValidationError):
             self.match.action_correct_result()
 
+    def test_correction_impact_without_optional_format_addon(self):
+        if "logical_fixture_id" in self.match._fields:
+            self.skipTest("The optional format addon is installed")
+
+        impact = self.match._result_correction_impact()
+
+        self.assertEqual(impact["dependent_fixture_ids"], [])
+        self.assertEqual(impact["dependent_match_ids"], [])
+        self.assertEqual(impact["publication_ids"], [])
+
     def test_correct_sets_flags(self):
         """Test that correct sets flags."""
         self.match.with_user(self.submitter_user).action_submit_result()

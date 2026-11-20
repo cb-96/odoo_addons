@@ -58,6 +58,13 @@ failure_classification_for() {
   python3 ci/classify_release_failure.py --lane "$lane" --log "$log_file"
 }
 
+database_for_lane() {
+  case "$1" in
+    upgrade|full) printf '%s' "$upgrade_database" ;;
+    *) printf '%s' "$database" ;;
+  esac
+}
+
 record_lane() {
   local lane="$1"
   local status="$2"
@@ -66,11 +73,9 @@ record_lane() {
   local finished_at="$5"
   local duration="$6"
   local log_file="$7"
-  local lane_database="$database"
-  if [[ "$lane" == "upgrade" ]]; then
-    lane_database="$upgrade_database"
-  fi
-  local command="scripts/ci/run_rc_validation.sh $lane"
+  local command="${8:-scripts/ci/run_rc_validation.sh $lane}"
+  local lane_database
+  lane_database="$(database_for_lane "$lane")"
   local args=(
     --lane "$lane"
     --status "$status"
@@ -87,6 +92,28 @@ record_lane() {
     args+=(--failure-classification "$(failure_classification_for "$lane" "$log_file")")
   fi
   python3 ci/capture_release_evidence.py "${args[@]}"
+}
+
+record_skipped_lane() {
+  local lane="$1"
+  local reason="$2"
+  local now log_file lane_database
+  now="$(utc_now)"
+  log_file="$evidence_dir/logs/$lane.log"
+  lane_database="$(database_for_lane "$lane")"
+  echo "[Release baseline] Skipping lane $lane: $reason" | tee "$log_file"
+  python3 ci/capture_release_evidence.py \
+    --lane "$lane" \
+    --status skipped \
+    --command "not run: blocked by release prerequisite" \
+    --exit-code 0 \
+    --started-at "$now" \
+    --finished-at "$now" \
+    --duration-seconds 0 \
+    --database "$lane_database" \
+    --log "$log_file" \
+    --skip-reason "$reason" \
+    --output "$evidence_dir/lane-$lane.json"
 }
 
 prepare_upgrade_database() {
@@ -126,20 +153,51 @@ run_lane() {
   return "$exit_code"
 }
 
-# Run every lane so a candidate produces a complete failure picture rather than
-# stopping at the first defect. Each failure is explicit and SHA-bound.
+# Run every lane after the candidate passes preflight so failures have a complete
+# picture. A failed preflight blocks all execution against an unqualified tree.
 overall_status=0
+preflight_blocked=0
+upgrade_database_blocked=0
 for lane in "${required_lanes[@]}"; do
+  if (( preflight_blocked )); then
+    record_skipped_lane "$lane" "preflight failed; candidate is not safe to qualify"
+    continue
+  fi
+  if [[ "$lane" == "full" ]] && (( upgrade_database_blocked )); then
+    record_skipped_lane "$lane" "upgrade database preparation failed; full lane is unavailable"
+    continue
+  fi
   if [[ "$lane" == "upgrade" ]]; then
-    if ! prepare_upgrade_database; then
+    prepare_started_at="$(utc_now)"
+    prepare_started_epoch="$(date +%s)"
+    prepare_upgrade_database
+    prepare_exit_code=$?
+    prepare_finished_epoch="$(date +%s)"
+    prepare_finished_at="$(utc_now)"
+    if (( prepare_exit_code != 0 )); then
       echo "[Release baseline] Upgrade database preparation failed." >&2
       overall_status=1
+      prepare_log="$evidence_dir/logs/upgrade-install.log"
+      record_lane \
+        "upgrade" \
+        "failed" \
+        "$prepare_exit_code" \
+        "$prepare_started_at" \
+        "$prepare_finished_at" \
+        "$((prepare_finished_epoch - prepare_started_epoch))" \
+        "$prepare_log" \
+        "scripts/ci/run_rc_validation.sh prepare-upgrade"
+      upgrade_database_blocked=1
+      continue
     fi
   fi
   run_lane "$lane"
   lane_status=$?
   if (( lane_status != 0 )); then
     overall_status=1
+    if [[ "$lane" == "preflight" ]]; then
+      preflight_blocked=1
+    fi
   fi
 done
 

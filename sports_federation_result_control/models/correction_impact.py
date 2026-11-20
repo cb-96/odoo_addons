@@ -11,25 +11,32 @@ class FederationResultCorrectionImpact(models.Model):
 
     def _result_correction_impact(self):
         self.ensure_one()
-        fixture = self.logical_fixture_id
-        seen = set()
-        frontier = fixture
-        dependants = self.env["federation.fixture"]
-        while frontier:
-            rows = self.env["federation.fixture"].search(
-                [
-                    "|",
-                    ("home_source_fixture_id", "in", frontier.ids),
-                    ("away_source_fixture_id", "in", frontier.ids),
-                ]
-            )
-            rows = rows.filtered(lambda item: item.id not in seen)
-            if not rows:
-                break
-            seen.update(rows.ids)
-            dependants |= rows
-            frontier = rows
-        matches = dependants.mapped("operational_match_id")
+        Fixture = self.env.get("federation.fixture")
+        dependants = Fixture.browse() if Fixture is not None else []
+        matches = self.env["federation.match"].browse()
+        if (
+            Fixture is not None
+            and "logical_fixture_id" in self._fields
+            and "operational_match_id" in Fixture._fields
+        ):
+            fixture = self.logical_fixture_id
+            seen = set()
+            frontier = fixture
+            while frontier:
+                rows = Fixture.search(
+                    [
+                        "|",
+                        ("home_source_fixture_id", "in", frontier.ids),
+                        ("away_source_fixture_id", "in", frontier.ids),
+                    ]
+                )
+                rows = rows.filtered(lambda item: item.id not in seen)
+                if not rows:
+                    break
+                seen.update(rows.ids)
+                dependants |= rows
+                frontier = rows
+            matches = dependants.mapped("operational_match_id")
         started = matches.filtered(
             lambda match: match.state in ("in_progress", "done")
             or match.result_state != "draft"
@@ -52,15 +59,20 @@ class FederationResultCorrectionImpact(models.Model):
             if Finance is not None
             else 0
         )
+        publication_ids = (
+            matches.mapped("schedule_publication_id").ids
+            if "schedule_publication_id" in matches._fields
+            else []
+        )
         impact = {
             "match_id": self.id,
             "result_state": self.result_state,
             "standing_ids": standings.ids if standings is not None else [],
-            "dependent_fixture_ids": dependants.ids,
+            "dependent_fixture_ids": dependants.ids if Fixture is not None else [],
             "dependent_match_ids": matches.ids,
             "started_dependent_match_ids": started.ids,
             "finance_event_count": finance_count,
-            "publication_ids": matches.mapped("schedule_publication_id").ids,
+            "publication_ids": publication_ids,
         }
         impact["signature"] = hashlib.sha256(
             json.dumps(impact, sort_keys=True, separators=(",", ":")).encode()

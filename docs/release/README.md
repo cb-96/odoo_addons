@@ -39,6 +39,11 @@ evidence are outputs and must not be mixed with product changes.
    source tree.
 
 `scripts/ci/run_rc_validation.sh preflight` enforces the clean-worktree rule.
+If preflight fails, the baseline records the remaining lanes as skipped and does
+not run them against a worktree that differs from the evidence commit. Likewise,
+an upgrade-database preparation failure is recorded as the failed upgrade lane;
+the actual upgrade and full-suite commands are skipped because both require the
+prepared upgrade database.
 
 ## Execute qualification
 
@@ -92,7 +97,9 @@ scheduled/manual **Upstream Odoo compatibility** workflow.
 
 Each lane record contains the candidate SHA, command, start and finish time,
 duration, exit code, tool versions, runner identity, database name and log
-hash. Failed lanes need a failure classification (allowed values are defined in
+hash. The `upgrade` and `full` lanes both target the upgrade database; the other
+baseline lanes target the validation database. Failed lanes need a failure
+classification (allowed values are defined in
 `ci/capture_release_evidence.py`), for example:
 
 ```bash

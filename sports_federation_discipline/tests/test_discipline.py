@@ -147,9 +147,22 @@ class TestDiscipline(TransactionCase):
         self.assertEqual(case.state, "decided")
         self.assertTrue(case.decided_on)
 
-        case.action_mark_appealed()
-        self.assertEqual(case.state, "appealed")
+        with self.assertRaisesRegex(ValidationError, "grounds and a deadline"):
+            case.action_mark_appealed()
 
+        appeal = self.env["federation.disciplinary.appeal"].create(
+            {
+                "case_id": case.id,
+                "grounds": "The decision relied on incorrect match evidence.",
+                "deadline": "2099-01-01 00:00:00",
+            }
+        )
+        appeal.action_submit()
+        self.assertEqual(case.state, "appealed")
+        with self.assertRaisesRegex(ValidationError, "Decide or withdraw"):
+            case.action_close()
+
+        appeal.action_withdraw()
         case.action_close()
         self.assertEqual(case.state, "closed")
         self.assertTrue(case.closed_on)

@@ -11,20 +11,22 @@
         <field name="refunded_amount" readonly="1"/>
         <field name="balance_amount" readonly="1"/>
       </xpath>
-      <xpath expr="//notebook" position="inside">
-        <page string="Payments and refunds">
-          <field name="settlement_ids">
-            <list editable="bottom">
-              <field name="occurred_on"/>
-              <field name="amount"/>
-              <field name="state"/>
-              <field name="provider"/>
-              <field name="provider_reference"/>
-              <field name="failure_reason"/>
-              <field name="reconciled"/>
-            </list>
-          </field>
-        </page>
+      <xpath expr="//sheet" position="inside">
+        <notebook>
+          <page string="Payments and refunds">
+            <field name="settlement_ids">
+              <list editable="bottom">
+                <field name="occurred_on"/>
+                <field name="amount"/>
+                <field name="state"/>
+                <field name="provider"/>
+                <field name="provider_reference"/>
+                <field name="failure_reason"/>
+                <field name="reconciled"/>
+              </list>
+            </field>
+          </page>
+        </notebook>
       </xpath>
     </field>
   </record>

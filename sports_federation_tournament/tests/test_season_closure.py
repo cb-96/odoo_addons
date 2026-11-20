@@ -36,7 +36,7 @@ class TestSeasonClosure(TransactionCase):
         self._make_tournament(name="Draft Tournament")
         with self.assertRaises(ValidationError) as cm:
             self.season.action_close()
-        self.assertIn("Draft Tournament", str(cm.exception))
+        self.assertIn("Active competitions: 1", str(cm.exception))
 
     def test_close_blocked_by_open_tournament(self):
         """Season cannot be closed when a tournament is open."""

@@ -1,6 +1,9 @@
 from datetime import timedelta
 
 from odoo import _, api, fields, models
+from odoo.addons.sports_federation_schedule_approval.planning_tokens import (
+    with_published_planning_token,
+)
 from odoo.exceptions import ValidationError
 
 
@@ -339,6 +342,9 @@ class FederationMatchdayCommands(models.AbstractModel):
             state_field="operational_status",
             reason=reason,
             reason_required=True,
+            writer=lambda transition_values: with_published_planning_token(
+                match.sudo()
+            ).write(transition_values),
             event_type="matchday_match_deviated",
             description=_("Operational match schedule changed."),
         )

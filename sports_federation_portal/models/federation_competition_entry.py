@@ -142,7 +142,7 @@ class FederationCompetitionEntry(models.Model):
         privilege = self.env["federation.portal.privilege"]
         entry = privilege.elevate(self, user=user)
         self.env["federation.portal.scope"].assert_team(entry.team_id, user=user)
-        if entry.state not in ("draft", "rejected", "withdrawn"):
+        if entry.state not in ("draft", "changes_requested", "rejected", "withdrawn"):
             raise ValidationError(
                 _(
                     "Only draft, returned, rejected, or withdrawn entries can be resubmitted."
@@ -186,7 +186,7 @@ class FederationCompetitionEntry(models.Model):
 
     def get_portal_state_label(self):
         self.ensure_one()
-        if self.state == "draft" and self.review_note:
+        if self.state in ("draft", "changes_requested") and self.review_note:
             return _("Returned for updates")
         return {
             "draft": _("Draft"),

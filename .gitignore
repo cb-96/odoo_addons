@@ -25,5 +25,5 @@ ci/logs/
 odoo-rc.log
 
 _logs/
-# Release evidence is generated outside the repository.
+# Release evidence is generated under artifacts/release and ignored.
 artifacts/release/

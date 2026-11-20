@@ -445,6 +445,29 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             [("match_id.schedule_publication_id.matchday_id", "=", matchday.id)]
         )
 
+    def _approve_dynamic_fixture_roster(self, match, team):
+        sheet = match.match_sheet_ids.filtered(lambda item: item.team_id == team)
+        self.assertEqual(len(sheet), 1)
+        roster = sheet.roster_id
+        active_lines = roster.line_ids.filtered(lambda line: line.status == "active")
+        self.assertTrue(active_lines)
+        self.env["federation.match.sheet.line"].create(
+            [
+                {
+                    "match_sheet_id": sheet.id,
+                    "player_id": line.player_id.id,
+                    "roster_line_id": line.id,
+                    "jersey_number": line.jersey_number,
+                }
+                for line in active_lines
+            ]
+        )
+        sheet.with_user(self.organizer).action_submit()
+        if sheet.state == "submitted":
+            sheet.with_user(self.organizer).action_approve()
+        self.assertEqual(sheet.state, "approved")
+        return sheet
+
     def _cross_out(self, match, team, indexes=(0, 1)):
         sheet = self.env["federation.match.sheet"].search(
             [("match_id", "=", match.id), ("team_id", "=", team.id)], limit=1
@@ -1105,12 +1128,17 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self.assertEqual(bye_fixture.bye_team_id, self.teams[0])
         self.assertEqual(len(stage.stage_fixture_ids), 3)
         matchday = schedules[0].matchday_id
+        self._prepare_gameday_rosters(matchday)
+        readiness = self.env["federation.matchday.readiness"].evaluate(matchday)
+        self.assertTrue(readiness["can_run"], json.dumps(readiness, indent=2))
         self._open_gameday(matchday)
         forfeit_fixture = stage.stage_fixture_ids.filtered(
             lambda fixture: fixture.round_number == 1 and fixture.operational_match_id
         )
         self.assertEqual(len(forfeit_fixture), 1)
         forfeit_match = forfeit_fixture.operational_match_id
+        self._cross_out(forfeit_match, forfeit_match.home_team_id)
+        self._cross_out(forfeit_match, forfeit_match.away_team_id)
         result = self._court_result(
             matchday,
             forfeit_match,
@@ -1130,10 +1158,16 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self.assertEqual(len(final_fixture), 1)
         self.assertTrue(final_fixture.operational_match_id)
         final_match = final_fixture.operational_match_id
+        for sheet in final_match.match_sheet_ids.filtered(
+            lambda item: not item.line_ids
+        ):
+            self._approve_dynamic_fixture_roster(final_match, sheet.team_id)
         if final_match.home_team_id == forfeit_match.away_team_id:
             final_home_score, final_away_score = 1, 0
         else:
             final_home_score, final_away_score = 0, 1
+        self._cross_out(final_match, final_match.home_team_id)
+        self._cross_out(final_match, final_match.away_team_id)
         self._court_result(
             matchday, final_match, home=final_home_score, away=final_away_score
         )

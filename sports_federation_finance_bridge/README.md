@@ -86,6 +86,9 @@ An individual financial occurrence.
   `sports_federation_accounting`, which requires an authorized payer and a
   configured product. The bridge-only command does not create invoices or use
   elevated fallback accounting access.
+10. **Settlement and refund traceability** — finance-event forms show payment
+  and refund attempts in a dedicated tab, including provider references,
+  failure reasons, and reconciliation status.
 
 ### `federation.season.budget`
 

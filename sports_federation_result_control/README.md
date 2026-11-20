@@ -22,6 +22,10 @@ The result path supports draft, submission, verification, approval, contest, and
 ## Integration
 
 Portal and tournament-operation actions call the same model-owned result methods as backend flows. Standings recomputation follows successful official result transitions.
+Correction-impact previews also support installations where the optional
+competition-format and schedule-approval addons are not installed; fixture
+dependencies and affected publication links are included when those addons are
+available.
 
 ## Tests
 

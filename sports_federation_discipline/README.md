@@ -59,7 +59,7 @@ An investigation triggered by one or more incidents.
 | `subject_player_id` / `subject_club_id` / `subject_referee_id` | Many2one | Subject |
 | `summary` / `notes` | Text | Case details |
 
-- **State machine**: draft → under_review → decided → appealed / closed, with under-review cases allowed back to draft for corrections before a decision is recorded.
+- **State machine**: draft → under_review → decided → appealed / closed, with under-review cases allowed back to draft for corrections before a decision is recorded. An appeal must be submitted with grounds and a deadline; an active appeal must be decided or withdrawn before the case can close.
 - **Auto-numbering** via `ir.sequence`.
 - **Counter labels** use distinct technical field names so the case relation tabs and their stat counters do not trigger duplicate-label warnings during module loading.
 

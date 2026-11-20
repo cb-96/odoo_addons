@@ -363,6 +363,8 @@ printed scoresheet remains the fallback. See the
 4. Use **Delay or Move Match** for a move, delay, postponement or
    cancellation. A reason is mandatory. The published slot never changes;
    `operational_slot_id` and `operational_status` represent the live reality.
+   The command also updates the operational date and location through its
+   audited, internal publication token; this does not rewrite publication data.
 5. Resolve incidents and complete or cancel every published match.
 6. Select **Close Match Day**. Forced closure requires a reason and retains the
    blocker IDs in the competition event.

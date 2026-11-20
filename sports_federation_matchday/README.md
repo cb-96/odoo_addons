@@ -16,7 +16,8 @@ approved publication evidence.
 - Every deviation requires a reason and records the session, publication, actor,
   old slot and new slot.
 - The immutable `published_slot_id` is preserved. Live reality is represented by
-  `operational_slot_id` and `operational_status`.
+  `operational_slot_id` and `operational_status`; the audited command updates the
+  match's operational date and location through the internal publication token.
 - Normal close requires all matches finished or cancelled and all incidents
   resolved. Forced close requires a reason.
 
