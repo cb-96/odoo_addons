@@ -57,7 +57,9 @@ def quadratic_objective(assignment, rows_by_fixture, season_minutes, targets):
     """Sum of squared deviation of (season + planned) minutes from target."""
     planned = dict(season_minutes)
     for fixture, club in assignment.items():
-        planned[club] = planned.get(club, 0) + rows_by_fixture[fixture]["duration_minutes"]
+        planned[club] = (
+            planned.get(club, 0) + rows_by_fixture[fixture]["duration_minutes"]
+        )
     clubs = set(planned) | set(targets)
     return sum((planned.get(c, 0) - targets.get(c, 0)) ** 2 for c in clubs)
 
@@ -70,8 +72,15 @@ def _capacity(capacities, club):
     return max(0, int(policy.get("max_simultaneous", 1)))
 
 
-def rebalance_quadratic(rows, capacities, pins=None, season_minutes=None,
-                        targets=None, iterations=4000, seed=0):
+def rebalance_quadratic(
+    rows,
+    capacities,
+    pins=None,
+    season_minutes=None,
+    targets=None,
+    iterations=4000,
+    seed=0,
+):
     """Local-search refinement minimising capacity overload, then
     quadratic season-fairness.
 
@@ -136,13 +145,18 @@ def rebalance_quadratic(rows, capacities, pins=None, season_minutes=None,
 
     planned = dict(season_minutes)
     for fixture, club in assignment.items():
-        planned[club] = planned.get(club, 0) + rows_by_fixture[fixture]["duration_minutes"]
+        planned[club] = (
+            planned.get(club, 0) + rows_by_fixture[fixture]["duration_minutes"]
+        )
     report = {
         "overload": current[0],
         "objective": current[1],
         "projected_minutes": planned,
         "max_deviation": max(
-            (abs(planned.get(c, 0) - targets.get(c, 0)) for c in set(planned) | set(targets)),
+            (
+                abs(planned.get(c, 0) - targets.get(c, 0))
+                for c in set(planned) | set(targets)
+            ),
             default=0,
         ),
     }

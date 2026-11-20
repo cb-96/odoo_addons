@@ -17,7 +17,9 @@ def find_violations(root: Path = ROOT) -> list[str]:
     source = script.read_text()
     violations = []
     if "artifacts/release/baseline" not in source:
-        violations.append("default release evidence is not under artifacts/release/baseline")
+        violations.append(
+            "default release evidence is not under artifacts/release/baseline"
+        )
     if "Evidence directory must be outside the repository" not in source:
         violations.append("release evidence outside artifacts/release is not rejected")
     preflight_gate = source.find("if (( preflight_blocked )); then")
@@ -37,7 +39,9 @@ def find_violations(root: Path = ROOT) -> list[str]:
         or run_lane < preparation_failure
         or "continue" not in source[preparation_failure:run_lane]
     ):
-        violations.append("upgrade does not record preparation failure before execution")
+        violations.append(
+            "upgrade does not record preparation failure before execution"
+        )
     if (
         "upgrade_database_blocked=0" not in source
         or '[[ "$lane" == "full" ]] && (( upgrade_database_blocked ))' not in source
@@ -45,7 +49,9 @@ def find_violations(root: Path = ROOT) -> list[str]:
         not in source
         or "upgrade_database_blocked=1" not in source[preparation_failure:]
     ):
-        violations.append("full lane is not skipped when upgrade database preparation fails")
+        violations.append(
+            "full lane is not skipped when upgrade database preparation fails"
+        )
     if "classify_release_failure.py" not in source:
         violations.append("failed lanes are not classified from their logs")
     if (
@@ -53,7 +59,9 @@ def find_violations(root: Path = ROOT) -> list[str]:
         or "upgrade|full)" not in source
         or source.count('database_for_lane "$lane"') < 2
     ):
-        violations.append("upgrade and full lane evidence do not use the upgrade database")
+        violations.append(
+            "upgrade and full lane evidence do not use the upgrade database"
+        )
     if not classifier.is_file():
         violations.append("release failure classifier is missing")
     return violations
