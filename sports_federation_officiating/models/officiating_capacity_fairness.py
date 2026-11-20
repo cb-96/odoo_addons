@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import fields, models
 
 from ..duty_fairness import rebalance_quadratic
 
